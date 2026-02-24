@@ -1,0 +1,39 @@
+
+
+services:
+  db:
+    image: ankane/pgvector
+    container_name: mutari-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mutari123
+      POSTGRES_DB: mutari
+    ports:
+      - "5432:5432"
+    volumes:
+      - mutari_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: mutari-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+  api:
+    build: .
+    container_name: mutari-api
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgres://postgres:mutari123@db:5432/mutari?sslmode=disable
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8080:8080"
+
+volumes:
+  mutari_data:
+  redis_data:
