@@ -16,21 +16,18 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) GetMatches(c *gin.Context) {
+
 	userIDParam := c.Param("user_id")
 
 	userID, err := strconv.ParseInt(userIDParam, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid user_id",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
 		return
 	}
 
-	matches, err := h.service.GetCandidates(c.Request.Context(), userID)
+	matches, err := h.service.GetMatches(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(), // show real error
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

@@ -13,6 +13,7 @@ import (
 )
 
 func newDB(connString string) (*pgxpool.Pool, error) {
+
 	ctx := context.Background()
 
 	config, err := pgxpool.ParseConfig(connString)
@@ -44,8 +45,16 @@ func main() {
 	handler := matching.NewHandler(service)
 
 	r := gin.Default()
+
+	r.Static("/app", "./web")
+
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
 	r.GET("/matches/:user_id", handler.GetMatches)
 
+	log.Println("Mutari Engine Started")
+
 	r.Run(":8080")
-	println("********************************APP STARTED - NEW BUILD ***************************************")
 }

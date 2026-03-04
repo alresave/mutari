@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mutari – Core Values Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            background: #0d0d0d;
+            color: #eaeaea;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .question {
+            margin-bottom: 25px;
+        }
+
+        input[type=range] {
+            width: 100%;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #result {
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Mutari – Core Values</h1>
+
+<label>User ID:</label>
+<input type="number" id="userId" value="1" />
+<hr/>
+
+<div id="questions"></div>
+
+<button onclick="submitTest()">Analyze Compatibility</button>
+
+<div id="result"></div>
+
+<script>
+
+const questions = [
+    { id: 1, text: "I prefer building long-term stability over living fully in the present." },
+    { id: 2, text: "I prefer stability over constant change." },
+    { id: 3, text: "Family should come before individual ambitions." },
+    { id: 4, text: "Financial security is more important than aggressive growth." },
+    { id: 5, text: "Defined roles in relationships create clarity." },
+    { id: 6, text: "Strict monogamy is essential to long-term trust." },
+    { id: 7, text: "Conflicts should be addressed directly." },
+    { id: 8, text: "A slower, grounded life pace is preferable." }
+];
+
+const container = document.getElementById("questions");
+
+questions.forEach(q => {
+    const div = document.createElement("div");
+    div.className = "question";
+
+    div.innerHTML = `
+        <label>${q.text}</label><br/>
+        <input type="range" min="0" max="100" value="50" id="q${q.id}">
+        <span id="val${q.id}">50</span>
+    `;
+
+    container.appendChild(div);
+
+    const slider = document.getElementById(`q${q.id}`);
+    const output = document.getElementById(`val${q.id}`);
+    slider.oninput = () => output.innerText = slider.value;
+});
+
+function submitTest() {
+
+    const userId = parseInt(document.getElementById("userId").value);
+
+    const answers = questions.map(q => ({
+        question_id: q.id,
+        value: parseFloat(document.getElementById(`q${q.id}`).value)
+    }));
+
+    document.getElementById("result").innerHTML = "<p>Analyzing structural alignment...</p>";
+
+    fetch("/mcp/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            user_id: userId,
+            answers: answers
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.matches && data.matches.length > 0) {
+            const top = data.matches[0];
+            const percentage = Math.min(top.score * 100, 98);
+
+            document.getElementById("result").innerHTML = `
+                <div style="
+                    padding:20px;
+                    border-radius:12px;
+                    background:#111;
+                ">
+                    <h3>Structural Compatibility</h3>
+                    <h1 style="font-size:48px;margin:0;">
+                        ${percentage.toFixed(1)}%
+                    </h1>
+                    <p style="opacity:0.8;">
+                        Strong alignment in core values and long-term priorities.
+                    </p>
+                </div>
+            `;
+        } else {
+            document.getElementById("result").innerHTML =
+                "<p>Profile stored. No matches available yet.</p>";
+        }
+
+    })
+    .catch(err => {
+        document.getElementById("result").innerHTML =
+            "<p>Error submitting test.</p>";
+        console.error(err);
+    });
+}
+
+</script>
+
+</body>
+</html>
