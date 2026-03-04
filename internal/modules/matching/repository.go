@@ -18,13 +18,14 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 type Candidate struct {
-	UserID            int64  `json:"user_id"`
-	Score             int    `json:"score"`
-	TopBlock          string `json:"top_block"`
-	SecondaryBlock    string `json:"secondary_alignment"`
-	CompatibilityType string `json:"compatibility_type"`
-	Explanation       string `json:"explanation"`
-	PotentialFriction string `json:"potential_friction"`
+	UserID               int64  `json:"user_id"`
+	Score                int    `json:"score"`
+	TopBlock             string `json:"top_block"`
+	SecondaryBlock       string `json:"secondary_alignment"`
+	CompatibilityType    string `json:"compatibility_type"`
+	Explanation          string `json:"explanation"`
+	PotentialFriction    string `json:"potential_friction"`
+	CompatibilitySummary string `json:"compatibility_summary"`
 }
 
 var blockWeights = []float64{
@@ -151,6 +152,17 @@ func frictionExplanation(block string) string {
 	}
 }
 
+func compatibilitySummary(primary, secondary, friction string) string {
+
+	return "Strong alignment in " +
+		primary +
+		" with additional compatibility in " +
+		secondary +
+		". However, there may be differences in " +
+		friction +
+		"."
+}
+
 func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candidate, error) {
 
 	query := `
@@ -250,14 +262,17 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 
 		friction := frictionExplanation(frictionBlock)
 
+		summary := compatibilitySummary(topBlock, secondBlock, frictionBlock)
+
 		candidates = append(candidates, Candidate{
-			UserID:            id,
-			Score:             percentage,
-			TopBlock:          topBlock,
-			SecondaryBlock:    secondBlock,
-			CompatibilityType: ctype,
-			Explanation:       explanation,
-			PotentialFriction: friction,
+			UserID:               id,
+			Score:                percentage,
+			TopBlock:             topBlock,
+			SecondaryBlock:       secondBlock,
+			CompatibilityType:    ctype,
+			Explanation:          explanation,
+			PotentialFriction:    friction,
+			CompatibilitySummary: summary,
 		})
 	}
 
