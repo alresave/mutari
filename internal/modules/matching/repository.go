@@ -18,10 +18,13 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 type Candidate struct {
-	UserID      int64  `json:"user_id"`
-	Score       int    `json:"score"`
-	TopBlock    string `json:"top_block"`
-	Explanation string `json:"explanation"`
+	UserID            int64  `json:"user_id"`
+	Score             int    `json:"score"`
+	TopBlock          string `json:"top_block"`
+	SecondaryBlock    string `json:"secondary_alignment"`
+	CompatibilityType string `json:"compatibility_type"`
+	Explanation       string `json:"explanation"`
+	PotentialFriction string `json:"potential_friction"`
 }
 
 var blockWeights = []float64{
@@ -82,6 +85,72 @@ func explainMatch(block string, score float64) string {
 	return "Some differences in " + block
 }
 
+func compatibilityType(block string) string {
+
+	switch block {
+
+	case "Core Values":
+		return "Values Match"
+
+	case "Relational Architecture":
+		return "Relationship Structure Match"
+
+	case "Lifestyle Rhythm":
+		return "Lifestyle Match"
+
+	case "Growth":
+		return "Growth Alignment"
+
+	case "Cognitive Style":
+		return "Thinking Style Match"
+
+	case "Ambition":
+		return "Ambition Alignment"
+
+	case "Emotional Stability":
+		return "Emotional Compatibility"
+
+	case "Intimacy":
+		return "Bonding Compatibility"
+
+	default:
+		return "General Compatibility"
+	}
+}
+
+func frictionExplanation(block string) string {
+
+	switch block {
+
+	case "Core Values":
+		return "Possible differences in core life principles"
+
+	case "Relational Architecture":
+		return "Different expectations about relationship roles"
+
+	case "Lifestyle Rhythm":
+		return "Potential mismatch in daily routines or pace of life"
+
+	case "Growth":
+		return "Different priorities in personal development"
+
+	case "Cognitive Style":
+		return "Different ways of thinking or processing decisions"
+
+	case "Ambition":
+		return "Possible differences in long-term goals or drive"
+
+	case "Emotional Stability":
+		return "Different emotional regulation styles"
+
+	case "Intimacy":
+		return "Different bonding or closeness needs"
+
+	default:
+		return "Potential area of difference"
+	}
+}
+
 func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candidate, error) {
 
 	query := `
@@ -100,8 +169,8 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 	var baseConf float64
 
 	err = r.db.QueryRow(ctx,
-		`SELECT effective_vector, confidence_final 
-		 FROM user_mcp_profiles 
+		`SELECT effective_vector, confidence_final
+		 FROM user_mcp_profiles
 		 WHERE user_id=$1`,
 		userID).Scan(&baseVec, &baseConf)
 
@@ -130,6 +199,12 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 		var topBlockScore float64
 		var topBlock string
 
+		var secondScore float64
+		var secondBlock string
+
+		var lowestScore float64 = 1
+		var frictionBlock string
+
 		for b := 0; b < 8; b++ {
 
 			start := b * 8
@@ -138,8 +213,23 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 			sim := blockSimilarity(vecA, vecB, start, end)
 
 			if sim > topBlockScore {
+
+				secondScore = topBlockScore
+				secondBlock = topBlock
+
 				topBlockScore = sim
 				topBlock = blockNames[b]
+
+			} else if sim > secondScore {
+
+				secondScore = sim
+				secondBlock = blockNames[b]
+
+			}
+
+			if sim < lowestScore {
+				lowestScore = sim
+				frictionBlock = blockNames[b]
 			}
 
 			w := blockWeights[b]
@@ -156,11 +246,18 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 
 		explanation := explainMatch(topBlock, finalScore)
 
+		ctype := compatibilityType(topBlock)
+
+		friction := frictionExplanation(frictionBlock)
+
 		candidates = append(candidates, Candidate{
-			UserID:      id,
-			Score:       percentage,
-			TopBlock:    topBlock,
-			Explanation: explanation,
+			UserID:            id,
+			Score:             percentage,
+			TopBlock:          topBlock,
+			SecondaryBlock:    secondBlock,
+			CompatibilityType: ctype,
+			Explanation:       explanation,
+			PotentialFriction: friction,
 		})
 	}
 
