@@ -1,0 +1,105 @@
+{
+  "user_id": 1,
+  "matches": [
+    {
+      "user_id": 3,
+      "score": 95,
+      "top_block": "Lifestyle Rhythm",
+      "secondary_alignment": "Ambition",
+      "compatibility_type": "Lifestyle Match",
+      "best_alignment": "Lifestyle Rhythm",
+      "potential_friction": "Emotional Stability",
+      "compatibility_summary": "Very similar daily rhythm and long-term ambition. Emotional processing styles may differ slightly."
+    },
+    {
+      "user_id": 2,
+      "score": 92,
+      "top_block": "Core Values",
+      "secondary_alignment": "Relational Architecture",
+      "compatibility_type": "Values Match",
+      "best_alignment": "Core Values",
+      "potential_friction": "Cognitive Style",
+      "compatibility_summary": "Strong alignment in life priorities and relationship structure."
+    },
+    {
+      "user_id": 5,
+      "score": 90,
+      "top_block": "Emotional Stability",
+      "secondary_alignment": "Lifestyle Rhythm",
+      "compatibility_type": "Emotional Match",
+      "best_alignment": "Emotional Stability",
+      "potential_friction": "Ambition",
+      "compatibility_summary": "Emotionally balanced pairing with similar lifestyle pacing."
+    },
+    {
+      "user_id": 7,
+      "score": 88,
+      "top_block": "Relational Architecture",
+      "secondary_alignment": "Core Values",
+      "compatibility_type": "Structural Match",
+      "best_alignment": "Relational Architecture",
+      "potential_friction": "Lifestyle Rhythm",
+      "compatibility_summary": "Compatible expectations around commitment and relationship roles."
+    },
+    {
+      "user_id": 9,
+      "score": 87,
+      "top_block": "Ambition",
+      "secondary_alignment": "Growth",
+      "compatibility_type": "Drive Match",
+      "best_alignment": "Ambition",
+      "potential_friction": "Lifestyle Rhythm",
+      "compatibility_summary": "Strong alignment in personal goals and growth orientation."
+    },
+    {
+      "user_id": 11,
+      "score": 86,
+      "top_block": "Growth",
+      "secondary_alignment": "Core Values",
+      "compatibility_type": "Growth Match",
+      "best_alignment": "Growth",
+      "potential_friction": "Emotional Stability",
+      "compatibility_summary": "Shared mindset around development and learning."
+    },
+    {
+      "user_id": 14,
+      "score": 84,
+      "top_block": "Intimacy",
+      "secondary_alignment": "Emotional Stability",
+      "compatibility_type": "Bonding Match",
+      "best_alignment": "Intimacy",
+      "potential_friction": "Ambition",
+      "compatibility_summary": "High emotional closeness potential with slightly different ambition levels."
+    },
+    {
+      "user_id": 16,
+      "score": 82,
+      "top_block": "Cognitive Style",
+      "secondary_alignment": "Growth",
+      "compatibility_type": "Intellectual Match",
+      "best_alignment": "Cognitive Style",
+      "potential_friction": "Lifestyle Rhythm",
+      "compatibility_summary": "Very compatible thinking patterns and problem-solving styles."
+    },
+    {
+      "user_id": 18,
+      "score": 80,
+      "top_block": "Lifestyle Rhythm",
+      "secondary_alignment": "Intimacy",
+      "compatibility_type": "Lifestyle Match",
+      "best_alignment": "Lifestyle Rhythm",
+      "potential_friction": "Cognitive Style",
+      "compatibility_summary": "Similar daily routines and lifestyle energy."
+    },
+    {
+      "user_id": 21,
+      "score": 78,
+      "top_block": "Core Values",
+      "secondary_alignment": "Ambition",
+      "compatibility_type": "Values Match",
+      "best_alignment": "Core Values",
+      "potential_friction": "Emotional Stability",
+      "compatibility_summary": "Aligned worldview and shared long-term priorities."
+    }
+  ]
+}

@@ -39,17 +39,6 @@ var blockWeights = []float64{
 	1.5, // Intimacy
 }
 
-var blockNames = []string{
-	"Core Values",
-	"Relational Architecture",
-	"Lifestyle Rhythm",
-	"Growth",
-	"Cognitive Style",
-	"Ambition",
-	"Emotional Stability",
-	"Intimacy",
-}
-
 func blockSimilarity(a, b []float32, start, end int) float64 {
 
 	var dot float64
@@ -281,4 +270,84 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 	})
 
 	return candidates, nil
+}
+func (r *Repository) StoreMCPAnswers(ctx context.Context, userID int64, answers []MCPAnswer) error {
+
+	query := `
+	INSERT INTO user_mcp_answers
+	(user_id, question_id, block, value)
+	VALUES ($1,$2,$3,$4)
+	`
+
+	for _, a := range answers {
+
+		_, err := r.db.Exec(ctx, query,
+			userID,
+			a.QuestionID,
+			a.Block,
+			a.Value,
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) error {
+
+	vector := make([]float32, 64)
+
+	for i := 0; i < 64; i++ {
+		vector[i] = 0.5
+	}
+
+	pgVector := pgvector.NewVector(vector)
+
+	query := `
+	UPDATE user_mcp_profiles
+	SET effective_vector = $1
+	WHERE user_id = $2
+	`
+
+	_, err := r.db.Exec(ctx, query, pgVector, userID)
+
+	return err
+}
+func (r *Repository) GetMCPQuestions(ctx context.Context) ([]MCPQuestion, error) {
+
+	query := `
+	SELECT id, block, question_text, scale
+	FROM mcp_questions
+	ORDER BY block, id
+	`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var questions []MCPQuestion
+
+	for rows.Next() {
+		var q MCPQuestion
+
+		err := rows.Scan(
+			&q.ID,
+			&q.Block,
+			&q.Question,
+			&q.Scale,
+		)
+		if err != nil {
+			return nil, err
+		}
+		q.BlockName = blockNames[q.Block]
+
+		questions = append(questions, q)
+	}
+
+	return questions, nil
 }

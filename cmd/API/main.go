@@ -53,8 +53,11 @@ func main() {
 	})
 
 	r.GET("/matches/:user_id", handler.GetMatches)
+	r.POST("mcp/answers", handler.SubmitMCPAnswers)
+	r.GET("/mcp/questions", handler.GetMCPQuestions)
 
 	log.Println("Mutari Engine Started")
 
 	r.Run(":8080")
+
 }
