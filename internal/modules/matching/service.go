@@ -1,20 +1,16 @@
 package matching
 
-import "context"
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/golang-jwt/jwt"
+	"golang.org/x/crypto/bcrypt"
+)
 
 type Service struct {
 	repo *Repository
-}
-
-var blockNames = map[int]string{
-	0: "Core Values",
-	1: "Lifestyle Rhythm",
-	2: "Emotional Stability",
-	3: "Relational Architecture",
-	4: "Ambition",
-	5: "Growth",
-	6: "Intimacy",
-	7: "Cognitive Style",
 }
 
 func NewService(repo *Repository) *Service {
@@ -37,4 +33,62 @@ func (s *Service) SubmitMCPAnswers(ctx context.Context, userID int64, answers []
 
 func (s *Service) GetMCPQuestions(ctx context.Context) ([]MCPQuestion, error) {
 	return s.repo.GetMCPQuestions(ctx)
+}
+
+func (s *Service) RebuildAllProfiles(ctx context.Context) error {
+
+	ids, err := s.repo.GetAllUserIDs(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, id := range ids {
+
+		err := s.repo.BuildIdentityVector(ctx, id)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+func (s *Service) Signup(ctx context.Context, name, email, password string) (int64, error) {
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return 0, err
+	}
+
+	return s.repo.CreateUser(ctx, name, email, string(hash))
+}
+func (s *Service) Login(ctx context.Context, email, password string) (int64, string, bool, error) {
+
+	id, hash, name, err := s.repo.GetUserByEmail(ctx, email)
+	if err != nil {
+		return 0, "", false, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	if err != nil {
+		return 0, "", false, errors.New("invalid credentials")
+	}
+
+	hasProfile, err := s.repo.HasMCPProfile(ctx, id)
+	if err != nil {
+		return 0, "", false, err
+	}
+
+	return id, name, hasProfile, nil
+}
+
+var jwtSecret = []byte("mutari-secret")
+
+func GenerateJWT(userID int64) (string, error) {
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": userID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	return token.SignedString(jwtSecret)
 }

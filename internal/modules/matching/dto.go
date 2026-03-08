@@ -5,9 +5,10 @@ type SubmitMCPRequest struct {
 	Answers []Answer `json:"answers"`
 }
 type MCPQuestion struct {
-	ID        int    `json:"id"`
-	Block     int    `json:"block"`
-	BlockName string `json:"block_name"`
-	Question  string `json:"question"`
-	Scale     string `json:"scale"`
+	ID               int    `json:"id"`
+	Block            int    `json:"block"`
+	BlockName        string `json:"block_name"`
+	BlockDescription string `json:"block_description"`
+	Question         string `json:"question"`
+	Scale            string `json:"scale"`
 }

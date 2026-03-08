@@ -2,8 +2,8 @@ package matching
 
 import (
 	"context"
+	"errors"
 	"math"
-	"sort"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pgvector/pgvector-go"
@@ -18,25 +18,29 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 type Candidate struct {
-	UserID               int64  `json:"user_id"`
-	Score                int    `json:"score"`
-	TopBlock             string `json:"top_block"`
-	SecondaryBlock       string `json:"secondary_alignment"`
-	CompatibilityType    string `json:"compatibility_type"`
-	Explanation          string `json:"explanation"`
-	PotentialFriction    string `json:"potential_friction"`
-	CompatibilitySummary string `json:"compatibility_summary"`
+	UserID                int64          `json:"user_id"`
+	Name                  string         `json:"name"`
+	Photo                 string         `json:"photo"`
+	Score                 int            `json:"score"`
+	TopBlock              string         `json:"top_block"`
+	SecondaryBlock        string         `json:"secondary_alignment"`
+	CompatibilityType     string         `json:"compatibility_type"`
+	Explanation           string         `json:"explanation"`
+	PotentialFriction     string         `json:"potential_friction"`
+	CompatibilitySummary  string         `json:"compatibility_summary"`
+	RelationshipStability string         `json:"relationship_stability"`
+	BlockScores           map[string]int `json:"block_scores"`
 }
 
-var blockWeights = []float64{
-	2.0, // Core Values
-	1.8, // Relational Architecture
-	1.2, // Lifestyle Rhythm
-	1.4, // Growth
-	1.3, // Cognitive Style
-	1.4, // Ambition
-	1.6, // Emotional Stability
-	1.5, // Intimacy
+var blockNames = []string{
+	"Core Values",
+	"Lifestyle Rhythm",
+	"Emotional Stability",
+	"Relational Architecture",
+	"Ambition",
+	"Growth",
+	"Intimacy",
+	"Cognitive Style",
 }
 
 func blockSimilarity(a, b []float32, start, end int) float64 {
@@ -55,7 +59,25 @@ func blockSimilarity(a, b []float32, start, end int) float64 {
 		normB += bv * bv
 	}
 
+	if normA == 0 || normB == 0 {
+		return 0
+	}
+
 	return dot / (math.Sqrt(normA) * math.Sqrt(normB))
+}
+
+func StabilityScore(score float64) string {
+
+	switch {
+	case score >= 0.9:
+		return "Exceptional"
+	case score >= 0.8:
+		return "Strong"
+	case score >= 0.6:
+		return "Moderate"
+	default:
+		return "Uncertain"
+	}
 }
 
 func explainMatch(block string, score float64) string {
@@ -119,22 +141,22 @@ func frictionExplanation(block string) string {
 		return "Different expectations about relationship roles"
 
 	case "Lifestyle Rhythm":
-		return "Potential mismatch in daily routines or pace of life"
+		return "Potential mismatch in daily routines"
 
 	case "Growth":
 		return "Different priorities in personal development"
 
 	case "Cognitive Style":
-		return "Different ways of thinking or processing decisions"
+		return "Different ways of thinking"
 
 	case "Ambition":
-		return "Possible differences in long-term goals or drive"
+		return "Possible differences in long-term goals"
 
 	case "Emotional Stability":
 		return "Different emotional regulation styles"
 
 	case "Intimacy":
-		return "Different bonding or closeness needs"
+		return "Different bonding needs"
 
 	default:
 		return "Potential area of difference"
@@ -155,127 +177,219 @@ func compatibilitySummary(primary, secondary, friction string) string {
 func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candidate, error) {
 
 	query := `
-	SELECT user_id, effective_vector, confidence_final
-	FROM user_mcp_profiles
-	WHERE user_id != $1
+	SELECT
+	u.id,
+	u.name,
+	u.photo_url,
+	p.effective_vector
+	FROM user_mcp_profiles p
+	JOIN users u ON u.id = p.user_id
 	`
 
-	rows, err := r.db.Query(ctx, query, userID)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var baseVec pgvector.Vector
-	var baseConf float64
-
-	err = r.db.QueryRow(ctx,
-		`SELECT effective_vector, confidence_final
-		 FROM user_mcp_profiles
-		 WHERE user_id=$1`,
-		userID).Scan(&baseVec, &baseConf)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var candidates []Candidate
+	vectors := make(map[int64][]float32)
+	names := make(map[int64]string)
+	photos := make(map[int64]string)
 
 	for rows.Next() {
 
 		var id int64
+		var name string
+		var photo string
 		var vec pgvector.Vector
-		var conf float64
 
-		if err := rows.Scan(&id, &vec, &conf); err != nil {
+		if err := rows.Scan(&id, &name, &photo, &vec); err != nil {
 			return nil, err
 		}
 
-		vecA := baseVec.Slice()
-		vecB := vec.Slice()
-
-		var weightedScore float64
-		var totalWeight float64
-
-		var topBlockScore float64
-		var topBlock string
-
-		var secondScore float64
-		var secondBlock string
-
-		var lowestScore float64 = 1
-		var frictionBlock string
-
-		for b := 0; b < 8; b++ {
-
-			start := b * 8
-			end := start + 8
-
-			sim := blockSimilarity(vecA, vecB, start, end)
-
-			if sim > topBlockScore {
-
-				secondScore = topBlockScore
-				secondBlock = topBlock
-
-				topBlockScore = sim
-				topBlock = blockNames[b]
-
-			} else if sim > secondScore {
-
-				secondScore = sim
-				secondBlock = blockNames[b]
-
-			}
-
-			if sim < lowestScore {
-				lowestScore = sim
-				frictionBlock = blockNames[b]
-			}
-
-			w := blockWeights[b]
-
-			weightedScore += sim * w
-			totalWeight += w
-		}
-
-		structural := weightedScore / totalWeight
-
-		finalScore := structural * math.Sqrt(baseConf*conf)
-
-		percentage := int(math.Round(finalScore * 100))
-
-		explanation := explainMatch(topBlock, finalScore)
-
-		ctype := compatibilityType(topBlock)
-
-		friction := frictionExplanation(frictionBlock)
-
-		summary := compatibilitySummary(topBlock, secondBlock, frictionBlock)
-
-		candidates = append(candidates, Candidate{
-			UserID:               id,
-			Score:                percentage,
-			TopBlock:             topBlock,
-			SecondaryBlock:       secondBlock,
-			CompatibilityType:    ctype,
-			Explanation:          explanation,
-			PotentialFriction:    friction,
-			CompatibilitySummary: summary,
-		})
+		vectors[id] = vec.Slice()
+		names[id] = name
+		photos[id] = photo
 	}
 
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].Score > candidates[j].Score
-	})
+	source, ok := vectors[userID]
+	if !ok {
+		return nil, errors.New("user vector not found")
+	}
 
-	return candidates, nil
+	var results []Candidate
+
+	for id, vec := range vectors {
+
+		if id == userID {
+			continue
+		}
+
+		blockScores := make(map[string]int)
+		blockSim := make([]float64, 8)
+
+		best := 0
+		second := 1
+		worst := 0
+
+		for block := 0; block < 8; block++ {
+
+			start := block * 8
+			end := start + 8
+
+			score := blockSimilarity(source, vec, start, end)
+
+			blockSim[block] = score
+			blockScores[blockNames[block]] = int(score * 100)
+		}
+
+		for i := 0; i < len(blockSim); i++ {
+
+			if blockSim[i] > blockSim[best] {
+				second = best
+				best = i
+			}
+
+			if blockSim[i] < blockSim[worst] {
+				worst = i
+			}
+		}
+
+		score := (blockSim[best] + blockSim[second]) / 2
+
+		c := Candidate{
+
+			UserID: id,
+			Name:   names[id],
+			Photo:  photos[id],
+
+			Score: int(score * 100),
+
+			TopBlock:       blockNames[best],
+			SecondaryBlock: blockNames[second],
+
+			CompatibilityType: compatibilityType(blockNames[best]),
+
+			Explanation: explainMatch(blockNames[best], score),
+
+			PotentialFriction: frictionExplanation(blockNames[worst]),
+
+			CompatibilitySummary: compatibilitySummary(
+				blockNames[best],
+				blockNames[second],
+				blockNames[worst],
+			),
+
+			RelationshipStability: StabilityScore(score),
+
+			BlockScores: blockScores,
+		}
+
+		results = append(results, c)
+	}
+
+	return results, nil
 }
+
+func (r *Repository) CreateUser(ctx context.Context, name, email, passwordHash string) (int64, error) {
+
+	query := `
+	INSERT INTO users (name,email,password_hash)
+	VALUES ($1,$2,$3)
+	RETURNING id
+	`
+
+	var id int64
+
+	err := r.db.QueryRow(ctx, query, name, email, passwordHash).Scan(&id)
+
+	return id, err
+}
+
+func (r *Repository) GetUserByEmail(ctx context.Context, email string) (int64, string, string, error) {
+
+	query := `
+	SELECT id,password_hash,name
+	FROM users
+	WHERE email=$1
+	`
+
+	var id int64
+	var hash string
+	var name string
+
+	err := r.db.QueryRow(ctx, query, email).Scan(&id, &hash, &name)
+
+	return id, hash, name, err
+}
+
+func (r *Repository) HasMCPProfile(ctx context.Context, userID int64) (bool, error) {
+
+	query := `
+	SELECT EXISTS(
+	SELECT 1 FROM user_mcp_profiles
+	WHERE user_id=$1
+	)
+	`
+
+	var exists bool
+
+	err := r.db.QueryRow(ctx, query, userID).Scan(&exists)
+
+	return exists, err
+}
+
+func (r *Repository) GetMCPQuestions(ctx context.Context) ([]MCPQuestion, error) {
+
+	query := `
+	SELECT
+	q.id,
+	q.block,
+	b.name,
+	b.description,
+	q.question_text,
+	q.scale
+	FROM mcp_questions q
+	JOIN mcp_blocks b ON q.block=b.id
+	ORDER BY q.block,q.id
+	`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var questions []MCPQuestion
+
+	for rows.Next() {
+
+		var q MCPQuestion
+
+		err := rows.Scan(
+			&q.ID,
+			&q.Block,
+			&q.BlockName,
+			&q.BlockDescription,
+			&q.Question,
+			&q.Scale,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		questions = append(questions, q)
+	}
+
+	return questions, nil
+}
+
 func (r *Repository) StoreMCPAnswers(ctx context.Context, userID int64, answers []MCPAnswer) error {
 
 	query := `
 	INSERT INTO user_mcp_answers
-	(user_id, question_id, block, value)
+	(user_id,question_id,block,value)
 	VALUES ($1,$2,$3,$4)
 	`
 
@@ -298,31 +412,79 @@ func (r *Repository) StoreMCPAnswers(ctx context.Context, userID int64, answers 
 
 func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) error {
 
+	query := `
+	SELECT block,value
+	FROM user_mcp_answers
+	WHERE user_id=$1
+	`
+
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	blockSum := make(map[int]float64)
+	blockCount := make(map[int]int)
+
+	for rows.Next() {
+
+		var block int
+		var value float64
+
+		if err := rows.Scan(&block, &value); err != nil {
+			return err
+		}
+
+		blockSum[block] += value
+		blockCount[block]++
+	}
+
 	vector := make([]float32, 64)
 
-	for i := 0; i < 64; i++ {
-		vector[i] = 0.5
+	for block := 0; block < 8; block++ {
+
+		avg := 0.5
+
+		if blockCount[block] > 0 {
+			avg = blockSum[block] / float64(blockCount[block])
+		}
+
+		start := block * 8
+
+		for i := 0; i < 8; i++ {
+
+			val := avg + (float64(i)-3.5)*0.03
+
+			if val < 0 {
+				val = 0
+			}
+
+			if val > 1 {
+				val = 1
+			}
+
+			vector[start+i] = float32(val)
+		}
 	}
 
 	pgVector := pgvector.NewVector(vector)
 
-	query := `
-	UPDATE user_mcp_profiles
-	SET effective_vector = $1
-	WHERE user_id = $2
+	queryInsert := `
+	INSERT INTO user_mcp_profiles(user_id,effective_vector)
+	VALUES($1,$2)
+	ON CONFLICT(user_id)
+	DO UPDATE SET effective_vector=EXCLUDED.effective_vector
 	`
 
-	_, err := r.db.Exec(ctx, query, pgVector, userID)
+	_, err = r.db.Exec(ctx, queryInsert, userID, pgVector)
 
 	return err
 }
-func (r *Repository) GetMCPQuestions(ctx context.Context) ([]MCPQuestion, error) {
 
-	query := `
-	SELECT id, block, question_text, scale
-	FROM mcp_questions
-	ORDER BY block, id
-	`
+func (r *Repository) GetAllUserIDs(ctx context.Context) ([]int64, error) {
+
+	query := `SELECT id FROM users`
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
@@ -330,24 +492,18 @@ func (r *Repository) GetMCPQuestions(ctx context.Context) ([]MCPQuestion, error)
 	}
 	defer rows.Close()
 
-	var questions []MCPQuestion
+	var ids []int64
 
 	for rows.Next() {
-		var q MCPQuestion
 
-		err := rows.Scan(
-			&q.ID,
-			&q.Block,
-			&q.Question,
-			&q.Scale,
-		)
-		if err != nil {
+		var id int64
+
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		q.BlockName = blockNames[q.Block]
 
-		questions = append(questions, q)
+		ids = append(ids, id)
 	}
 
-	return questions, nil
+	return ids, nil
 }

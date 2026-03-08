@@ -1,15 +1,33 @@
 package matching
 
 import (
-	"net/http"
-	"strconv"
-
+	"github.com/alresave/mutari/internal/security"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	service *Service
+	service      *Service
+	loginLimiter *security.RateLimiter
 }
+
+func NewHandler(service *Service, limiter *security.RateLimiter) *Handler {
+	return &Handler{
+		service:      service,
+		loginLimiter: limiter,
+	}
+}
+
+type SignupRequest struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type MCPAnswer struct {
 	QuestionID int     `json:"question_id"`
 	Block      int     `json:"block"`
@@ -21,51 +39,95 @@ type SubmitAnswersRequest struct {
 	Answers []MCPAnswer `json:"answers"`
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
-}
+//
+// SIGNUP
+//
 
-func (h *Handler) GetMatches(c *gin.Context) {
+func (h *Handler) Signup(c *gin.Context) {
 
-	userIDParam := c.Param("user_id")
-
-	userID, err := strconv.ParseInt(userIDParam, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
-		return
-	}
-
-	matches, err := h.service.GetMatches(c.Request.Context(), userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"user_id": userID,
-		"matches": matches,
-	})
-}
-func (h *Handler) SubmitMCPAnswers(c *gin.Context) {
-
-	var req SubmitAnswersRequest
+	var req SignupRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 
-	err := h.service.SubmitMCPAnswers(c.Request.Context(), req.UserID, req.Answers)
+	id, err := h.service.Signup(
+		c.Request.Context(),
+		req.Name,
+		req.Email,
+		req.Password,
+	)
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
+	token, err := GenerateJWT(id)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "token error"})
+		return
+	}
+
 	c.JSON(200, gin.H{
-		"status": "answers stored",
+		"user_id": id,
+		"token":   token,
 	})
 }
+
+//
+// LOGIN
+//
+
+func (h *Handler) Login(c *gin.Context) {
+
+	ip := c.ClientIP()
+
+	if !h.loginLimiter.Allow(ip) {
+		c.JSON(429, gin.H{
+			"error": "too many login attempts",
+		})
+		return
+	}
+
+	var req LoginRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	id, name, profileComplete, err := h.service.Login(
+		c.Request.Context(),
+		req.Email,
+		req.Password,
+	)
+
+	if err != nil {
+		c.JSON(401, gin.H{"error": "invalid credentials"})
+		return
+	}
+
+	token, err := GenerateJWT(id)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "token error"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"token": token,
+		"user": gin.H{
+			"id":   id,
+			"name": name,
+		},
+		"profile_complete": profileComplete,
+	})
+}
+
+//
+// GET MCP QUESTIONS
+//
 
 func (h *Handler) GetMCPQuestions(c *gin.Context) {
 
@@ -77,5 +139,73 @@ func (h *Handler) GetMCPQuestions(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"questions": questions,
+	})
+}
+
+//
+// SUBMIT MCP ANSWERS
+//
+
+func (h *Handler) SubmitMCPAnswers(c *gin.Context) {
+
+	var req SubmitAnswersRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	err := h.service.SubmitMCPAnswers(
+		c.Request.Context(),
+		req.UserID,
+		req.Answers,
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"status": "answers stored",
+	})
+}
+
+//
+// GET MATCHES
+//
+
+func (h *Handler) GetMatches(c *gin.Context) {
+
+	userID := c.GetInt64("userID")
+
+	matches, err := h.service.GetMatches(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"user_id": userID,
+		"matches": matches,
+	})
+}
+
+//
+// ADMIN: rebuild MCP profiles
+//
+
+func (h *Handler) RebuildProfiles(c *gin.Context) {
+
+	err := h.service.RebuildAllProfiles(c.Request.Context())
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"status": "profiles rebuilt",
 	})
 }
