@@ -507,3 +507,24 @@ func (r *Repository) GetAllUserIDs(ctx context.Context) ([]int64, error) {
 
 	return ids, nil
 }
+
+func (r *Repository) GetUserByID(ctx context.Context, userID int64) (int64, string, string, error) {
+
+	query := `
+	SELECT id, name, photo_url
+	FROM users
+	WHERE id=$1
+	`
+
+	var id int64
+	var name string
+	var photo string
+
+	err := r.db.QueryRow(ctx, query, userID).Scan(
+		&id,
+		&name,
+		&photo,
+	)
+
+	return id, name, photo, err
+}

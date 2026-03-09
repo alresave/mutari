@@ -92,3 +92,20 @@ func GenerateJWT(userID int64) (string, error) {
 
 	return token.SignedString(jwtSecret)
 }
+func (s *Service) Me(
+	ctx context.Context,
+	userID int64,
+) (int64, string, string, bool, error) {
+
+	id, name, photo, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return 0, "", "", false, err
+	}
+
+	profileComplete, err := s.repo.HasMCPProfile(ctx, userID)
+	if err != nil {
+		return 0, "", "", false, err
+	}
+
+	return id, name, photo, profileComplete, nil
+}

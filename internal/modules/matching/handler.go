@@ -209,3 +209,30 @@ func (h *Handler) RebuildProfiles(c *gin.Context) {
 		"status": "profiles rebuilt",
 	})
 }
+func (h *Handler) Me(c *gin.Context) {
+
+	userID := c.GetInt64("userID")
+
+	id, name, photo, profileComplete, err :=
+		h.service.Me(c.Request.Context(), userID)
+
+	if err != nil {
+
+		c.JSON(500, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+
+		"user": gin.H{
+			"id":    id,
+			"name":  name,
+			"photo": photo,
+		},
+
+		"profile_complete": profileComplete,
+	})
+}

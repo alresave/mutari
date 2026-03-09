@@ -106,6 +106,7 @@ func main() {
 	auth := r.Group("/")
 	auth.Use(AuthMiddleware())
 
+	auth.GET("/me", handler.Me)
 	auth.GET("/matches", handler.GetMatches)
 	r.POST("/admin/rebuild-profiles", handler.RebuildProfiles)
 	auth.POST("/mcp/answers", handler.SubmitMCPAnswers)
