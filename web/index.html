@@ -9,7 +9,7 @@
 
 <script>
 tailwind.config = {
-  darkMode: "class"
+darkMode: "class"
 }
 </script>
 
@@ -67,192 +67,223 @@ Your Top Matches
 
 <script>
 
-if(data.token){
+const token = localStorage.getItem("token")
+const user = JSON.parse(localStorage.getItem("user"))
 
-localStorage.setItem("token",data.token)
+if(!token){
 
-window.location="/app/matches.html"
+window.location="/app/login.html"
 
 }
 
 let questions = []
 
-function toggleDark() {
-  document.documentElement.classList.toggle("dark")
-}
+function toggleDark(){
 
-async function loadQuestions() {
-
-  const res = await fetch("/mcp/questions")
-  const data = await res.json()
-
-  questions = data.questions
-
-  const form = document.getElementById("testForm")
-
-  let currentBlock = -1
-
-  questions.forEach(q => {
-
-    if (q.block !== currentBlock) {
-
-      currentBlock = q.block
-
-      const block = document.createElement("div")
-
-      block.innerHTML = `
-      <div class="text-2xl font-semibold border-b pb-2 border-slate-200 dark:border-slate-700">
-      ${q.block_name}
-      </div>
-      `
-
-      form.appendChild(block)
-
-    }
-
-    const container = document.createElement("div")
-
-    container.className =
-      "bg-white dark:bg-slate-800 p-6 rounded-xl shadow"
-
-    container.innerHTML = `
-
-    <div class="mb-4 font-medium">
-      ${q.question}
-    </div>
-
-    <div class="flex justify-between text-sm text-slate-500 mb-2">
-      <span>Strongly Disagree</span>
-      <span>Strongly Agree</span>
-    </div>
-
-    <input
-      type="range"
-      min="0.1"
-      max="1"
-      step="0.1"
-      value="0.5"
-      id="q_${q.id}"
-      class="w-full accent-indigo-600"
-    >
-
-    <div class="text-center mt-2 text-sm text-slate-500">
-      Value: <span id="v_${q.id}">0.5</span>
-    </div>
-
-    `
-
-    form.appendChild(container)
-
-    const slider = container.querySelector(`#q_${q.id}`)
-    const label = container.querySelector(`#v_${q.id}`)
-
-    slider.addEventListener("input", () => {
-      label.innerText = slider.value
-    })
-
-  })
+document.documentElement.classList.toggle("dark")
 
 }
 
-async function submitAnswers() {
+async function loadQuestions(){
 
-  const answers = []
+const res = await fetch("/mcp/questions",{
 
-  questions.forEach(q => {
+headers:{
+Authorization:"Bearer "+token
+}
 
-    const slider = document.getElementById(`q_${q.id}`)
+})
 
-    answers.push({
-      question_id: q.id,
-      answer: parseFloat(slider.value)
-    })
+if(res.status===401){
 
-  })
-
-  const userId = 1
-
-  await fetch("/mcp/answers", {
-
-    method: "POST",
-
-    headers: {
-      "Content-Type": "application/json"
-    },
-
-    body: JSON.stringify({
-      user_id: userId,
-      answers: answers
-    })
-
-  })
-
-  loadMatches(userId)
+localStorage.clear()
+window.location="/app/login.html"
+return
 
 }
 
-async function loadMatches(userId) {
+const data = await res.json()
 
-  const res = await fetch(`/matches/${userId}`)
-  const data = await res.json()
+questions=data.questions
 
-  document.getElementById("testSection").classList.add("hidden")
-  document.getElementById("matchesSection").classList.remove("hidden")
+const form=document.getElementById("testForm")
 
-  const container = document.getElementById("matchesContainer")
+let currentBlock=-1
 
-  container.innerHTML = ""
+questions.forEach(q=>{
 
-  data.matches.forEach(m => {
+if(q.block!==currentBlock){
 
-    const card = document.createElement("div")
+currentBlock=q.block
 
-    card.className =
-      "bg-white dark:bg-slate-800 p-6 rounded-xl shadow"
+const block=document.createElement("div")
 
-    card.innerHTML = `
+block.innerHTML=`
+<div class="text-2xl font-semibold border-b pb-2 border-slate-200 dark:border-slate-700">
+${q.block_name}
+</div>
+`
 
-    <div class="flex justify-between items-center mb-4">
+form.appendChild(block)
 
-      <div class="text-2xl font-bold">
-        ${m.score}%
-      </div>
+}
 
-      <div class="text-sm text-indigo-500">
-        ${m.compatibility_type}
-      </div>
+const container=document.createElement("div")
 
-    </div>
+container.className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow"
 
-    <div class="mb-3">
-      <div class="text-sm text-slate-500">
-      Best Alignment
-      </div>
+container.innerHTML=`
 
-      <div class="font-semibold">
-      ${m.top_block}
-      </div>
-    </div>
+<div class="mb-4 font-medium">
+${q.question}
+</div>
 
-    <div class="mb-3">
-      <div class="text-sm text-slate-500">
-      Relationship Stability
-      </div>
+<div class="flex justify-between text-sm text-slate-500 mb-2">
+<span>Strongly Disagree</span>
+<span>Strongly Agree</span>
+</div>
 
-      <div class="font-semibold">
-      ${m.relationship_stability}
-      </div>
-    </div>
+<input
+type="range"
+min="0.1"
+max="1"
+step="0.1"
+value="0.5"
+id="q_${q.id}"
+class="w-full accent-indigo-600"
+>
 
-    <div class="text-sm text-slate-400">
-      ⚠ ${m.potential_friction}
-    </div>
+<div class="text-center mt-2 text-sm text-slate-500">
+Value: <span id="v_${q.id}">0.5</span>
+</div>
 
-    `
+`
 
-    container.appendChild(card)
+form.appendChild(container)
 
-  })
+const slider=container.querySelector(`#q_${q.id}`)
+const label=container.querySelector(`#v_${q.id}`)
+
+slider.addEventListener("input",()=>{
+label.innerText=slider.value
+})
+
+})
+
+}
+
+async function submitAnswers(){
+
+const answers=[]
+
+questions.forEach(q=>{
+
+const slider=document.getElementById(`q_${q.id}`)
+
+answers.push({
+
+question_id:q.id,
+block:q.block,
+value:parseFloat(slider.value)
+
+})
+
+})
+
+await fetch("/mcp/answers",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+
+body:JSON.stringify({
+
+user_id:user.id,
+answers:answers
+
+})
+
+})
+
+loadMatches()
+
+}
+
+async function loadMatches(){
+
+const res=await fetch("/matches",{
+
+headers:{
+Authorization:"Bearer "+token
+}
+
+})
+
+const data=await res.json()
+
+document.getElementById("testSection").classList.add("hidden")
+document.getElementById("matchesSection").classList.remove("hidden")
+
+const container=document.getElementById("matchesContainer")
+
+container.innerHTML=""
+
+data.matches.forEach(m=>{
+
+const card=document.createElement("div")
+
+card.className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow"
+
+card.innerHTML=`
+
+<div class="flex justify-between items-center mb-4">
+
+<div class="text-2xl font-bold">
+${m.score}%
+</div>
+
+<div class="text-sm text-indigo-500">
+${m.compatibility_type}
+</div>
+
+</div>
+
+<div class="mb-3">
+
+<div class="text-sm text-slate-500">
+Best Alignment
+</div>
+
+<div class="font-semibold">
+${m.top_block}
+</div>
+
+</div>
+
+<div class="mb-3">
+
+<div class="text-sm text-slate-500">
+Relationship Stability
+</div>
+
+<div class="font-semibold">
+${m.relationship_stability}
+</div>
+
+</div>
+
+<div class="text-sm text-slate-400">
+⚠ ${m.potential_friction}
+</div>
+
+`
+
+container.appendChild(card)
+
+})
 
 }
 
