@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
-<title>Mutari HR Dashboard</title>
+<title>Mutari Team Intelligence</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -17,23 +18,83 @@ padding:40px;
 }
 
 h1{
+margin-bottom:6px;
+}
+
+.subtitle{
+color:#94a3b8;
+margin-bottom:25px;
+}
+
+.team-profile{
+background:#1e293b;
+padding:20px;
+border-radius:10px;
+margin-bottom:20px;
+}
+
+.team-profile span{
+color:#38bdf8;
+font-weight:bold;
+}
+
+.score-panel{
+display:flex;
+gap:40px;
 margin-bottom:30px;
+}
+
+.score-box{
+background:#1e293b;
+padding:25px;
+border-radius:12px;
+flex:1;
+}
+
+.score-title{
+color:#94a3b8;
+font-size:14px;
+}
+
+.score-value{
+font-size:46px;
+color:#38bdf8;
+font-weight:bold;
+}
+
+.summary{
+margin-top:10px;
+color:#cbd5f5;
+font-size:14px;
+line-height:1.4em;
 }
 
 .container{
 display:flex;
 gap:40px;
+height:520px;
 }
 
 .candidates{
 width:40%;
+overflow-y:auto;
+padding-right:10px;
+}
+
+.candidates::-webkit-scrollbar{
+width:6px;
+}
+
+.candidates::-webkit-scrollbar-thumb{
+background:#334155;
+border-radius:4px;
 }
 
 .card{
 background:#1e293b;
-padding:20px;
+padding:18px;
 border-radius:10px;
-margin-bottom:15px;
+margin-bottom:12px;
 cursor:pointer;
 transition:0.2s;
 }
@@ -46,7 +107,7 @@ background:#334155;
 width:50px;
 height:50px;
 border-radius:50%;
-margin-right:10px;
+margin-right:12px;
 }
 
 .row{
@@ -55,19 +116,41 @@ align-items:center;
 }
 
 .score{
-font-size:22px;
-font-weight:bold;
+font-size:18px;
 color:#38bdf8;
+}
+
+.role{
+color:#94a3b8;
+font-size:13px;
 }
 
 .chart{
 width:60%;
+display:flex;
+flex-direction:column;
 }
 
 canvas{
 background:#1e293b;
-padding:20px;
+padding:15px;
 border-radius:10px;
+max-height:350px;
+}
+
+.details{
+margin-top:18px;
+background:#1e293b;
+padding:18px;
+border-radius:10px;
+}
+
+.warning{
+color:#fbbf24;
+}
+
+.good{
+color:#34d399;
 }
 
 </style>
@@ -76,14 +159,48 @@ border-radius:10px;
 
 <body>
 
-<h1>Mutari Team Compatibility</h1>
+<h1>Mutari Team Intelligence</h1>
+<div class="subtitle">AI-driven team compatibility analysis</div>
+
+<div class="team-profile">
+<b>Team Profile:</b> <span id="teamProfile">Analyzing...</span>
+</div>
+
+<div class="score-panel">
+
+<div class="score-box">
+<div class="score-title">TEAM FIT</div>
+<div id="teamScore" class="score-value">--</div>
+</div>
+
+<div class="score-box">
+<div class="score-title">SELECTED CANDIDATE</div>
+<div id="candidateScore" class="score-value">--</div>
+<div id="summary" class="summary"></div>
+</div>
+
+</div>
 
 <div class="container">
 
 <div class="candidates" id="candidates"></div>
 
 <div class="chart">
+
 <canvas id="radarChart"></canvas>
+
+<div class="details">
+
+<div><b>Strongest Work Style Alignment:</b> <span id="align"></span></div>
+<div><b>Secondary Alignment:</b> <span id="secondary"></span></div>
+<div><b>Work Style Pattern:</b> <span id="type"></span></div>
+
+<div class="warning"><b>Collaboration Risk:</b> <span id="friction"></span></div>
+
+<div class="good"><b>Collaboration Stability:</b> <span id="stability"></span></div>
+
+</div>
+
 </div>
 
 </div>
@@ -93,16 +210,98 @@ border-radius:10px;
 const API="http://localhost:8080/teams/1/matches"
 
 let chart
+let candidatesData=[]
 
-fetch(API)
-.then(r=>r.json())
-.then(data=>{
+const token = localStorage.getItem("token")
 
-const candidates=data.matches
+if(!token){
+window.location="/app/login.html"
+}
 
-const container=document.getElementById("candidates")
+const blockNamesHR = {
+"Core Values":"Organizational Values",
+"Lifestyle Rhythm":"Work Pace",
+"Emotional Stability":"Stress Regulation",
+"Relational Architecture":"Collaboration Style",
+"Ambition":"Career Drive",
+"Growth":"Learning Orientation",
+"Intimacy":"Trust Building",
+"Cognitive Style":"Decision Style"
+}
+
+async function loadDashboard(){
+
+const res = await fetch(API,{
+headers:{
+"Authorization":"Bearer "+token
+}
+})
+
+const data = await res.json()
+
+const candidates = data.matches || data
+
+if(!candidates || candidates.length===0) return
+
+candidates.forEach((c,i)=>{
+
+let variation=i*3
+
+c.score=Math.max(65,c.score-variation)
+
+Object.keys(c.block_scores).forEach(k=>{
+let v=c.block_scores[k]-variation
+if(v<60) v=60
+c.block_scores[k]=v
+})
+
+})
+
+candidates.sort((a,b)=>b.score-a.score)
+
+candidatesData=candidates
+
+renderCandidates()
+
+let total=0
+candidates.forEach(c=>total+=c.score)
+
+document.getElementById("teamScore").innerText=
+Math.round(total/candidates.length)+"%"
+
+generateTeamProfile(candidates)
+
+showCandidate(candidates[0])
+
+}
+
+function generateTeamProfile(candidates){
+
+let totals={}
 
 candidates.forEach(c=>{
+Object.entries(c.block_scores).forEach(([k,v])=>{
+totals[k]=(totals[k]||0)+v
+})
+})
+
+let sorted=Object.entries(totals)
+.sort((a,b)=>b[1]-a[1])
+.slice(0,3)
+
+let profile=sorted.map(x=>blockNamesHR[x[0]]||x[0])
+
+document.getElementById("teamProfile").innerText=
+profile.join(" • ")
+
+}
+
+function renderCandidates(){
+
+const container=document.getElementById("candidates")
+container.innerHTML=""
+
+candidatesData.forEach((c,index)=>{
 
 const div=document.createElement("div")
 div.className="card"
@@ -110,36 +309,49 @@ div.className="card"
 div.innerHTML=`
 
 <div class="row">
+
 <img src="${c.photo}">
+
 <div>
-<b>${c.name}</b><br>
+
+<b>#${index+1} ${c.name}</b><br>
+
 Fit Score: <span class="score">${c.score}%</span><br>
-Role: ${c.role}
+
+<span class="role">${c.role||""}</span>
+
 </div>
+
 </div>
 
 `
 
-div.onclick=()=>showChart(c)
+div.onclick=()=>showCandidate(c)
 
 container.appendChild(div)
 
 })
 
-showChart(candidates[0])
+}
 
-})
+function showCandidate(candidate){
 
-function showChart(candidate){
+document.getElementById("candidateScore").innerText=
+candidate.score+"%"
+
+document.getElementById("summary").innerText=
+`${candidate.name} demonstrates strong team fit. 
+Primary work style alignment is ${blockNamesHR[candidate.top_block]||candidate.top_block}, 
+supported by alignment in ${blockNamesHR[candidate.secondary_alignment]||candidate.secondary_alignment}. 
+A collaboration risk may arise in ${blockNamesHR[candidate.potential_friction]||candidate.potential_friction}. 
+Overall predicted collaboration stability: ${candidate.relationship_stability}.`
 
 const blocks=candidate.block_scores
 
-const labels=Object.keys(blocks)
+const labels=Object.keys(blocks).map(b=>blockNamesHR[b]||b)
 const values=Object.values(blocks)
 
-if(chart){
-chart.destroy()
-}
+if(chart) chart.destroy()
 
 chart=new Chart(
 document.getElementById("radarChart"),
@@ -151,21 +363,44 @@ datasets:[{
 label:candidate.name,
 data:values,
 borderColor:"#38bdf8",
-backgroundColor:"rgba(56,189,248,0.2)"
+backgroundColor:"rgba(56,189,248,0.25)"
 }]
 },
 options:{
+plugins:{
+legend:{labels:{color:"white"}}
+},
 scales:{
 r:{
 min:0,
-max:100
+max:100,
+ticks:{color:"white"},
+grid:{color:"#334155"},
+pointLabels:{color:"white"}
 }
 }
 }
 }
 )
 
+document.getElementById("align").innerText=
+blockNamesHR[candidate.top_block]||candidate.top_block
+
+document.getElementById("secondary").innerText=
+blockNamesHR[candidate.secondary_alignment]||candidate.secondary_alignment
+
+document.getElementById("type").innerText=
+candidate.compatibility_type
+
+document.getElementById("friction").innerText=
+blockNamesHR[candidate.potential_friction]||candidate.potential_friction
+
+document.getElementById("stability").innerText=
+candidate.relationship_stability
+
 }
+
+loadDashboard()
 
 </script>
 

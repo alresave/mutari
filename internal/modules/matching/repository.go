@@ -152,7 +152,7 @@ func frictionExplanation(block string) string {
 		return "Different expectations about relationship roles"
 
 	case "Lifestyle Rhythm":
-		return "Potential mismatch in daily routines"
+		return "Potential mismatch in work pace"
 
 	case "Growth":
 		return "Different priorities in personal development"
