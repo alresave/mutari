@@ -213,3 +213,75 @@ INSERT INTO users (name,email,password_hash,photo_url) VALUES
 ('Harper Brooks','harper@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/18.jpg'),
 ('Evelyn Hayes','evelyn@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/19.jpg'),
 ('Abigail Stone','abigail@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/20.jpg');
+
+INSERT INTO user_mcp_answers
+SELECT 13,id,block,5 FROM mcp_questions WHERE block IN (5,7);
+
+INSERT INTO user_mcp_answers
+SELECT 14,id,block,4 FROM mcp_questions WHERE block=1;
+
+INSERT INTO user_mcp_answers
+SELECT 13,id,block,3 FROM mcp_questions WHERE block NOT IN (5,7,1);
+
+CREATE TABLE team_profiles (
+    team_id INT PRIMARY KEY,
+    effective_vector VECTOR(64)
+);
+
+CREATE TABLE team_members (
+    team_id INT REFERENCES teams(id),
+    user_id INT REFERENCES users(id)
+);
+
+CREATE TABLE teams (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT
+);
+INSERT INTO teams (name,description)
+VALUES ('Backend Team','Core platform engineers');
+
+INSERT INTO team_members (team_id,user_id) VALUES
+(1,1),
+(1,2),
+(1,3),
+(1,4);
+
+INSERT INTO team_profiles (team_id,effective_vector)
+
+SELECT
+tm.team_id,
+AVG(p.effective_vector)
+
+FROM team_members tm
+JOIN user_mcp_profiles p
+ON p.user_id = tm.user_id
+
+GROUP BY tm.team_id
+
+ON CONFLICT (team_id)
+DO UPDATE SET effective_vector = EXCLUDED.effective_vector;
+
+Query de compatibilidad candidato vs equipo
+
+Este es el núcleo.
+
+SELECT
+u.id,
+u.name,
+u.photo_url,
+
+ROUND(
+(1 - (p.effective_vector <=> t.effective_vector)) * 100
+) AS compatibility
+
+FROM team_profiles t
+JOIN user_mcp_profiles p ON TRUE
+JOIN users u ON u.id = p.user_id
+
+WHERE t.team_id = 1
+AND u.id NOT IN (
+SELECT user_id FROM team_members WHERE team_id=1
+)
+
+ORDER BY compatibility DESC;
