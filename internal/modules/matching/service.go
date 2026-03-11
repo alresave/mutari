@@ -109,3 +109,10 @@ func (s *Service) Me(
 
 	return id, name, photo, profileComplete, nil
 }
+
+func (s *Service) GetTeamMatches(ctx context.Context, teamID int64) ([]Candidate, error) {
+	return s.repo.GetTeamMatches(ctx, teamID)
+}
+func (s *Service) GetTeamFit(ctx context.Context, teamID int64, userID int64) (Candidate, error) {
+	return s.repo.GetTeamFit(ctx, teamID, userID)
+}

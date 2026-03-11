@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -52,14 +51,11 @@ func AuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			log.Printf("Invalid token: %v", err)
 			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
 			return
 		}
-		log.Println("**************************jwt debug******************************")
 
 		claims := token.Claims.(jwt.MapClaims)
-		fmt.Printf("Claims: %v\n", claims)
 
 		userID := int64(claims["user_id"].(float64))
 
@@ -80,7 +76,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	securityLimiter := security.NewRateLimiter()
+
 	repo := matching.NewRepository(db)
 	service := matching.NewService(repo)
 	handler := matching.NewHandler(service, securityLimiter)
@@ -90,29 +88,35 @@ func main() {
 	// Static UI
 	r.Static("/app", "./web")
 
-	// Health check
+	// Health
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	// Auth routes
+	// Auth endpoints
 	r.POST("/auth/signup", handler.Signup)
 	r.POST("/auth/login", handler.Login)
 
-	// Public endpoint
+	// Public MCP endpoint
 	r.GET("/mcp/questions", handler.GetMCPQuestions)
 
 	// Protected routes
 	auth := r.Group("/")
 	auth.Use(AuthMiddleware())
-
 	auth.GET("/me", handler.Me)
-	auth.GET("/matches", handler.GetMatches)
-	r.POST("/admin/rebuild-profiles", handler.RebuildProfiles)
+
 	auth.POST("/mcp/answers", handler.SubmitMCPAnswers)
 
+	auth.GET("/matches", handler.GetMatches)
+	auth.GET("/teams/:team_id/fit/:user_id", handler.GetTeamFit)
+
+	// TEAM ENGINE
+	auth.GET("/teams/:team_id/matches", handler.GetTeamMatches)
+
+	// Admin utility
+	r.POST("/admin/rebuild-profiles", handler.RebuildProfiles)
+
 	log.Println("Mutari Engine Started")
-	log.Println("**************************jwt debug******************************")
 
 	r.Run(":8080")
 }

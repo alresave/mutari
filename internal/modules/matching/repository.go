@@ -18,18 +18,29 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 type Candidate struct {
-	UserID                int64          `json:"user_id"`
-	Name                  string         `json:"name"`
-	Photo                 string         `json:"photo"`
-	Score                 int            `json:"score"`
-	TopBlock              string         `json:"top_block"`
-	SecondaryBlock        string         `json:"secondary_alignment"`
-	CompatibilityType     string         `json:"compatibility_type"`
-	Explanation           string         `json:"explanation"`
-	PotentialFriction     string         `json:"potential_friction"`
-	CompatibilitySummary  string         `json:"compatibility_summary"`
-	RelationshipStability string         `json:"relationship_stability"`
-	BlockScores           map[string]int `json:"block_scores"`
+	UserID int64 `json:"user_id"`
+
+	Name  string `json:"name"`
+	Photo string `json:"photo"`
+
+	Score int `json:"score"`
+
+	TopBlock       string `json:"top_block"`
+	SecondaryBlock string `json:"secondary_alignment"`
+
+	CompatibilityType string `json:"compatibility_type"`
+
+	Explanation string `json:"explanation"`
+
+	PotentialFriction string `json:"potential_friction"`
+
+	CompatibilitySummary string `json:"compatibility_summary"`
+
+	RelationshipStability string `json:"relationship_stability"`
+
+	BlockScores map[string]int `json:"block_scores"`
+
+	Role string `json:"role"`
 }
 
 var blockNames = []string{
@@ -409,7 +420,6 @@ func (r *Repository) StoreMCPAnswers(ctx context.Context, userID int64, answers 
 
 	return nil
 }
-
 func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) error {
 
 	query := `
@@ -452,9 +462,18 @@ func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) erro
 
 		start := block * 8
 
+		// cuánto se separa el bloque del centro psicológico
+		spread := (avg - 0.5) * 0.8
+
+		// pequeña variación por bloque
+		blockBias := float64(block) * 0.01
+
 		for i := 0; i < 8; i++ {
 
-			val := avg + (float64(i)-3.5)*0.03
+			// gradiente interno del bloque
+			gradient := (float64(i) - 3.5) * 0.18
+
+			val := 0.5 + spread + gradient + blockBias
 
 			if val < 0 {
 				val = 0
@@ -481,7 +500,6 @@ func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) erro
 
 	return err
 }
-
 func (r *Repository) GetAllUserIDs(ctx context.Context) ([]int64, error) {
 
 	query := `SELECT id FROM users`
@@ -527,4 +545,313 @@ func (r *Repository) GetUserByID(ctx context.Context, userID int64) (int64, stri
 	)
 
 	return id, name, photo, err
+}
+
+func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]Candidate, error) {
+
+	query := `
+	SELECT
+	u.id,
+	u.name,
+	u.photo_url,
+	p.effective_vector,
+	t.effective_vector
+	FROM team_profiles t
+	JOIN user_mcp_profiles p ON TRUE
+	JOIN users u ON u.id = p.user_id
+	WHERE t.team_id=$1
+	AND u.id NOT IN (
+		SELECT user_id FROM team_members WHERE team_id=$1
+	)
+	`
+
+	rows, err := r.db.Query(ctx, query, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []Candidate
+
+	for rows.Next() {
+
+		var id int64
+		var name string
+		var photo string
+		var vec pgvector.Vector
+		var teamVec pgvector.Vector
+
+		err := rows.Scan(&id, &name, &photo, &vec, &teamVec)
+		if err != nil {
+			return nil, err
+		}
+
+		source := vec.Slice()
+		target := teamVec.Slice()
+
+		blockSim := make([]float64, 8)
+		blockScores := make(map[string]int)
+
+		best := 0
+		second := 1
+		worst := 0
+
+		for block := 0; block < 8; block++ {
+
+			start := block * 8
+			end := start + 8
+
+			score := blockSimilarity(source, target, start, end)
+
+			blockSim[block] = score
+			blockScores[blockNames[block]] = int(score * 100)
+		}
+
+		for i := 0; i < 8; i++ {
+
+			if blockSim[i] > blockSim[best] {
+				second = best
+				best = i
+			}
+
+			if blockSim[i] < blockSim[worst] {
+				worst = i
+			}
+		}
+
+		score := (blockSim[best] + blockSim[second]) / 2
+
+		stabilityWeights := []float64{
+			0.25,
+			0.10,
+			0.20,
+			0.20,
+			0.05,
+			0.05,
+			0.10,
+			0.05,
+		}
+
+		stability := 0.0
+
+		for i := 0; i < 8; i++ {
+			stability += blockSim[i] * stabilityWeights[i]
+		}
+
+		stabilityLabel := StabilityScore(stability)
+
+		role := detectRole(blockScores)
+
+		c := Candidate{
+
+			UserID: id,
+			Name:   name,
+			Photo:  photo,
+
+			Score: int(score * 100),
+
+			TopBlock:       blockNames[best],
+			SecondaryBlock: blockNames[second],
+
+			CompatibilityType: compatibilityType(blockNames[best]),
+
+			Explanation: explainMatch(blockNames[best], score),
+
+			PotentialFriction: frictionExplanation(blockNames[worst]),
+
+			CompatibilitySummary: compatibilitySummary(
+				blockNames[best],
+				blockNames[second],
+				blockNames[worst],
+			),
+
+			RelationshipStability: stabilityLabel,
+
+			BlockScores: blockScores,
+
+			Role: role,
+		}
+
+		results = append(results, c)
+	}
+
+	return results, nil
+}
+
+func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64) (Candidate, error) {
+
+	query := `
+	SELECT
+		u.id,
+		u.name,
+		u.photo_url,
+		p.effective_vector,
+		t.effective_vector
+	FROM users u
+	JOIN user_mcp_profiles p ON u.id = p.user_id
+	JOIN team_profiles t ON t.team_id = $1
+	WHERE u.id = $2
+	`
+
+	var id int64
+	var name string
+	var photo string
+	var vec pgvector.Vector
+	var teamVec pgvector.Vector
+
+	err := r.db.QueryRow(ctx, query, teamID, userID).
+		Scan(&id, &name, &photo, &vec, &teamVec)
+
+	if err != nil {
+		return Candidate{}, err
+	}
+
+	source := vec.Slice()
+	target := teamVec.Slice()
+
+	blockSim := make([]float64, 8)
+	blockScores := make(map[string]int)
+
+	best := 0
+	second := 1
+	worst := 0
+
+	for block := 0; block < 8; block++ {
+
+		start := block * 8
+		end := start + 8
+
+		score := blockSimilarity(source, target, start, end)
+
+		blockSim[block] = score
+		blockScores[blockNames[block]] = int(score * 100)
+	}
+
+	for i := 0; i < len(blockSim); i++ {
+
+		if blockSim[i] > blockSim[best] {
+			second = best
+			best = i
+		}
+
+		if blockSim[i] < blockSim[worst] {
+			worst = i
+		}
+	}
+
+	score := (blockSim[best] + blockSim[second]) / 2
+
+	stabilityWeights := []float64{
+		0.25,
+		0.10,
+		0.20,
+		0.20,
+		0.05,
+		0.05,
+		0.10,
+		0.05,
+	}
+
+	stability := 0.0
+
+	for i := 0; i < 8; i++ {
+		stability += blockSim[i] * stabilityWeights[i]
+	}
+
+	stabilityLabel := StabilityScore(stability)
+
+	role := detectRole(blockScores)
+
+	result := Candidate{
+
+		UserID: id,
+		Name:   name,
+		Photo:  photo,
+
+		Score: int(score * 100),
+
+		TopBlock:       blockNames[best],
+		SecondaryBlock: blockNames[second],
+
+		CompatibilityType: compatibilityType(blockNames[best]),
+
+		Explanation: explainMatch(blockNames[best], score),
+
+		PotentialFriction: frictionExplanation(blockNames[worst]),
+
+		CompatibilitySummary: compatibilitySummary(
+			blockNames[best],
+			blockNames[second],
+			blockNames[worst],
+		),
+
+		RelationshipStability: stabilityLabel,
+
+		BlockScores: blockScores,
+
+		Role: role,
+	}
+
+	return result, nil
+}
+
+func detectRole(blockScores map[string]int) string {
+
+	core := blockScores["Core Values"]
+	emotional := blockScores["Emotional Stability"]
+	cognitive := blockScores["Cognitive Style"]
+	ambition := blockScores["Ambition"]
+	growth := blockScores["Growth"]
+	intimacy := blockScores["Intimacy"]
+	lifestyle := blockScores["Lifestyle Rhythm"]
+	relational := blockScores["Relational Architecture"]
+
+	switch {
+
+	case ambition > 90 && core > 85:
+		return "Leader"
+
+	case cognitive > 90 && growth > 85:
+		return "Strategist"
+
+	case growth > 90 && ambition > 80:
+		return "Builder"
+
+	case lifestyle > 90 && growth > 85:
+		return "Explorer"
+
+	case relational > 90 && intimacy > 85:
+		return "Connector"
+
+	case emotional > 90 && core > 85:
+		return "Stabilizer"
+
+	case cognitive > 85 && ambition > 85:
+		return "Visionary"
+
+	case intimacy > 90 && emotional > 85:
+		return "Caregiver"
+
+	default:
+		return "Balanced"
+	}
+}
+
+func cosineDistance(a, b []float32) float64 {
+
+	var dot float64
+	var normA float64
+	var normB float64
+
+	for i := 0; i < len(a); i++ {
+
+		av := float64(a[i])
+		bv := float64(b[i])
+
+		dot += av * bv
+		normA += av * av
+		normB += bv * bv
+	}
+
+	return 1 - (dot / (math.Sqrt(normA) * math.Sqrt(normB)))
 }

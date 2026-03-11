@@ -1,6 +1,8 @@
 package matching
 
 import (
+	"strconv"
+
 	"github.com/alresave/mutari/internal/security"
 	"github.com/gin-gonic/gin"
 )
@@ -235,4 +237,43 @@ func (h *Handler) Me(c *gin.Context) {
 
 		"profile_complete": profileComplete,
 	})
+}
+
+func (h *Handler) GetTeamMatches(c *gin.Context) {
+
+	teamIDParam := c.Param("team_id")
+
+	teamID, err := strconv.ParseInt(teamIDParam, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team_id"})
+		return
+	}
+
+	matches, err := h.service.GetTeamMatches(c.Request.Context(), teamID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"team_id": teamID,
+		"matches": matches,
+	})
+}
+
+func (h *Handler) GetTeamFit(c *gin.Context) {
+
+	teamParam := c.Param("team_id")
+	userParam := c.Param("user_id")
+
+	teamID, _ := strconv.ParseInt(teamParam, 10, 64)
+	userID, _ := strconv.ParseInt(userParam, 10, 64)
+
+	match, err := h.service.GetTeamFit(c.Request.Context(), teamID, userID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, match)
 }

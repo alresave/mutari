@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mutari HR Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#0f172a;
+color:white;
+margin:0;
+padding:40px;
+}
+
+h1{
+margin-bottom:30px;
+}
+
+.container{
+display:flex;
+gap:40px;
+}
+
+.candidates{
+width:40%;
+}
+
+.card{
+background:#1e293b;
+padding:20px;
+border-radius:10px;
+margin-bottom:15px;
+cursor:pointer;
+transition:0.2s;
+}
+
+.card:hover{
+background:#334155;
+}
+
+.card img{
+width:50px;
+height:50px;
+border-radius:50%;
+margin-right:10px;
+}
+
+.row{
+display:flex;
+align-items:center;
+}
+
+.score{
+font-size:22px;
+font-weight:bold;
+color:#38bdf8;
+}
+
+.chart{
+width:60%;
+}
+
+canvas{
+background:#1e293b;
+padding:20px;
+border-radius:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Mutari Team Compatibility</h1>
+
+<div class="container">
+
+<div class="candidates" id="candidates"></div>
+
+<div class="chart">
+<canvas id="radarChart"></canvas>
+</div>
+
+</div>
+
+<script>
+
+const API="http://localhost:8080/teams/1/matches"
+
+let chart
+
+fetch(API)
+.then(r=>r.json())
+.then(data=>{
+
+const candidates=data.matches
+
+const container=document.getElementById("candidates")
+
+candidates.forEach(c=>{
+
+const div=document.createElement("div")
+div.className="card"
+
+div.innerHTML=`
+
+<div class="row">
+<img src="${c.photo}">
+<div>
+<b>${c.name}</b><br>
+Fit Score: <span class="score">${c.score}%</span><br>
+Role: ${c.role}
+</div>
+</div>
+
+`
+
+div.onclick=()=>showChart(c)
+
+container.appendChild(div)
+
+})
+
+showChart(candidates[0])
+
+})
+
+function showChart(candidate){
+
+const blocks=candidate.block_scores
+
+const labels=Object.keys(blocks)
+const values=Object.values(blocks)
+
+if(chart){
+chart.destroy()
+}
+
+chart=new Chart(
+document.getElementById("radarChart"),
+{
+type:"radar",
+data:{
+labels:labels,
+datasets:[{
+label:candidate.name,
+data:values,
+borderColor:"#38bdf8",
+backgroundColor:"rgba(56,189,248,0.2)"
+}]
+},
+options:{
+scales:{
+r:{
+min:0,
+max:100
+}
+}
+}
+}
+)
+
+}
+
+</script>
+
+</body>
+</html>
