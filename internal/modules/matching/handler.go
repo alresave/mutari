@@ -44,6 +44,15 @@ type SubmitAnswersRequest struct {
 //
 // SIGNUP
 //
+// @Summary User signup
+// @Description Create a new user account
+// @Accept json
+// @Produce json
+// @Param request body SignupRequest true "Signup request"
+// @Success 200 {object} map[string]interface{} "user_id and token"
+// @Failure 400 {object} map[string]interface{} "invalid request"
+// @Failure 500 {object} map[string]interface{} "server error"
+// @Router /auth/signup [post]
 
 func (h *Handler) Signup(c *gin.Context) {
 
@@ -81,6 +90,16 @@ func (h *Handler) Signup(c *gin.Context) {
 //
 // LOGIN
 //
+// @Summary User login
+// @Description Authenticate user with email and password
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login request"
+// @Success 200 {object} map[string]interface{} "user_id and token"
+// @Failure 400 {object} map[string]interface{} "invalid request"
+// @Failure 429 {object} map[string]interface{} "rate limit exceeded"
+// @Failure 500 {object} map[string]interface{} "server error"
+// @Router /auth/login [post]
 
 func (h *Handler) Login(c *gin.Context) {
 
@@ -130,6 +149,12 @@ func (h *Handler) Login(c *gin.Context) {
 //
 // GET MCP QUESTIONS
 //
+// @Summary Get MCP questions
+// @Description Retrieve all matching compatibility profile (MCP) questions
+// @Produce json
+// @Success 200 {object} map[string]interface{} "array of questions"
+// @Failure 500 {object} map[string]interface{} "server error"
+// @Router /mcp/questions [get]
 
 func (h *Handler) GetMCPQuestions(c *gin.Context) {
 

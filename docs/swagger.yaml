@@ -1,0 +1,17 @@
+basePath: /api
+host: localhost:8080
+info:
+  contact: {}
+  description: API for Mutari - Matching engine for teams and relationships
+  title: Mutari API
+  version: "1.0"
+paths: {}
+schemes:
+- http
+- https
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
