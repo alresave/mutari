@@ -17,6 +17,14 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
+type TeamFitSimulation struct {
+	TeamID      int64          `json:"team_id"`
+	CandidateID int64          `json:"candidate_id"`
+	Score       int            `json:"score"`
+	Role        string         `json:"suggested_role"`
+	BlockScores map[string]int `json:"block_scores"`
+}
+
 type Candidate struct {
 	UserID int64 `json:"user_id"`
 
@@ -795,6 +803,69 @@ func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64)
 	return result, nil
 }
 
+func (r *Repository) GetTeamCulture(ctx context.Context, teamID int64) (map[string]int, string, error) {
+
+	query := `
+	SELECT p.effective_vector
+	FROM team_members tm
+	JOIN user_mcp_profiles p ON p.user_id = tm.user_id
+	WHERE tm.team_id = $1
+	`
+
+	rows, err := r.db.Query(ctx, query, teamID)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var vectors [][]float32
+
+	for rows.Next() {
+
+		var vec pgvector.Vector
+
+		if err := rows.Scan(&vec); err != nil {
+			return nil, "", err
+		}
+
+		vectors = append(vectors, vec.Slice())
+	}
+
+	if len(vectors) == 0 {
+		return nil, "", errors.New("team has no members")
+	}
+
+	blockScores := make(map[string]int)
+
+	for block := 0; block < 8; block++ {
+
+		start := block * 8
+		end := start + 8
+
+		sum := 0.0
+
+		for _, vec := range vectors {
+
+			local := 0.0
+
+			for i := start; i < end; i++ {
+				local += float64(vec[i])
+			}
+
+			local = local / 8
+			sum += local
+		}
+
+		avg := sum / float64(len(vectors))
+
+		blockScores[blockNames[block]] = int(avg * 100)
+	}
+
+	archetype := detectTeamArchetype(blockScores)
+
+	return blockScores, archetype, nil
+}
+
 func detectRole(blockScores map[string]int) string {
 
 	core := blockScores["Core Values"]
@@ -854,4 +925,158 @@ func cosineDistance(a, b []float32) float64 {
 	}
 
 	return 1 - (dot / (math.Sqrt(normA) * math.Sqrt(normB)))
+}
+func cosineSimilarity(a, b []float32) float64 {
+
+	var dot float64
+	var normA float64
+	var normB float64
+
+	for i := 0; i < len(a); i++ {
+
+		av := float64(a[i])
+		bv := float64(b[i])
+
+		dot += av * bv
+		normA += av * av
+		normB += bv * bv
+	}
+
+	if normA == 0 || normB == 0 {
+		return 0
+	}
+
+	return dot / (math.Sqrt(normA) * math.Sqrt(normB))
+}
+func suggestRole(vec []float32) string {
+
+	cognitive := vec[56]
+	ambition := vec[32]
+	emotional := vec[16]
+
+	if cognitive > 0.75 {
+		return "Strategist"
+	}
+
+	if ambition > 0.75 {
+		return "Leader"
+	}
+
+	if emotional > 0.75 {
+		return "Connector"
+	}
+
+	return "Specialist"
+}
+func computeBlockScores(team, candidate []float32) map[string]int {
+
+	scores := make(map[string]int)
+
+	for block := 0; block < 8; block++ {
+
+		start := block * 8
+		end := start + 8
+
+		score := blockSimilarity(team, candidate, start, end)
+
+		scores[blockNames[block]] = int(score * 100)
+	}
+
+	return scores
+}
+
+func (r *Repository) SimulateTeamFit(
+	ctx context.Context,
+	teamID int64,
+	candidateID int64,
+) (TeamFitSimulation, error) {
+
+	// candidate vector
+	var candidateVec pgvector.Vector
+
+	err := r.db.QueryRow(ctx, `
+	SELECT effective_vector
+	FROM user_mcp_profiles
+	WHERE user_id=$1
+	`, candidateID).Scan(&candidateVec)
+
+	if err != nil {
+		return TeamFitSimulation{}, err
+	}
+
+	// team vectors
+	rows, err := r.db.Query(ctx, `
+	SELECT p.effective_vector
+	FROM team_members tm
+	JOIN user_mcp_profiles p ON p.user_id=tm.user_id
+	WHERE tm.team_id=$1
+	`, teamID)
+
+	if err != nil {
+		return TeamFitSimulation{}, err
+	}
+
+	defer rows.Close()
+
+	var teamVectors [][]float32
+
+	for rows.Next() {
+
+		var vec pgvector.Vector
+
+		if err := rows.Scan(&vec); err != nil {
+			return TeamFitSimulation{}, err
+		}
+
+		teamVectors = append(teamVectors, vec.Slice())
+	}
+
+	if len(teamVectors) == 0 {
+		return TeamFitSimulation{}, errors.New("team has no members")
+	}
+
+	// team average vector
+	avg := make([]float32, 64)
+
+	for _, v := range teamVectors {
+		for i := 0; i < 64; i++ {
+			avg[i] += v[i]
+		}
+	}
+
+	for i := 0; i < 64; i++ {
+		avg[i] /= float32(len(teamVectors))
+	}
+
+	candidate := candidateVec.Slice()
+
+	score := cosineSimilarity(avg, candidate)
+
+	blockScores := computeBlockScores(avg, candidate)
+
+	role := suggestRole(candidate)
+
+	return TeamFitSimulation{
+		TeamID:      teamID,
+		CandidateID: candidateID,
+		Score:       int(score * 100),
+		Role:        role,
+		BlockScores: blockScores,
+	}, nil
+}
+func detectTeamArchetype(scores map[string]int) string {
+
+	if scores["Ambition"] > 85 && scores["Cognitive Style"] > 85 {
+		return "Visionary Builders"
+	}
+
+	if scores["Relational Architecture"] > 85 {
+		return "Collaborative Operators"
+	}
+
+	if scores["Emotional Stability"] > 85 {
+		return "Stable Executors"
+	}
+
+	return "Balanced Team"
 }

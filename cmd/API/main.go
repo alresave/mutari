@@ -109,6 +109,8 @@ func main() {
 
 	auth.GET("/matches", handler.GetMatches)
 	auth.GET("/teams/:team_id/fit/:user_id", handler.GetTeamFit)
+	auth.GET("/teams/:team_id/simulate/:candidate_id", handler.SimulateTeamFit)
+	auth.GET("/teams/:team_id/culture", handler.GetTeamCulture)
 
 	// TEAM ENGINE
 	auth.GET("/teams/:team_id/matches", handler.GetTeamMatches)

@@ -12,6 +12,11 @@ import (
 type Service struct {
 	repo *Repository
 }
+type TeamCulture struct {
+	TeamID      int64          `json:"team_id"`
+	Archetype   string         `json:"archetype"`
+	BlockScores map[string]int `json:"block_scores"`
+}
 
 func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
@@ -116,3 +121,40 @@ func (s *Service) GetTeamMatches(ctx context.Context, teamID int64) ([]Candidate
 func (s *Service) GetTeamFit(ctx context.Context, teamID int64, userID int64) (Candidate, error) {
 	return s.repo.GetTeamFit(ctx, teamID, userID)
 }
+
+func (s *Service) SimulateTeamFit(
+	ctx context.Context,
+	teamID int64,
+	candidateID int64,
+) (TeamFitSimulation, error) {
+
+	result, err := s.repo.SimulateTeamFit(
+		ctx,
+		teamID,
+		candidateID,
+	)
+
+	if err != nil {
+		return TeamFitSimulation{}, err
+	}
+
+	return result, nil
+}
+
+func (s *Service) GetTeamCulture(ctx context.Context, teamID int64) (*TeamCulture, error) {
+
+	scores, archetype, err := s.repo.GetTeamCulture(ctx, teamID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &TeamCulture{
+		TeamID:      teamID,
+		Archetype:   archetype,
+		BlockScores: scores,
+	}
+
+	return result, nil
+}
+
+// team average vector

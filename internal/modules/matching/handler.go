@@ -1,6 +1,7 @@
 package matching
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/alresave/mutari/internal/security"
@@ -301,4 +302,64 @@ func (h *Handler) GetTeamFit(c *gin.Context) {
 	}
 
 	c.JSON(200, match)
+
+}
+func (h *Handler) SimulateTeamFit(c *gin.Context) {
+
+	teamIDParam := c.Param("team_id")
+	candidateParam := c.Param("candidate_id")
+
+	teamID, err := strconv.ParseInt(teamIDParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid team_id",
+		})
+		return
+	}
+
+	candidateID, err := strconv.ParseInt(candidateParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid candidate_id",
+		})
+		return
+	}
+
+	result, err := h.service.SimulateTeamFit(
+		c.Request.Context(),
+		teamID,
+		candidateID,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+func (h *Handler) GetTeamCulture(c *gin.Context) {
+
+	teamIDParam := c.Param("team_id")
+
+	teamID, err := strconv.ParseInt(teamIDParam, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "invalid team_id",
+		})
+		return
+	}
+
+	result, err := h.service.GetTeamCulture(c.Request.Context(), teamID)
+	if err != nil {
+
+		c.JSON(500, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, result)
 }
