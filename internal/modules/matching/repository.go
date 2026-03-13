@@ -458,6 +458,25 @@ func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) erro
 		blockCount[block]++
 	}
 
+	// MCP archetype bases
+	archetypes := [][]float64{
+
+		// Leader
+		{0.9, 0.7, 0.7, 0.7, 0.95, 0.8, 0.6, 0.8},
+
+		// Strategist
+		{0.8, 0.7, 0.8, 0.7, 0.7, 0.9, 0.7, 0.95},
+
+		// Builder
+		{0.8, 0.75, 0.7, 0.75, 0.9, 0.85, 0.65, 0.7},
+
+		// Connector
+		{0.85, 0.8, 0.9, 0.9, 0.65, 0.75, 0.9, 0.7},
+
+		// Stabilizer
+		{0.9, 0.85, 0.95, 0.85, 0.6, 0.7, 0.8, 0.65},
+	}
+
 	vector := make([]float32, 64)
 
 	for block := 0; block < 8; block++ {
@@ -468,20 +487,16 @@ func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) erro
 			avg = blockSum[block] / float64(blockCount[block])
 		}
 
+		archetype := archetypes[int(userID)%len(archetypes)]
+		base := archetype[block]
+
 		start := block * 8
-
-		// cuánto se separa el bloque del centro psicológico
-		spread := (avg - 0.5) * 0.8
-
-		// pequeña variación por bloque
-		blockBias := float64(block) * 0.01
 
 		for i := 0; i < 8; i++ {
 
-			// gradiente interno del bloque
-			gradient := (float64(i) - 3.5) * 0.18
+			gradient := (float64(i) - 3.5) * 0.15
 
-			val := 0.5 + spread + gradient + blockBias
+			val := (base*0.6 + avg*0.4) + gradient
 
 			if val < 0 {
 				val = 0
@@ -991,7 +1006,10 @@ func (r *Repository) SimulateTeamFit(
 	candidateID int64,
 ) (TeamFitSimulation, error) {
 
-	// candidate vector
+	// -----------------------------
+	// Candidate vector
+	// -----------------------------
+
 	var candidateVec pgvector.Vector
 
 	err := r.db.QueryRow(ctx, `
@@ -1004,11 +1022,16 @@ func (r *Repository) SimulateTeamFit(
 		return TeamFitSimulation{}, err
 	}
 
-	// team vectors
+	candidate := candidateVec.Slice()
+
+	// -----------------------------
+	// Team member vectors
+	// -----------------------------
+
 	rows, err := r.db.Query(ctx, `
 	SELECT p.effective_vector
 	FROM team_members tm
-	JOIN user_mcp_profiles p ON p.user_id=tm.user_id
+	JOIN user_mcp_profiles p ON p.user_id = tm.user_id
 	WHERE tm.team_id=$1
 	`, teamID)
 
@@ -1035,35 +1058,104 @@ func (r *Repository) SimulateTeamFit(
 		return TeamFitSimulation{}, errors.New("team has no members")
 	}
 
-	// team average vector
-	avg := make([]float32, 64)
+	// -----------------------------
+	// Candidate vs each team member
+	// -----------------------------
+
+	totalSim := 0.0
+	sims := make([]float64, len(teamVectors))
+
+	for i, member := range teamVectors {
+
+		sim := cosineSimilarity(member, candidate)
+
+		sims[i] = sim
+		totalSim += sim
+	}
+
+	teamFit := totalSim / float64(len(teamVectors))
+
+	// -----------------------------
+	// Team balance penalty
+	// -----------------------------
+
+	var variance float64
+
+	for _, s := range sims {
+		diff := s - teamFit
+		variance += diff * diff
+	}
+
+	variance /= float64(len(sims))
+
+	balancePenalty := math.Sqrt(variance)
+
+	// -----------------------------
+	// Role complementarity
+	// -----------------------------
+
+	role := suggestRole(candidate)
+
+	roleBoost := 0.0
+
+	switch role {
+
+	case "Strategist":
+		roleBoost = 0.05
+
+	case "Leader":
+		roleBoost = 0.05
+
+	case "Connector":
+		roleBoost = 0.04
+
+	default:
+		roleBoost = 0.02
+	}
+
+	// -----------------------------
+	// Final score
+	// -----------------------------
+
+	scoreRaw :=
+		(teamFit * 0.75) +
+			((1 - balancePenalty) * 0.20) +
+			roleBoost
+
+	dist := math.Acos(scoreRaw) / math.Pi
+
+	score := int((1 - dist) * 100)
+
+	// -----------------------------
+	// Compute team average vector
+	// (for block scores)
+	// -----------------------------
+
+	dim := len(candidate)
+
+	avg := make([]float32, dim)
 
 	for _, v := range teamVectors {
-		for i := 0; i < 64; i++ {
+		for i := 0; i < dim; i++ {
 			avg[i] += v[i]
 		}
 	}
 
-	for i := 0; i < 64; i++ {
+	for i := 0; i < dim; i++ {
 		avg[i] /= float32(len(teamVectors))
 	}
 
-	candidate := candidateVec.Slice()
-
-	score := cosineSimilarity(avg, candidate)
-
 	blockScores := computeBlockScores(avg, candidate)
-
-	role := suggestRole(candidate)
 
 	return TeamFitSimulation{
 		TeamID:      teamID,
 		CandidateID: candidateID,
-		Score:       int(score * 100),
+		Score:       score,
 		Role:        role,
 		BlockScores: blockScores,
 	}, nil
 }
+
 func detectTeamArchetype(scores map[string]int) string {
 
 	if scores["Ambition"] > 85 && scores["Cognitive Style"] > 85 {

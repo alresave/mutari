@@ -1,59 +1,178 @@
-APP_NAME=mutari-api
+# =========================
+# Mutari Makefile
+# =========================
 
-DB_URL?=postgres://postgres:postgres@localhost:5432/mutari?sslmode=disable
+APP=mutari-api
+GO=go
 
-.PHONY: help dev build run watch test tidy fmt clean seed bootstrap logs docker-up docker-down rebuild
+DB_CONTAINER=mutari-db
+REDIS_CONTAINER=mutari-redis
+
+DB_USER=postgres
+DB_NAME=mutari
+DB_PORT=5432
+
+# =========================
+# Phony Targets
+# =========================
+
+.PHONY: help dev watch build run clean \
+up down restart logs ps \
+db db-logs wait-db \
+schema seed reset-db reseed \
+swagger-init swagger-serve \
+fmt tidy lint test \
+setup rebuild fresh prune
+
+# =========================
+# Help
+# =========================
 
 help:
-	@echo "Mutari Makefile"
 	@echo ""
-	@echo "make dev           Run API locally"
-	@echo "make watch         Run with hot reload"
-	@echo "make build         Build binary"
-	@echo "make test          Run tests"
-	@echo "make tidy          Go mod tidy"
-	@echo "make fmt           Format code"
-	@echo "make docker-up     Start containers"
-	@echo "make docker-down   Stop containers"
-	@echo "make seed          Seed database"
-	@echo "make rebuild       Rebuild identity vectors"
-	@echo "make bootstrap     Full setup for demo"
+	@echo "Mutari Development Commands"
+	@echo "---------------------------------"
+	@echo "make dev            Run API locally"
+	@echo "make watch          Run with hot reload (air)"
+	@echo "make build          Build binary"
+	@echo "make run            Run compiled binary"
+	@echo "make clean          Remove binary"
+	@echo ""
+	@echo "Docker"
+	@echo "make up             Start containers"
+	@echo "make down           Stop containers"
+	@echo "make restart        Restart containers"
+	@echo "make logs           View logs"
+	@echo "make ps             List containers"
+	@echo ""
+	@echo "Database"
+	@echo "make db             Open psql shell"
+	@echo "make schema         Load schema"
+	@echo "make seed           Seed demo data"
+	@echo "make reset-db       Recreate DB"
+	@echo ""
+	@echo "Utilities"
+	@echo "make fmt            Format Go code"
+	@echo "make tidy           Clean go.mod"
+	@echo "make lint           Run linter"
+	@echo "make test           Run tests"
+	@echo ""
+	@echo "Project Setup"
+	@echo "make setup          Full project setup"
+	@echo "make fresh          Reset DB + build + run"
+	@echo ""
+
+# =========================
+# Development
+# =========================
 
 dev:
-	go run cmd/api/main.go
+	$(GO) run cmd/api/main.go
 
 watch:
 	air
 
 build:
-	go build -o bin/$(APP_NAME) cmd/api/main.go
+	$(GO) build -o $(APP) cmd/api/main.go
 
-test:
-	go test ./...
-
-tidy:
-	go mod tidy
-
-fmt:
-	go fmt ./...
+run:
+	./$(APP)
 
 clean:
-	rm -rf bin
+	rm -f $(APP)
 
-docker-up:
+# =========================
+# Docker
+# =========================
+
+build-docker:
+	docker compose build --no-cache
+
+up:
 	docker compose up -d
 
-docker-down:
+down:
 	docker compose down
+
+restart: down up
 
 logs:
 	docker compose logs -f
 
+ps:
+	docker compose ps
+
+# =========================
+# Database
+# =========================
+
+db:
+	docker exec -it $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME)
+
+db-logs:
+	docker logs -f $(DB_CONTAINER)
+
+wait-db:
+	@echo "Waiting for database..."
+	@until docker exec $(DB_CONTAINER) pg_isready -U $(DB_USER) > /dev/null 2>&1; do \
+		sleep 1; \
+	done
+	@echo "Database ready."
+
+schema:
+	docker exec -i $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME) < db/schema.sql
+
 seed:
-	psql $(DB_URL) -f db/seed_demo.sql
+	docker exec -i $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME) < db/seed_demo.sql
 
-rebuild:
-	curl -X POST http://localhost:8080/admin/rebuild-profiles
+reseed: seed
 
-bootstrap: docker-up seed rebuild
-	@echo "Mutari ready"
+reset-db:
+	docker compose down -v
+	docker compose up -d
+	$(MAKE) wait-db
+	$(MAKE) schema
+	$(MAKE) seed
+
+# =========================
+# Swagger
+# =========================
+
+swagger-init:
+	swag init --generalInfo cmd/api/main.go --output docs
+
+swagger-serve:
+	open http://localhost:8080/swagger/index.html
+
+# =========================
+# Go Utilities
+# =========================
+
+fmt:
+	$(GO) fmt ./...
+
+tidy:
+	$(GO) mod tidy
+
+lint:
+	golangci-lint run
+
+test:
+	$(GO) test ./...
+
+# =========================
+# Project Setup
+# =========================
+
+setup: up wait-db schema seed build
+
+rebuild: build restart
+
+fresh: reset-db build run
+
+# =========================
+# System cleanup
+# =========================
+
+prune:
+	docker system prune -f

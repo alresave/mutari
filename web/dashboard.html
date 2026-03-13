@@ -1,205 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 
 <meta charset="UTF-8">
-<title>Mutari Team Intelligence</title>
+<title>Mutari HR Intelligence</title>
 
+<script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-
-body{
-font-family:Arial;
-background:#0f172a;
-color:white;
-margin:0;
-padding:40px;
-}
-
-h1{
-margin-bottom:6px;
-}
-
-.subtitle{
-color:#94a3b8;
-margin-bottom:25px;
-}
-
-.team-profile{
-background:#1e293b;
-padding:20px;
-border-radius:10px;
-margin-bottom:20px;
-}
-
-.team-profile span{
-color:#38bdf8;
-font-weight:bold;
-}
-
-.score-panel{
-display:flex;
-gap:40px;
-margin-bottom:30px;
-}
-
-.score-box{
-background:#1e293b;
-padding:25px;
-border-radius:12px;
-flex:1;
-}
-
-.score-title{
-color:#94a3b8;
-font-size:14px;
-}
-
-.score-value{
-font-size:46px;
-color:#38bdf8;
-font-weight:bold;
-}
-
-.summary{
-margin-top:10px;
-color:#cbd5f5;
-font-size:14px;
-line-height:1.4em;
-}
-
-.container{
-display:flex;
-gap:40px;
-height:520px;
-}
-
-.candidates{
-width:40%;
-overflow-y:auto;
-padding-right:10px;
-}
-
-.candidates::-webkit-scrollbar{
-width:6px;
-}
-
-.candidates::-webkit-scrollbar-thumb{
-background:#334155;
-border-radius:4px;
-}
-
-.card{
-background:#1e293b;
-padding:18px;
-border-radius:10px;
-margin-bottom:12px;
-cursor:pointer;
-transition:0.2s;
-}
-
-.card:hover{
-background:#334155;
-}
-
-.card img{
-width:50px;
-height:50px;
-border-radius:50%;
-margin-right:12px;
-}
-
-.row{
-display:flex;
-align-items:center;
-}
-
-.score{
-font-size:18px;
-color:#38bdf8;
-}
-
-.role{
-color:#94a3b8;
-font-size:13px;
-}
-
-.chart{
-width:60%;
-display:flex;
-flex-direction:column;
-}
-
-canvas{
-background:#1e293b;
-padding:15px;
-border-radius:10px;
-max-height:350px;
-}
-
-.details{
-margin-top:18px;
-background:#1e293b;
-padding:18px;
-border-radius:10px;
-}
-
-.warning{
-color:#fbbf24;
-}
-
-.good{
-color:#34d399;
-}
-
-</style>
 
 </head>
 
-<body>
+<body class="bg-slate-100">
 
-<h1>Mutari Team Intelligence</h1>
-<div class="subtitle">AI-driven team compatibility analysis</div>
+<div class="max-w-7xl mx-auto py-10 px-6">
 
-<div class="team-profile">
-<b>Team Profile:</b> <span id="teamProfile">Analyzing...</span>
+<h1 class="text-3xl font-bold mb-8">
+Mutari Team Intelligence
+</h1>
+
+<div class="grid grid-cols-3 gap-6">
+
+<div class="col-span-2 bg-white p-6 rounded-xl shadow">
+
+<h2 class="text-xl font-semibold mb-2">
+Team Culture Profile
+</h2>
+
+<div class="text-sm text-slate-500 mb-4">
+Archetype: <span id="archetype"></span>
 </div>
 
-<div class="score-panel">
-
-<div class="score-box">
-<div class="score-title">TEAM FIT</div>
-<div id="teamScore" class="score-value">--</div>
-</div>
-
-<div class="score-box">
-<div class="score-title">SELECTED CANDIDATE</div>
-<div id="candidateScore" class="score-value">--</div>
-<div id="summary" class="summary"></div>
-</div>
+<canvas id="teamRadar" style="max-height:350px;"></canvas>
 
 </div>
 
-<div class="container">
+<div class="bg-white p-6 rounded-xl shadow">
 
-<div class="candidates" id="candidates"></div>
+<h2 class="text-xl font-semibold mb-4">
+Candidate Impact
+</h2>
 
-<div class="chart">
+<div id="simulation">
 
-<canvas id="radarChart"></canvas>
-
-<div class="details">
-
-<div><b>Strongest Work Style Alignment:</b> <span id="align"></span></div>
-<div><b>Secondary Alignment:</b> <span id="secondary"></span></div>
-<div><b>Work Style Pattern:</b> <span id="type"></span></div>
-
-<div class="warning"><b>Collaboration Risk:</b> <span id="friction"></span></div>
-
-<div class="good"><b>Collaboration Stability:</b> <span id="stability"></span></div>
+<div class="text-sm text-slate-500">
+Select a candidate to simulate team impact
+</div>
 
 </div>
+
+</div>
+
+</div>
+
+<div class="mt-8 bg-white p-6 rounded-xl shadow">
+
+<h2 class="text-xl font-semibold mb-4">
+Candidate Evaluation
+</h2>
+
+<div
+id="candidates"
+class="max-h-96 overflow-y-auto space-y-3"
+></div>
 
 </div>
 
@@ -207,200 +69,187 @@ color:#34d399;
 
 <script>
 
-const API="http://localhost:8080/teams/1/matches"
-
-let chart
-let candidatesData=[]
-
 const token = localStorage.getItem("token")
 
-if(!token){
-window.location="/app/login.html"
-}
-
-const blockNamesHR = {
-"Core Values":"Organizational Values",
-"Lifestyle Rhythm":"Work Pace",
-"Emotional Stability":"Stress Regulation",
-"Relational Architecture":"Collaboration Style",
-"Ambition":"Career Drive",
-"Growth":"Learning Orientation",
-"Intimacy":"Trust Building",
-"Cognitive Style":"Decision Style"
-}
-
-async function loadDashboard(){
-
-const res = await fetch(API,{
-headers:{
+const headers = {
 "Authorization":"Bearer "+token
 }
-})
 
+let teamRadar = null
+let teamScores = null
+
+async function loadTeamCulture(){
+
+const res = await fetch("/teams/1/culture",{headers})
 const data = await res.json()
 
-const candidates = data.matches || data
+document.getElementById("archetype").innerText = data.archetype
 
-if(!candidates || candidates.length===0) return
+teamScores = data.block_scores
 
-candidates.forEach((c,i)=>{
-
-let variation=i*3
-
-c.score=Math.max(65,c.score-variation)
-
-Object.keys(c.block_scores).forEach(k=>{
-let v=c.block_scores[k]-variation
-if(v<60) v=60
-c.block_scores[k]=v
-})
-
-})
-
-candidates.sort((a,b)=>b.score-a.score)
-
-candidatesData=candidates
-
-renderCandidates()
-
-let total=0
-candidates.forEach(c=>total+=c.score)
-
-document.getElementById("teamScore").innerText=
-Math.round(total/candidates.length)+"%"
-
-generateTeamProfile(candidates)
-
-showCandidate(candidates[0])
+drawRadar(teamScores)
 
 }
 
-function generateTeamProfile(candidates){
+function drawRadar(scores, candidate=null){
 
-let totals={}
+const labels = Object.keys(scores)
 
-candidates.forEach(c=>{
-Object.entries(c.block_scores).forEach(([k,v])=>{
-totals[k]=(totals[k]||0)+v
-})
-})
-
-let sorted=Object.entries(totals)
-.sort((a,b)=>b[1]-a[1])
-.slice(0,3)
-
-let profile=sorted.map(x=>blockNamesHR[x[0]]||x[0])
-
-document.getElementById("teamProfile").innerText=
-profile.join(" • ")
-
-}
-
-function renderCandidates(){
-
-const container=document.getElementById("candidates")
-container.innerHTML=""
-
-candidatesData.forEach((c,index)=>{
-
-const div=document.createElement("div")
-div.className="card"
-
-div.innerHTML=`
-
-<div class="row">
-
-<img src="${c.photo}">
-
-<div>
-
-<b>#${index+1} ${c.name}</b><br>
-
-Fit Score: <span class="score">${c.score}%</span><br>
-
-<span class="role">${c.role||""}</span>
-
-</div>
-
-</div>
-
-`
-
-div.onclick=()=>showCandidate(c)
-
-container.appendChild(div)
-
-})
-
-}
-
-function showCandidate(candidate){
-
-document.getElementById("candidateScore").innerText=
-candidate.score+"%"
-
-document.getElementById("summary").innerText=
-`${candidate.name} demonstrates strong team fit. 
-Primary work style alignment is ${blockNamesHR[candidate.top_block]||candidate.top_block}, 
-supported by alignment in ${blockNamesHR[candidate.secondary_alignment]||candidate.secondary_alignment}. 
-A collaboration risk may arise in ${blockNamesHR[candidate.potential_friction]||candidate.potential_friction}. 
-Overall predicted collaboration stability: ${candidate.relationship_stability}.`
-
-const blocks=candidate.block_scores
-
-const labels=Object.keys(blocks).map(b=>blockNamesHR[b]||b)
-const values=Object.values(blocks)
-
-if(chart) chart.destroy()
-
-chart=new Chart(
-document.getElementById("radarChart"),
+const datasets = [
 {
+label:"Team Culture",
+data:Object.values(scores)
+}
+]
+
+if(candidate){
+datasets.push({
+label:"Candidate Profile",
+data:Object.values(candidate)
+})
+}
+
+const ctx = document.getElementById("teamRadar")
+
+if(teamRadar){
+teamRadar.destroy()
+}
+
+teamRadar = new Chart(ctx,{
 type:"radar",
 data:{
 labels:labels,
-datasets:[{
-label:candidate.name,
-data:values,
-borderColor:"#38bdf8",
-backgroundColor:"rgba(56,189,248,0.25)"
-}]
+datasets:datasets
 },
 options:{
 plugins:{
-legend:{labels:{color:"white"}}
+legend:{position:"top"}
 },
 scales:{
 r:{
 min:0,
-max:100,
-ticks:{color:"white"},
-grid:{color:"#334155"},
-pointLabels:{color:"white"}
+max:100
 }
 }
 }
-}
-)
-
-document.getElementById("align").innerText=
-blockNamesHR[candidate.top_block]||candidate.top_block
-
-document.getElementById("secondary").innerText=
-blockNamesHR[candidate.secondary_alignment]||candidate.secondary_alignment
-
-document.getElementById("type").innerText=
-candidate.compatibility_type
-
-document.getElementById("friction").innerText=
-blockNamesHR[candidate.potential_friction]||candidate.potential_friction
-
-document.getElementById("stability").innerText=
-candidate.relationship_stability
+})
 
 }
 
-loadDashboard()
+async function loadCandidates(){
+
+const res = await fetch("/teams/1/matches",{headers})
+const data = await res.json()
+
+const container = document.getElementById("candidates")
+
+container.innerHTML=""
+
+const matches = data.matches.sort((a,b)=>b.score-a.score)
+
+matches.forEach(match=>{
+
+const photo = match.photo && match.photo !== ""
+? match.photo
+: "https://ui-avatars.com/api/?name="+encodeURIComponent(match.name)
+
+const row = document.createElement("div")
+
+row.className="candidate-row flex items-center justify-between border p-3 rounded-lg hover:bg-slate-50"
+
+row.innerHTML = `
+
+<div class="flex items-center gap-3">
+
+<img
+src="${photo}"
+class="w-10 h-10 rounded-full"
+/>
+
+<div>
+
+<div class="font-semibold">
+${match.name}
+</div>
+
+<div class="text-sm text-slate-500">
+Compatibility Score: ${match.score}%
+</div>
+
+</div>
+
+</div>
+
+<button class="simulate-btn bg-indigo-600 text-white px-3 py-1 rounded">
+Simulate Impact
+</button>
+
+`
+
+row.querySelector(".simulate-btn").addEventListener("click",()=>{
+
+selectCandidate(row)
+
+simulate(match)
+
+})
+
+container.appendChild(row)
+
+})
+
+}
+
+function selectCandidate(row){
+
+document.querySelectorAll(".candidate-row").forEach(r=>{
+r.classList.remove("ring","ring-indigo-500")
+})
+
+row.classList.add("ring","ring-indigo-500")
+
+}
+
+function simulate(match){
+
+document.getElementById("simulation").innerHTML = `
+
+<div class="mb-3">
+
+<div class="text-sm text-slate-500">
+Team Compatibility Score
+</div>
+
+<div class="text-2xl font-bold">
+${match.score}%
+</div>
+
+</div>
+
+<div class="mb-3">
+
+<div class="text-sm text-slate-500">
+Suggested Role
+</div>
+
+<div class="font-semibold">
+${match.role}
+</div>
+
+</div>
+
+<div class="text-sm text-slate-600">
+${match.compatibility_summary}
+</div>
+
+`
+
+drawRadar(teamScores, match.block_scores)
+
+}
+
+loadTeamCulture()
+loadCandidates()
 
 </script>
 
