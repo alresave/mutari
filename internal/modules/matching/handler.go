@@ -363,3 +363,22 @@ func (h *Handler) GetTeamCulture(c *gin.Context) {
 
 	c.JSON(200, result)
 }
+
+func (h *Handler) GetTeamGaps(c *gin.Context) {
+
+	param := c.Param("team_id")
+
+	teamID, err := strconv.ParseInt(param, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team_id"})
+		return
+	}
+
+	result, err := h.service.GetTeamGaps(c.Request.Context(), teamID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, result)
+}

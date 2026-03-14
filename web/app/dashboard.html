@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html class="dark">
+<head>
+
+<meta charset="UTF-8">
+<title>Mutari HR Dashboard</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+tailwind.config = { darkMode: "class" }
+</script>
+
+</head>
+
+<body class="bg-slate-900 text-white">
+
+<div class="max-w-7xl mx-auto p-8">
+
+<h1 class="text-4xl font-bold mb-8">
+Mutari HR Dashboard
+</h1>
+
+<!-- TEAM CONTROLS -->
+
+<div class="flex gap-4 mb-8">
+
+<select id="teamSelector" class="bg-slate-800 px-4 py-2 rounded">
+
+<option value="1">Team 1</option>
+<option value="2">Team 2</option>
+
+</select>
+
+<button onclick="loadMatches()"
+class="bg-indigo-600 hover:bg-indigo-700 px-6 py-2 rounded">
+Load Candidates
+</button>
+
+<button onclick="loadGaps()"
+class="bg-orange-500 hover:bg-orange-600 px-6 py-2 rounded">
+Analyze Team Gaps
+</button>
+
+</div>
+
+<!-- TEAM GAPS -->
+
+<div id="gapsBox"
+class="hidden bg-slate-800 p-6 rounded mb-8">
+
+<h2 class="text-2xl mb-3">
+Team Gap Analysis
+</h2>
+
+<div id="weakBlocks" class="text-slate-300 mb-2"></div>
+
+<div id="recommendedProfile"
+class="text-orange-400 font-semibold"></div>
+
+</div>
+
+<!-- MAIN GRID -->
+
+<div class="grid grid-cols-2 gap-8">
+
+<!-- CANDIDATES -->
+
+<div>
+
+<h2 class="text-2xl mb-4">
+Candidates
+</h2>
+
+<div id="candidates"
+class="space-y-3 max-h-[600px] overflow-y-auto">
+</div>
+
+</div>
+
+<!-- RADAR -->
+
+<div>
+
+<h2 class="text-2xl mb-4">
+Candidate Fit
+</h2>
+
+<canvas id="radar"></canvas>
+
+<div id="candidateSummary"
+class="mt-6 text-slate-300"></div>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+/* =============================
+TOKEN VALIDATION
+============================= */
+
+const token = localStorage.getItem("token")
+
+if(!token){
+window.location="/login.html"
+}
+
+/* =============================
+RADAR
+============================= */
+
+let radarChart
+
+/* =============================
+LOAD TEAM MATCHES
+============================= */
+
+async function loadMatches(){
+
+const team = document.getElementById("teamSelector").value
+
+const res = await fetch(`/teams/${team}/matches`,{
+
+headers:{
+Authorization:`Bearer ${token}`
+}
+
+})
+
+const data = await res.json()
+
+const container = document.getElementById("candidates")
+
+container.innerHTML=""
+
+data.matches.forEach(c=>{
+
+const card=document.createElement("div")
+
+card.className="bg-slate-800 p-4 rounded cursor-pointer hover:bg-slate-700"
+
+card.innerHTML=`
+
+<div class="flex items-center gap-4">
+
+<img src="${c.photo}"
+class="w-10 h-10 rounded-full">
+
+<div>
+
+<div class="font-semibold">
+${c.name}
+</div>
+
+<div class="text-sm text-slate-400">
+Score ${c.score}%
+</div>
+
+</div>
+
+</div>
+`
+
+card.onclick=()=>selectCandidate(c)
+
+container.appendChild(card)
+
+})
+
+}
+
+/* =============================
+TEAM GAP ANALYSIS
+============================= */
+
+async function loadGaps(){
+
+const team=document.getElementById("teamSelector").value
+
+const res=await fetch(`/teams/${team}/gaps`,{
+
+headers:{
+Authorization:`Bearer ${token}`
+}
+
+})
+
+const data=await res.json()
+
+document.getElementById("gapsBox").classList.remove("hidden")
+
+document.getElementById("weakBlocks").innerHTML=
+`Weak Blocks: ${data.weak_blocks.join(", ")}`
+
+document.getElementById("recommendedProfile").innerHTML=
+`Recommended Profile: ${data.recommended_profile}`
+
+}
+
+/* =============================
+SELECT CANDIDATE
+============================= */
+
+function selectCandidate(c){
+
+const labels=Object.keys(c.block_scores)
+
+const scores=Object.values(c.block_scores)
+
+if(radarChart){
+radarChart.destroy()
+}
+
+radarChart=new Chart(document.getElementById("radar"),{
+
+type:"radar",
+
+data:{
+
+labels:labels,
+
+datasets:[{
+
+label:"Candidate Fit",
+
+data:scores,
+
+borderColor:"rgb(99,102,241)",
+backgroundColor:"rgba(99,102,241,0.2)"
+
+}]
+
+},
+
+options:{
+
+plugins:{
+legend:{
+labels:{
+color:"white"
+}
+}
+},
+
+scales:{
+r:{
+min:0,
+max:100,
+ticks:{
+color:"white"
+},
+grid:{
+color:"#444"
+},
+pointLabels:{
+color:"white"
+}
+}
+}
+
+}
+
+})
+
+document.getElementById("candidateSummary").innerHTML=`
+
+<div class="text-xl font-semibold mb-2">
+${c.name}
+</div>
+
+<div class="mb-1">
+Compatibility Score: ${c.score}%
+</div>
+
+<div class="mb-1">
+Suggested Role: ${c.role}
+</div>
+
+<div class="mb-1">
+Top Alignment: ${c.top_block}
+</div>
+
+<div class="text-sm text-slate-400 mt-3">
+${c.compatibility_summary}
+</div>
+
+`
+
+}
+
+</script>
+
+</body>
+</html>

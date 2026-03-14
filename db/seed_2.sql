@@ -6,7 +6,7 @@ INSERT INTO mcp_blocks (id,name,description) VALUES
 (3,'Relational Architecture','How relationships are structured'),
 (4,'Ambition','Drive and long term goals'),
 (5,'Growth','Personal development orientation'),
-(6,'Intimacy','Emotional bonding and closeness'),
+(6,'Trust & Collaboration ','Emotional bonding and closeness'),
 (7,'Cognitive Style','Thinking and decision making'),
 (8,'Control','Consistency validation questions');
 
@@ -73,7 +73,7 @@ INSERT INTO mcp_questions (id,block,question_text,scale) VALUES
 (47,5,'I reflect on my behavior regularly','likert_1_5'),
 (48,5,'I welcome opportunities for personal growth','likert_1_5'),
 
--- Intimacy
+-- Trust & Collaboration 
 (49,6,'I feel comfortable expressing affection','likert_1_5'),
 (50,6,'Emotional closeness is important to me','likert_1_5'),
 (51,6,'I enjoy deep conversations','likert_1_5'),

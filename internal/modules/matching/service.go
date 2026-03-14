@@ -157,4 +157,22 @@ func (s *Service) GetTeamCulture(ctx context.Context, teamID int64) (*TeamCultur
 	return result, nil
 }
 
-// team average vector
+type TeamGaps struct {
+	TeamID             int64    `json:"team_id"`
+	WeakBlocks         []string `json:"weak_blocks"`
+	RecommendedProfile string   `json:"recommended_profile"`
+}
+
+func (s *Service) GetTeamGaps(ctx context.Context, teamID int64) (*TeamGaps, error) {
+
+	weak, profile, err := s.repo.GetTeamGaps(ctx, teamID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TeamGaps{
+		TeamID:             teamID,
+		WeakBlocks:         weak,
+		RecommendedProfile: profile,
+	}, nil
+}

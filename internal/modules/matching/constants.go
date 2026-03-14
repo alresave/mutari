@@ -7,6 +7,6 @@ var BlockNames = []string{
 	"Relational Architecture",
 	"Ambition",
 	"Growth",
-	"Intimacy",
+	"Trust & Collaboration ",
 	"Cognitive Style",
 }

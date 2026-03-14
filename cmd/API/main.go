@@ -86,7 +86,8 @@ func main() {
 	r := gin.Default()
 
 	// Static UI
-	r.Static("/app", "./web")
+	r.Static("app", "web/app")
+	r.Static("dating", "web/dating")
 
 	// Health
 	r.GET("/health", func(c *gin.Context) {
@@ -111,6 +112,7 @@ func main() {
 	auth.GET("/teams/:team_id/fit/:user_id", handler.GetTeamFit)
 	auth.GET("/teams/:team_id/simulate/:candidate_id", handler.SimulateTeamFit)
 	auth.GET("/teams/:team_id/culture", handler.GetTeamCulture)
+	auth.GET("/teams/:team_id/gaps", handler.GetTeamGaps)
 
 	// TEAM ENGINE
 	auth.GET("/teams/:team_id/matches", handler.GetTeamMatches)

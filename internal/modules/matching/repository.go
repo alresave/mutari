@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"sort"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pgvector/pgvector-go"
@@ -58,7 +59,7 @@ var blockNames = []string{
 	"Relational Architecture",
 	"Ambition",
 	"Growth",
-	"Intimacy",
+	"Trust & Collaboration ",
 	"Cognitive Style",
 }
 
@@ -141,7 +142,7 @@ func compatibilityType(block string) string {
 	case "Emotional Stability":
 		return "Emotional Compatibility"
 
-	case "Intimacy":
+	case "Trust & Collaboration ":
 		return "Bonding Compatibility"
 
 	default:
@@ -174,7 +175,7 @@ func frictionExplanation(block string) string {
 	case "Emotional Stability":
 		return "Different emotional regulation styles"
 
-	case "Intimacy":
+	case "Trust & Collaboration ":
 		return "Different bonding needs"
 
 	default:
@@ -880,6 +881,88 @@ func (r *Repository) GetTeamCulture(ctx context.Context, teamID int64) (map[stri
 
 	return blockScores, archetype, nil
 }
+func (r *Repository) GetTeamGaps(ctx context.Context, teamID int64) ([]string, string, error) {
+
+	query := `
+ SELECT p.effective_vector
+ FROM team_members tm
+ JOIN user_mcp_profiles p ON p.user_id = tm.user_id
+ WHERE tm.team_id = $1
+ `
+
+	rows, err := r.db.Query(ctx, query, teamID)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var vectors [][]float32
+
+	for rows.Next() {
+
+		var vec pgvector.Vector
+
+		if err := rows.Scan(&vec); err != nil {
+			return nil, "", err
+		}
+
+		vectors = append(vectors, vec.Slice())
+	}
+
+	if len(vectors) == 0 {
+		return nil, "", errors.New("team has no members")
+	}
+
+	blockScores := make(map[string]int)
+
+	for block := 0; block < 8; block++ {
+
+		start := block * 8
+		end := start + 8
+
+		sum := 0.0
+
+		for _, vec := range vectors {
+
+			local := 0.0
+
+			for i := start; i < end; i++ {
+				local += float64(vec[i])
+			}
+
+			local = local / 8
+			sum += local
+		}
+
+		avg := sum / float64(len(vectors))
+
+		blockScores[blockNames[block]] = int(avg * 100)
+	}
+
+	type pair struct {
+		block string
+		score int
+	}
+
+	var list []pair
+
+	for k, v := range blockScores {
+		list = append(list, pair{k, v})
+	}
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].score < list[j].score
+	})
+
+	weak := []string{
+		list[0].block,
+		list[1].block,
+	}
+
+	profile := recommendProfile(weak)
+
+	return weak, profile, nil
+}
 
 func detectRole(blockScores map[string]int) string {
 
@@ -888,7 +971,7 @@ func detectRole(blockScores map[string]int) string {
 	cognitive := blockScores["Cognitive Style"]
 	ambition := blockScores["Ambition"]
 	growth := blockScores["Growth"]
-	intimacy := blockScores["Intimacy"]
+	TrustCollaboration := blockScores["Trust & Collaboration "]
 	lifestyle := blockScores["Lifestyle Rhythm"]
 	relational := blockScores["Relational Architecture"]
 
@@ -906,7 +989,7 @@ func detectRole(blockScores map[string]int) string {
 	case lifestyle > 90 && growth > 85:
 		return "Explorer"
 
-	case relational > 90 && intimacy > 85:
+	case relational > 90 && TrustCollaboration > 85:
 		return "Connector"
 
 	case emotional > 90 && core > 85:
@@ -915,7 +998,7 @@ func detectRole(blockScores map[string]int) string {
 	case cognitive > 85 && ambition > 85:
 		return "Visionary"
 
-	case intimacy > 90 && emotional > 85:
+	case TrustCollaboration > 90 && emotional > 85:
 		return "Caregiver"
 
 	default:
@@ -1171,4 +1254,38 @@ func detectTeamArchetype(scores map[string]int) string {
 	}
 
 	return "Balanced Team"
+}
+func recommendProfile(blocks []string) string {
+
+	for _, b := range blocks {
+
+		switch b {
+
+		case "Emotional Stability":
+			return "Stabilizer"
+
+		case "Relational Architecture":
+			return "Collaborator"
+
+		case "Cognitive Style":
+			return "Strategist"
+
+		case "Ambition":
+			return "Driver"
+
+		case "Growth":
+			return "Learner"
+
+		case "Trust & Collaboration ":
+			return "Connector"
+
+		case "Lifestyle Rhythm":
+			return "Balancer"
+
+		case "Core Values":
+			return "Anchor"
+		}
+	}
+
+	return "Generalist"
 }

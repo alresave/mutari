@@ -12,7 +12,7 @@ INSERT INTO mcp_blocks (id,name,description) VALUES
 (3,'Relational Architecture','How relationships are structured'),
 (4,'Ambition','Drive and long term goals'),
 (5,'Growth','Personal development orientation'),
-(6,'Intimacy','Emotional bonding and closeness'),
+(6,'Trust & Collaboration ','Emotional bonding and closeness'),
 (7,'Cognitive Style','Thinking and decision making'),
 (8,'Control','Consistency validation questions');
 
@@ -79,7 +79,7 @@ INSERT INTO mcp_questions (id,block,question_text,scale) VALUES
 (47,5,'I reflect on my behavior regularly','likert_1_5'),
 (48,5,'I welcome opportunities for personal growth','likert_1_5'),
 
--- Intimacy
+-- Trust & Collaboration 
 (49,6,'I feel comfortable expressing affection','likert_1_5'),
 (50,6,'Emotional closeness is important to me','likert_1_5'),
 (51,6,'I enjoy deep conversations','likert_1_5'),
@@ -114,41 +114,59 @@ INSERT INTO mcp_questions (id,block,question_text,scale) VALUES
 -- USERS (30 demo candidates)
 -- ============================================
 
+
 INSERT INTO users (name,email,password_hash,photo_url) VALUES
-('alice','alice@test.com','12345678','https://randomuser.me/api/portraits/women/1.jpg'),
-('alresave','alresave@gmail.com','123456','https://randomuser.me/api/portraits/men/2.jpg'),
-('Engineering Architect','demo3@mutari.io','demo','https://randomuser.me/api/portraits/men/3.jpg'),
-('Creative Director','demo4@mutari.io','demo','https://randomuser.me/api/portraits/women/4.jpg'),
-('Operations Leader','demo5@mutari.io','demo','https://randomuser.me/api/portraits/men/5.jpg'),
-('UX Researcher','demo6@mutari.io','demo','https://randomuser.me/api/portraits/women/6.jpg'),
-('Growth Hacker','demo7@mutari.io','demo','https://randomuser.me/api/portraits/men/7.jpg'),
-('Financial Analyst','demo8@mutari.io','demo','https://randomuser.me/api/portraits/women/8.jpg'),
-('Customer Success','demo9@mutari.io','demo','https://randomuser.me/api/portraits/women/9.jpg'),
-('Data Scientist','demo10@mutari.io','demo','https://randomuser.me/api/portraits/men/10.jpg'),
+('Alberto Gonzalez','alresave@gmail.com','123456','https://randomuser.me/api/portraits/men/11.jpg'),
+('Alicia Gonzalez','alicia.gonzalez@gmail.com','12345678','https://randomuser.me/api/portraits/women/11.jpg'),
+('Daniel Schmidt','daniel.schmidt@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/13.jpg'),
+('Marco Rossi','marco.rossi@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/14.jpg'),
+('Carlos Alvarez','carlos.alvarez@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/15.jpg'),
+('Juan Torres','juan.torres@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/16.jpg'),
+('Mateo Gonzalez','mateo.gonzalez@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/17.jpg'),
+('Pedro Carvalho','pedro.carvalho@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/18.jpg'),
+('Nicolas Dubois','nicolas.dubois@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/19.jpg'),
+('Liam Murphy','liam.murphy@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/20.jpg'),
+('Oliver Johnson','oliver.johnson@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/21.jpg'),
+('Noah Brown','noah.brown@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/22.jpg'),
+('Ethan Williams','ethan.williams@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/23.jpg'),
+('Alexander Ivanov','alex.ivanov@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/24.jpg'),
+('Yuki Tanaka','yuki.tanaka@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/25.jpg'),
+('Min-Jun Park','minjun.park@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/26.jpg'),
+('Arjun Patel','arjun.patel@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/27.jpg'),
+('Ahmed Hassan','ahmed.hassan@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/28.jpg'),
+('Omar Khaled','omar.khaled@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/29.jpg'),
+('George Thompson','george.thompson@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/30.jpg'),
+('William Scott','william.scott@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/31.jpg'),
+('Benjamin Lee','benjamin.lee@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/32.jpg'),
+('Logan White','logan.white@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/33.jpg'),
+('Henry Wilson','henry.wilson@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/34.jpg'),
+('Jack Anderson','jack.anderson@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/men/35.jpg'),
 
-('Strategic Thinker','demo11@mutari.io','demo','https://randomuser.me/api/portraits/men/11.jpg'),
-('Creative Builder','demo12@mutari.io','demo','https://randomuser.me/api/portraits/women/12.jpg'),
-('Systems Engineer','demo13@mutari.io','demo','https://randomuser.me/api/portraits/men/13.jpg'),
-('Design Visionary','demo14@mutari.io','demo','https://randomuser.me/api/portraits/women/14.jpg'),
-('Startup Operator','demo15@mutari.io','demo','https://randomuser.me/api/portraits/men/15.jpg'),
-('People Connector','demo16@mutari.io','demo','https://randomuser.me/api/portraits/women/16.jpg'),
-('Execution Specialist','demo17@mutari.io','demo','https://randomuser.me/api/portraits/men/17.jpg'),
-('Market Analyst','demo18@mutari.io','demo','https://randomuser.me/api/portraits/women/18.jpg'),
-('Culture Builder','demo19@mutari.io','demo','https://randomuser.me/api/portraits/women/19.jpg'),
-('Technical Innovator','demo20@mutari.io','demo','https://randomuser.me/api/portraits/men/20.jpg'),
-
-('Product Visionary','demo21@mutari.io','demo','https://randomuser.me/api/portraits/men/21.jpg'),
-('Growth Strategist','demo22@mutari.io','demo','https://randomuser.me/api/portraits/women/22.jpg'),
-('Platform Architect','demo23@mutari.io','demo','https://randomuser.me/api/portraits/men/23.jpg'),
-('Creative Technologist','demo24@mutari.io','demo','https://randomuser.me/api/portraits/women/24.jpg'),
-('Operations Strategist','demo25@mutari.io','demo','https://randomuser.me/api/portraits/men/25.jpg'),
-('Community Builder','demo26@mutari.io','demo','https://randomuser.me/api/portraits/women/26.jpg'),
-('Execution Leader','demo27@mutari.io','demo','https://randomuser.me/api/portraits/men/27.jpg'),
-('Insight Analyst','demo28@mutari.io','demo','https://randomuser.me/api/portraits/women/28.jpg'),
-('Innovation Catalyst','demo29@mutari.io','demo','https://randomuser.me/api/portraits/women/29.jpg'),
-('Engineering Leader','demo30@mutari.io','demo','https://randomuser.me/api/portraits/men/30.jpg');
-
--- sincronizar secuencia correctamente
+('Emma Wilson','emma.wilson@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/11.jpg'),
+('Olivia Taylor','olivia.taylor@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/12.jpg'),
+('Sophia Brown','sophia.brown@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/13.jpg'),
+('Isabella Garcia','isabella.garcia@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/14.jpg'),
+('Mia Martinez','mia.martinez@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/15.jpg'),
+('Charlotte Dubois','charlotte.dubois@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/16.jpg'),
+('Amelia Rossi','amelia.rossi@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/17.jpg'),
+('Harper Johnson','harper.johnson@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/18.jpg'),
+('Evelyn Davis','evelyn.davis@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/19.jpg'),
+('Abigail Miller','abigail.miller@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/20.jpg'),
+('Emily Clark','emily.clark@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/21.jpg'),
+('Sofia Hernandez','sofia.hernandez@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/22.jpg'),
+('Camila Torres','camila.torres@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/23.jpg'),
+('Valentina Lopez','valentina.lopez@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/24.jpg'),
+('Lucia Fernandez','lucia.fernandez@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/25.jpg'),
+('Anna Schmidt','anna.schmidt@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/26.jpg'),
+('Laura Müller','laura.mueller@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/27.jpg'),
+('Giulia Bianchi','giulia.bianchi@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/28.jpg'),
+('Yuna Kim','yuna.kim@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/29.jpg'),
+('Aiko Sato','aiko.sato@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/30.jpg'),
+('Priya Sharma','priya.sharma@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/31.jpg'),
+('Fatima Ali','fatima.ali@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/32.jpg'),
+('Layla Hassan','layla.hassan@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/33.jpg'),
+('Nora Jensen','nora.jensen@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/34.jpg'),
+('Chloe Martin','chloe.martin@gmail.com','$2y$10$hashdemo','https://randomuser.me/api/portraits/women/35.jpg');
 SELECT setval(
     pg_get_serial_sequence('users','id'),
     COALESCE((SELECT MAX(id) FROM users),1),
@@ -198,50 +216,66 @@ SELECT
     id,
     (
         SELECT array_agg(
-            CASE archetype
-
-                -- Leader
-                WHEN 0 THEN
-                    CASE (g-1)/8
-                        WHEN 4 THEN 0.85 + random()*0.15
-                        WHEN 5 THEN 0.70 + random()*0.20
-                        ELSE random()*0.60
-                    END
-
-                -- Strategist
-                WHEN 1 THEN
-                    CASE (g-1)/8
-                        WHEN 7 THEN 0.85 + random()*0.15
-                        WHEN 5 THEN 0.75 + random()*0.20
-                        ELSE random()*0.60
-                    END
-
-                -- Builder
-                WHEN 2 THEN
-                    CASE (g-1)/8
-                        WHEN 5 THEN 0.85 + random()*0.15
-                        WHEN 4 THEN 0.75 + random()*0.20
-                        ELSE random()*0.60
-                    END
-
-                -- Connector
-                WHEN 3 THEN
-                    CASE (g-1)/8
-                        WHEN 6 THEN 0.85 + random()*0.15
-                        WHEN 3 THEN 0.75 + random()*0.20
-                        ELSE random()*0.60
-                    END
-
-                -- Stabilizer
-                ELSE
-                    CASE (g-1)/8
-                        WHEN 2 THEN 0.85 + random()*0.15
-                        WHEN 0 THEN 0.75 + random()*0.20
-                        ELSE random()*0.60
-                    END
-            END
+            GREATEST(
+                0,
+                LEAST(
+                    1,
+                    base + gaussian_noise
+                )
+            )
         )
-        FROM generate_series(1,64) g
+        FROM (
+            SELECT
+                g,
+                archetype,
+                CASE archetype
+
+                    -- Leader
+                    WHEN 0 THEN
+                        CASE (g-1)/8
+                            WHEN 4 THEN 0.85
+                            WHEN 5 THEN 0.75
+                            ELSE 0.40
+                        END
+
+                    -- Strategist
+                    WHEN 1 THEN
+                        CASE (g-1)/8
+                            WHEN 7 THEN 0.90
+                            WHEN 5 THEN 0.75
+                            ELSE 0.40
+                        END
+
+                    -- Builder
+                    WHEN 2 THEN
+                        CASE (g-1)/8
+                            WHEN 5 THEN 0.85
+                            WHEN 4 THEN 0.80
+                            ELSE 0.40
+                        END
+
+                    -- Connector
+                    WHEN 3 THEN
+                        CASE (g-1)/8
+                            WHEN 6 THEN 0.90
+                            WHEN 3 THEN 0.85
+                            ELSE 0.45
+                        END
+
+                    -- Stabilizer
+                    ELSE
+                        CASE (g-1)/8
+                            WHEN 2 THEN 0.90
+                            WHEN 0 THEN 0.85
+                            ELSE 0.45
+                        END
+                END AS base,
+
+                -- gaussian noise
+                (random() + random() + random() + random() - 2) * 0.15 AS gaussian_noise
+
+            FROM generate_series(1,64) g
+        ) s
     )::vector
 FROM (
     SELECT id, (id % 5) AS archetype
@@ -264,46 +298,63 @@ SELECT
     id,
     (
         SELECT array_agg(
-            CASE archetype
-
-                -- Visionary
-                WHEN 0 THEN
-                    CASE (g-1)/8
-                        WHEN 7 THEN 0.9
-                        WHEN 4 THEN 0.85
-                        ELSE random()*0.5
-                    END
-
-                -- Execution
-                WHEN 1 THEN
-                    CASE (g-1)/8
-                        WHEN 5 THEN 0.9
-                        WHEN 4 THEN 0.85
-                        ELSE random()*0.5
-                    END
-
-                -- Collaborative
-                WHEN 2 THEN
-                    CASE (g-1)/8
-                        WHEN 6 THEN 0.9
-                        WHEN 3 THEN 0.85
-                        ELSE random()*0.5
-                    END
-
-                -- Stability
-                WHEN 3 THEN
-                    CASE (g-1)/8
-                        WHEN 2 THEN 0.9
-                        WHEN 0 THEN 0.85
-                        ELSE random()*0.5
-                    END
-
-                -- Balanced
-                ELSE
-                    random()
-            END
+            GREATEST(
+                0,
+                LEAST(
+                    1,
+                    base + gaussian_noise
+                )
+            )
         )
-        FROM generate_series(1,64) g
+        FROM (
+            SELECT
+                g,
+                archetype,
+
+                CASE archetype
+
+                    -- Visionary Startup
+                    WHEN 0 THEN
+                        CASE (g-1)/8
+                            WHEN 7 THEN 0.90
+                            WHEN 4 THEN 0.85
+                            ELSE 0.40
+                        END
+
+                    -- Execution Engine
+                    WHEN 1 THEN
+                        CASE (g-1)/8
+                            WHEN 5 THEN 0.90
+                            WHEN 4 THEN 0.85
+                            ELSE 0.40
+                        END
+
+                    -- Collaborative Studio
+                    WHEN 2 THEN
+                        CASE (g-1)/8
+                            WHEN 6 THEN 0.90
+                            WHEN 3 THEN 0.85
+                            ELSE 0.45
+                        END
+
+                    -- Stable Organization
+                    WHEN 3 THEN
+                        CASE (g-1)/8
+                            WHEN 2 THEN 0.90
+                            WHEN 0 THEN 0.85
+                            ELSE 0.45
+                        END
+
+                    -- Balanced Team
+                    ELSE
+                        0.55
+                END AS base,
+
+                -- Gaussian noise
+                (random() + random() + random() + random() - 2) * 0.12 AS gaussian_noise
+
+            FROM generate_series(1,64) g
+        ) s
     )::vector
 FROM (
     SELECT id, (id % 5) AS archetype

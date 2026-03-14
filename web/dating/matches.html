@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<title>Mutari Relationship Intelligence</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body class="bg-slate-100">
+
+<div class="max-w-6xl mx-auto py-10 px-6">
+
+<h1 class="text-3xl font-bold mb-8">
+Mutari Relationship Intelligence
+</h1>
+
+<div class="grid grid-cols-3 gap-6">
+
+<!-- RADAR -->
+
+<div class="col-span-2 bg-white p-6 rounded-xl shadow">
+
+<h2 class="text-xl font-semibold mb-4">
+Relationship Compatibility Map
+</h2>
+
+<canvas id="relationshipRadar" style="max-height:350px;"></canvas>
+
+</div>
+
+<!-- RELATIONSHIP INFO -->
+
+<div class="bg-white p-6 rounded-xl shadow">
+
+<h2 class="text-xl font-semibold mb-4">
+Relationship Insights
+</h2>
+
+<div id="relationshipInfo">
+
+<div class="text-slate-500 text-sm">
+Select a partner to analyze compatibility
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- PARTNERS -->
+
+<div class="mt-8 bg-white p-6 rounded-xl shadow">
+
+<h2 class="text-xl font-semibold mb-4">
+Potential Matches
+</h2>
+
+<div
+id="partners"
+class="max-h-96 overflow-y-auto space-y-3"
+></div>
+
+</div>
+
+</div>
+
+<script>
+
+const token = localStorage.getItem("token")
+
+const headers = {
+"Authorization":"Bearer "+token
+}
+
+let radar = null
+
+async function loadMatches(){
+
+const res = await fetch("/matches",{headers})
+
+const data = await res.json()
+
+const container = document.getElementById("partners")
+
+container.innerHTML=""
+
+data.matches.forEach(p=>{
+
+const row = document.createElement("div")
+
+row.className="flex items-center justify-between border p-3 rounded-lg"
+
+row.innerHTML = `
+
+<div class="flex items-center gap-3">
+
+<img
+src="${p.photo}"
+class="w-10 h-10 rounded-full"
+/>
+
+<div>
+
+<div class="font-semibold">
+${p.name}
+</div>
+
+<div class="text-sm text-slate-500">
+Compatibility ${p.score}%
+</div>
+
+</div>
+
+</div>
+
+<button
+onclick='analyze(${JSON.stringify(p.block_scores)},${JSON.stringify(p).replace(/'/g,"&apos;")})'
+class="bg-pink-600 text-white px-3 py-1 rounded"
+>
+
+Analyze
+
+</button>
+
+`
+
+container.appendChild(row)
+
+})
+
+}
+
+function analyze(scores,partner){
+
+drawRadar(scores)
+
+document.getElementById("relationshipInfo").innerHTML=`
+
+<div class="mb-4">
+
+<div class="text-sm text-slate-500">
+Compatibility Score
+</div>
+
+<div class="text-2xl font-bold">
+${partner.score}%
+</div>
+
+</div>
+
+<div class="mb-4">
+
+<div class="text-sm text-slate-500">
+Relationship Archetype
+</div>
+
+<div class="font-semibold">
+${partner.compatibility_type}
+</div>
+
+</div>
+
+<div class="mb-4">
+
+<div class="text-sm text-slate-500">
+Strongest Alignment
+</div>
+
+<div class="font-semibold">
+${partner.top_block}
+</div>
+
+</div>
+
+<div class="mb-4">
+
+<div class="text-sm text-slate-500">
+Potential Friction
+</div>
+
+<div class="text-sm text-slate-600">
+${partner.potential_friction}
+</div>
+
+</div>
+
+<div class="text-sm text-slate-600">
+${partner.compatibility_summary}
+</div>
+
+`
+
+}
+
+function drawRadar(scores){
+
+const labels = Object.keys(scores)
+const values = Object.values(scores)
+
+const ctx = document.getElementById("relationshipRadar")
+
+if(radar){
+radar.destroy()
+}
+
+radar = new Chart(ctx,{
+type:"radar",
+data:{
+labels:labels,
+datasets:[
+{
+label:"Relationship Compatibility",
+data:values
+}
+]
+},
+options:{
+plugins:{
+legend:{display:false}
+},
+scales:{
+r:{
+min:0,
+max:100
+}
+}
+}
+})
+
+}
+
+loadMatches()
+
+</script>
+
+</body>
+</html>

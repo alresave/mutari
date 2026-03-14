@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Mutari — Team Fit</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+
+<body class="bg-gray-900 text-white min-h-screen">
+
+<div class="max-w-6xl mx-auto p-10">
+
+<h1 class="text-4xl font-bold mb-8">
+Mutari Team Compatibility Engine
+</h1>
+
+
+<div class="bg-gray-800 rounded-xl p-6 flex gap-4 mb-10">
+
+<input
+id="teamID"
+type="number"
+placeholder="Team ID"
+class="bg-gray-700 p-3 rounded w-40"
+/>
+
+<input
+id="userID"
+type="number"
+placeholder="Candidate User ID"
+class="bg-gray-700 p-3 rounded w-56"
+/>
+
+<button
+onclick="loadFit()"
+class="bg-blue-600 px-6 py-3 rounded hover:bg-blue-500"
+>
+Analyze Candidate
+</button>
+
+</div>
+
+
+<div id="result" class="grid gap-6"></div>
+
+</div>
+
+
+<script>
+
+async function loadFit(){
+
+const teamID=document.getElementById("teamID").value
+const userID=document.getElementById("userID").value
+
+const token=localStorage.getItem("token")
+
+const res=await fetch(`http://localhost:8080/teams/${teamID}/fit/${userID}`,{
+
+headers:{
+"Authorization":"Bearer "+token
+}
+
+})
+
+const data=await res.json()
+
+console.log(data)
+
+renderResults(data.matches)
+
+}
+
+
+function renderResults(matches){
+
+const container=document.getElementById("result")
+
+container.innerHTML=""
+
+matches.forEach(c=>{
+
+const card=document.createElement("div")
+
+card.className="bg-gray-800 rounded-xl p-6 flex gap-6"
+
+card.innerHTML=`
+
+<img src="${c.photo}" class="w-24 h-24 rounded-full">
+
+<div class="flex-1">
+
+<h2 class="text-xl font-semibold">${c.name}</h2>
+
+<div class="text-green-400 text-lg font-bold mt-1">
+Score: ${c.score}
+</div>
+
+<div class="text-blue-400 text-sm mt-1">
+Role Fit: ${c.role}
+</div>
+
+
+<div class="grid grid-cols-2 gap-4 mt-4">
+
+<div>
+
+<div class="text-gray-400 text-sm">
+Top Alignment
+</div>
+
+<div class="font-semibold">
+${c.top_block}
+</div>
+
+</div>
+
+
+<div>
+
+<div class="text-gray-400 text-sm">
+Secondary Alignment
+</div>
+
+<div class="font-semibold">
+${c.secondary_alignment}
+</div>
+
+</div>
+
+
+<div>
+
+<div class="text-gray-400 text-sm">
+Compatibility Type
+</div>
+
+<div class="font-semibold">
+${c.compatibility_type}
+</div>
+
+</div>
+
+
+<div>
+
+<div class="text-gray-400 text-sm">
+Relationship Stability
+</div>
+
+<div class="font-semibold">
+${c.relationship_stability}
+</div>
+
+</div>
+
+</div>
+
+
+<div class="mt-4">
+
+<div class="text-yellow-400 text-sm">
+Potential Friction
+</div>
+
+<div class="text-gray-300">
+${c.potential_friction}
+</div>
+
+</div>
+
+
+<div class="mt-4 text-gray-400 text-sm">
+${c.compatibility_summary}
+</div>
+
+
+<div class="mt-6">
+
+<div class="text-gray-400 text-sm mb-2">
+Psychological Block Scores
+</div>
+
+<div class="grid grid-cols-4 gap-4">
+
+${renderBlocks(c.block_scores)}
+
+</div>
+
+</div>
+
+</div>
+
+`
+
+container.appendChild(card)
+
+})
+
+}
+
+
+function renderBlocks(blocks){
+
+let html=""
+
+for(const key in blocks){
+
+const score=blocks[key]
+
+html+=`
+
+<div>
+
+<div class="text-gray-400 text-xs mb-1">
+${key}
+</div>
+
+<div class="bg-gray-700 rounded h-3 w-full">
+
+<div
+class="bg-green-500 h-3 rounded"
+style="width:${score}%"
+></div>
+
+</div>
+
+<div class="text-xs mt-1">
+${score}
+</div>
+
+</div>
+
+`
+
+}
+
+return html
+
+}
+
+</script>
+
+
+</body>
+
+</html>
