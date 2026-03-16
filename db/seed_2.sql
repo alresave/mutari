@@ -1,15 +1,23 @@
-INSERT INTO mcp_blocks (id,name,description) VALUES
 
+-- ============================================
+-- MCP BLOCKS
+-- ============================================
+
+INSERT INTO mcp_blocks (id,name,description) VALUES
 (0,'Core Values','Fundamental life principles'),
 (1,'Lifestyle Rhythm','Daily habits and life pace'),
 (2,'Emotional Stability','Emotional regulation and stress'),
 (3,'Relational Architecture','How relationships are structured'),
 (4,'Ambition','Drive and long term goals'),
 (5,'Growth','Personal development orientation'),
-(6,'Trust & Collaboration ','Emotional bonding and closeness'),
+(6,'Trust & Collaboration','Emotional bonding and closeness'),
 (7,'Cognitive Style','Thinking and decision making'),
 (8,'Control','Consistency validation questions');
 
+
+-- ============================================
+-- MCP QUESTIONS
+-- ============================================
 
 INSERT INTO mcp_questions (id,block,question_text,scale) VALUES
 
@@ -73,7 +81,7 @@ INSERT INTO mcp_questions (id,block,question_text,scale) VALUES
 (47,5,'I reflect on my behavior regularly','likert_1_5'),
 (48,5,'I welcome opportunities for personal growth','likert_1_5'),
 
--- Trust & Collaboration 
+-- Trust & Collaboration
 (49,6,'I feel comfortable expressing affection','likert_1_5'),
 (50,6,'Emotional closeness is important to me','likert_1_5'),
 (51,6,'I enjoy deep conversations','likert_1_5'),
@@ -91,21 +99,15 @@ INSERT INTO mcp_questions (id,block,question_text,scale) VALUES
 (61,7,'I enjoy intellectual discussions','likert_1_5'),
 (62,7,'I try to understand multiple perspectives','likert_1_5'),
 (63,7,'I reflect before reacting','likert_1_5'),
-(64,7,'I enjoy solving complex problems','likert_1_5'),
+(64,7,'I enjoy solving complex problems','likert_1_5');
 
--- Control Questions
-(65,8,'I rarely reflect on my own mistakes','likert_1_5'),
-(66,8,'I almost never feel stressed','likert_1_5'),
-(67,8,'I make important decisions impulsively','likert_1_5'),
-(68,8,'I avoid discussing difficult topics','likert_1_5'),
-(69,8,'I change my long-term plans constantly','likert_1_5'),
-(70,8,'I dislike planning ahead','likert_1_5'),
-(71,8,'I rarely question my own opinions','likert_1_5'),
-(72,8,'I never doubt my decisions','likert_1_5');
 
+-- ============================================
+-- USERS
+-- ============================================
 
 INSERT INTO users (name,email,password_hash,photo_url) VALUES
-('Lucas Silva','lucas@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/11.jpg'),
+('Alberto Gonzalez','alberto@mutari.dev','123456','https://randomuser.me/api/portraits/men/11.jpg'),
 ('Mateo Torres','mateo@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/12.jpg'),
 ('Santiago Ruiz','santiago@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/13.jpg'),
 ('Sebastian Vega','sebastian@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/14.jpg'),
@@ -127,43 +129,35 @@ INSERT INTO users (name,email,password_hash,photo_url) VALUES
 ('Evelyn Hayes','evelyn@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/19.jpg'),
 ('Abigail Stone','abigail@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/20.jpg');
 
-INSERT INTO user_mcp_answers
+
+-- ============================================
+-- COMPANY
+-- ============================================
+
+INSERT INTO companies (name,owner_user_id)
+VALUES ('Mutari LLC',1);
 
 
-INSERT INTO user_mcp_answers
-SELECT 13,id,block,5 FROM mcp_questions WHERE block IN (5,7);
+-- ============================================
+-- TEAMS
+-- ============================================
 
-INSERT INTO user_mcp_answers
-SELECT 14,id,block,4 FROM mcp_questions WHERE block=1;
+INSERT INTO teams (name,description,company_id) VALUES
+('Backend Team','Core platform engineers',1),
+('Frontend Team','User interface and experience',1),
+('Data Science Team','Data analysis and machine learning',1),
+('Product Team','Product management and design',1),
+('Growth Team','Marketing and growth strategies',1),
+('Customer Success Team','Customer support and success',1),
+('Experimental Team','Internal research team',1);
 
-INSERT INTO user_mcp_answers
-SELECT 13,id,block,3 FROM mcp_questions WHERE block NOT IN (5,7,1);
 
-CREATE TABLE team_profiles (
-    team_id INT PRIMARY KEY,
-    effective_vector VECTOR(64)
-);
-
-INSERT INTO teams (name,description)
-VALUES ('Backend Team','Core platform engineers');
+-- ============================================
+-- TEAM MEMBERS
+-- ============================================
 
 INSERT INTO team_members (team_id,user_id) VALUES
-(1,1),
-(1,2),
-(1,3),
-(1,4);
-
-INSERT INTO team_profiles (team_id,effective_vector)
-
-SELECT
-tm.team_id,
-AVG(p.effective_vector)
-
-FROM team_members tm
-JOIN user_mcp_profiles p
-ON p.user_id = tm.user_id
-
-GROUP BY tm.team_id
-
-ON CONFLICT (team_id)
-DO UPDATE SET effective_vector = EXCLUDED.effective_vector;
+(1,1),(1,2),(1,3),(1,4),(1,5),
+(2,6),(2,7),(2,8),(2,9),(2,10),
+(3,11),(3,12),(3,13),(3,14),(3,15),
+(4,16),(4,17),(4,18),(4,19),(4,20);

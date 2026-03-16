@@ -176,3 +176,6 @@ func (s *Service) GetTeamGaps(ctx context.Context, teamID int64) (*TeamGaps, err
 		RecommendedProfile: profile,
 	}, nil
 }
+func (s *Service) GetTeams(ctx context.Context) ([]Team, error) {
+	return s.repo.GetTeams(ctx)
+}

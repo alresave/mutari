@@ -25,6 +25,11 @@ type TeamFitSimulation struct {
 	Role        string         `json:"suggested_role"`
 	BlockScores map[string]int `json:"block_scores"`
 }
+type Team struct {
+	ID          int64   `json:"id"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+}
 
 type Candidate struct {
 	UserID int64 `json:"user_id"`
@@ -962,6 +967,44 @@ func (r *Repository) GetTeamGaps(ctx context.Context, teamID int64) ([]string, s
 	profile := recommendProfile(weak)
 
 	return weak, profile, nil
+}
+
+func (r *Repository) GetTeams(ctx context.Context) ([]Team, error) {
+
+	query := `
+SELECT id, name,
+description
+FROM teams
+ORDER BY id
+`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var teams []Team
+
+	for rows.Next() {
+
+		var t Team
+
+		err := rows.Scan(
+			&t.ID,
+			&t.Name,
+			&t.Description,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		teams = append(teams, t)
+
+	}
+
+	return teams, nil
 }
 
 func detectRole(blockScores map[string]int) string {

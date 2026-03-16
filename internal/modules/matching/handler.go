@@ -382,3 +382,18 @@ func (h *Handler) GetTeamGaps(c *gin.Context) {
 
 	c.JSON(200, result)
 }
+func (h *Handler) GetTeams(c *gin.Context) {
+
+	teams, err := h.service.GetTeams(c.Request.Context())
+	if err != nil {
+
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+
+	}
+
+	c.JSON(200, gin.H{
+		"teams": teams,
+	})
+
+}
