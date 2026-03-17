@@ -1,7 +1,101 @@
+None selected 
+
+Skip to content
+Using Gmail with screen readers
+in:draft 
+Conversations
+Draft
+V7demo
+ 
+Attachment:
+mutari_dashboard_demo_mode.html
+1:56 PM
+Draft
+V62
+ - <!DOCTYPE html><html class="dark"> <head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><sc
+ 
+1:51 PM
+Draft
+V6
+ - <!DOCTYPE html><html class="dark"> <head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><sc
+ 
+1:49 PM
+Draft
+(no subject)
+ - <!DOCTYPE html><html class="dark"> <head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><sc
+ 
+1:49 PM
+Draft
+V5
+ - <!DOCTYPE html><html class="dark"> <head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><sc
+ 
+1:47 PM
+Draft
+<!DOCTYPE html> <html class="dark"> <head> <meta charset="UTF-8"> <title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <script> tailwind.config = { darkMode: "class" } </script> <style> body{ background:#020617; } .glow{ box-shadow:0 0 30px rgba(99,102,241,0.25); } .candidate{ transition:all .2s; } .candidate:hover{ transform:scale(1.03); background:#1e293b; } .bar{ transition:width .6s ease; } .score{ font-size:48px; font-weight:bold; color:#6366f1; } </style> </head> <body class="text-slate-200"> <div class="max-w-7xl mx-auto p-8"> <!-- HEADER --> <div class="flex items-center justify-between mb-10"> <div class="flex items-center gap-6"> <img src="../images/logo.jpg" style="height:160px"> <div> <div class="text-4xl font-bold"> Mutari </div> <div class="text-sm text-slate-400"> AI Team Intelligence </div> </div> </div> <select id="teamSelect" class="bg-s.
+ 
+1:46 PM
+Draft
+Definitivo
+ 
+Attachment:
+mutari_dashboard_definitivo.html
+1:32 PM
+Draft
+Dash al premium
+ - <!DOCTYPE html><html class="dark"> <head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><sc
+ 
+1:27 PM
+Draft
+Dash premium
+ - <!DOCTYPE html><html class="dark"> <head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><sc
+ 
+1:21 PM
+Draft
+Super dash
+ - <!DOCTYPE html><html class="dark"> <head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><sc
+ 
+1:19 PM
+Draft
+Super dash
+ - <!DOCTYPE html><html class="dark"><head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><scr
+ 
+1:18 PM
+Draft
+Super dash
+ - <!DOCTYPE html><html class="dark"><head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><scr
+ 
+1:16 PM
+Draft
+Dash corregido 2
+ - <!DOCTYPE html><html class="dark"><head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><scr
+ 
+12:59 PM
+Draft
+Dash corregido
+ - <!DOCTYPE html><html class="dark"><head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><scr
+ 
+12:59 PM
+Draft
+Dash nuevo
+ - <!DOCTYPE html><html class="dark"><head> <meta charset="UTF-8"><title>Mutari — Team Intelligence</title> <script src="https://cdn.tailwindcss.com"></script><scr
+ 
+12:56 PM
+Draft
+Funcs
+ 
+Attachment:
+mutari_hiring_profile_helpers.go
+12:38 PM
+61% of 204 GB used
+Terms · Privacy · Program Policies
+Last account activity: 0 minutes ago
+Currently being used in 2 other locations · Details
+Compose:
+V6
+MinimizePop-outClose
 <!DOCTYPE html>
 <html class="dark">
 <head>
-
 <meta charset="UTF-8">
 <title>Mutari — Team Intelligence</title>
 
@@ -12,90 +106,121 @@
 tailwind.config = { darkMode: "class" }
 </script>
 
+<style>
+body{
+background:#020617;
+}
+
+.glow{
+box-shadow:0 0 30px rgba(99,102,241,0.25);
+}
+
+.candidate{
+transition:all .2s;
+}
+
+.candidate:hover{
+transform:scale(1.03);
+background:#1e293b;
+}
+
+.bar{
+transition:width .6s ease;
+}
+
+.score{
+font-size:48px;
+font-weight:bold;
+color:#6366f1;
+}
+</style>
 </head>
 
-<body class="bg-slate-900 text-slate-200">
+<body class="text-slate-200">
 
 <div class="max-w-7xl mx-auto p-8">
-
-<!-- HEADER -->
 
 <div class="flex items-center justify-between mb-10">
 
 <div class="flex items-center gap-6">
-
-<img src="../images/logo.jpg" style="height:120px">
+<img src="../images/logo.jpg" style="height:256px">
 
 <div>
-<div class="text-3xl font-bold">Mutari</div>
+<div class="text-4xl font-bold">Mutari</div>
 <div class="text-sm text-slate-400">AI Team Intelligence</div>
 </div>
+</div>
+
+<select id="teamSelect"
+class="bg-slate-900 border border-slate-700 px-4 py-2 rounded-lg">
+</select>
 
 </div>
 
-<select
-id="teamSelect"
-class="bg-slate-800 border border-slate-700 px-4 py-2 rounded"
-></select>
+<div class="grid grid-cols-3 gap-8 mb-8">
 
+<div class="bg-slate-900 p-6 rounded-xl border border-slate-800 glow">
+<div class="text-xl font-semibold mb-4">Team Archetype</div>
+<div id="teamArchetype" class="text-3xl font-bold mb-4 text-indigo-400">—</div>
+<div class="text-sm text-slate-400">
+Behavioral structure derived from team vectors
+</div>
 </div>
 
-<!-- GRID -->
-
-<div class="grid grid-cols-3 gap-8 mb-10">
-
-<!-- RADAR -->
-
-<div class="bg-slate-800 p-6 rounded-xl">
-
-<div class="text-lg font-semibold mb-4">
-Team Genome
-</div>
-
+<div class="bg-slate-900 p-6 rounded-xl border border-slate-800 glow">
+<div class="text-xl font-semibold mb-4">Team vs Candidate Genome</div>
 <canvas id="radarChart"></canvas>
+</div>
+
+<div class="bg-slate-900 p-6 rounded-xl border border-slate-800 glow">
+<div class="text-xl font-semibold mb-4">Candidates</div>
+<div id="candidates" class="space-y-3 max-h-[420px] overflow-y-auto"></div>
+</div>
 
 </div>
 
-<!-- GAPS -->
+<div class="grid grid-cols-3 gap-8 mb-8">
 
-<div class="bg-slate-800 p-6 rounded-xl">
-
-<div class="text-lg font-semibold mb-4">
-Team Gaps
+<div class="bg-slate-900 p-6 rounded-xl border border-slate-800 glow">
+<div class="text-xl font-semibold mb-4">Team Gaps</div>
+<div id="gaps" class="space-y-4"></div>
 </div>
 
-<div id="gaps"></div>
-
-</div>
-
-<!-- HIRING PROFILE -->
-
-<div class="bg-slate-800 p-6 rounded-xl">
-
-<div class="text-lg font-semibold mb-4">
-Ideal Hire
-</div>
-
-<div id="role" class="text-xl font-bold mb-4"></div>
-
+<div class="bg-slate-900 p-6 rounded-xl border border-slate-800 glow">
+<div class="text-xl font-semibold mb-4">Ideal Hiring Profile</div>
+<div id="role" class="text-2xl font-bold mb-4 text-indigo-400"></div>
 <ul id="traits" class="space-y-2 text-sm"></ul>
+</div>
 
+<div class="bg-slate-900 p-6 rounded-xl border border-slate-800 glow">
+<div class="text-xl font-semibold mb-4">AI Reasoning</div>
+<div id="reasoning" class="text-sm text-slate-300"></div>
 </div>
 
 </div>
 
-<!-- CANDIDATES -->
+<div class="bg-slate-900 p-6 rounded-xl border border-slate-800 glow">
 
-<div class="bg-slate-800 p-6 rounded-xl">
+<div class="text-xl font-semibold mb-6">Team Impact Simulation</div>
 
-<div class="text-lg font-semibold mb-4">
-Candidates
+<div class="grid grid-cols-3 text-center">
+
+<div>
+<div class="text-sm text-slate-400">Current Team Score</div>
+<div id="teamScore" class="score">—</div>
 </div>
 
-<div
-id="candidates"
-class="space-y-3 max-h-96 overflow-y-auto"
-></div>
+<div>
+<div class="text-sm text-slate-400">With Candidate</div>
+<div id="candidateScore" class="score">—</div>
+</div>
+
+<div>
+<div class="text-sm text-slate-400">Impact</div>
+<div id="impact" class="score">—</div>
+</div>
+
+</div>
 
 </div>
 
@@ -105,16 +230,13 @@ class="space-y-3 max-h-96 overflow-y-auto"
 
 const token = localStorage.getItem("token")
 
-if(!token){
-alert("Missing token")
-}
-
 const headers = {
 "Authorization":"Bearer "+token
 }
 
 let radar = null
 let currentTeam = null
+let teamVector = null
 
 const labels = [
 "Core Values",
@@ -127,13 +249,11 @@ const labels = [
 "Collaboration"
 ]
 
-function createRadar(data){
+function createRadar(team,candidate){
 
-if(!data || data.length===0) return
+if(!team) return
 
-if(radar){
-radar.destroy()
-}
+if(radar) radar.destroy()
 
 radar = new Chart(
 document.getElementById("radarChart"),
@@ -142,25 +262,38 @@ type:"radar",
 
 data:{
 labels:labels,
-datasets:[{
-label:"Profile",
-data:data,
+
+datasets:[
+
+{
+label:"Team",
+data:team,
 borderColor:"#6366f1",
 backgroundColor:"rgba(99,102,241,0.2)"
-}]
+},
+
+{
+label:"Candidate",
+data:candidate || team,
+borderColor:"#22c55e",
+backgroundColor:"rgba(34,197,94,0.2)"
+}
+
+]
+
 },
 
 options:{
-responsive:true,
+plugins:{legend:{labels:{color:"#cbd5f5"}}},
 scales:{
 r:{
 min:0,
 max:1,
-ticks:{display:false}
+ticks:{display:false},
+grid:{color:"#1e293b"}
 }
 }
 }
-
 })
 }
 
@@ -169,27 +302,27 @@ async function loadTeams(){
 const res = await fetch("/teams",{headers})
 const data = await res.json()
 
+const teams = Array.isArray(data) ? data : data.teams
+
 const select = document.getElementById("teamSelect")
+
 select.innerHTML=""
 
-if(!data.teams) return
+teams.forEach(team=>{
 
-data.teams.forEach(t=>{
+const option=document.createElement("option")
 
-const opt = document.createElement("option")
-opt.value = t.id
-opt.innerText = t.name
+option.value = team.id
+option.innerText = team.name
 
-select.appendChild(opt)
+select.appendChild(option)
 
 })
 
-select.addEventListener("change",()=>{
-loadTeam(select.value)
-})
+select.onchange = () => loadTeam(select.value)
 
-if(data.teams.length>0){
-loadTeam(data.teams[0].id)
+if(teams.length > 0){
+loadTeam(teams[0].id)
 }
 
 }
@@ -198,9 +331,27 @@ async function loadTeam(teamId){
 
 currentTeam = teamId
 
+await loadTeamInfo(teamId)
 await loadGaps(teamId)
 await loadHiring(teamId)
 await loadCandidates(teamId)
+
+}
+
+async function loadTeamInfo(teamId){
+
+const res = await fetch(`/teams/${teamId}/vector`,{headers})
+const data = await res.json()
+
+teamVector = data.vector || []
+
+document.getElementById("teamArchetype").innerText =
+data.archetype || "Team"
+
+createRadar(teamVector)
+
+document.getElementById("teamScore").innerText =
+Math.round(data.team_score || 0)
 
 }
 
@@ -209,39 +360,32 @@ async function loadGaps(teamId){
 const res = await fetch(`/teams/${teamId}/gaps`,{headers})
 const data = await res.json()
 
-const container = document.getElementById("gaps")
+const container=document.getElementById("gaps")
 container.innerHTML=""
 
-if(!data.gaps) return
+const gaps = data.gaps || data
 
-const radarData=[]
+Object.entries(gaps).forEach(([k,v])=>{
 
-Object.entries(data.gaps).forEach(([k,v])=>{
+const val=Number(v)
 
-const val = Number(v) || 0
-
-const row = document.createElement("div")
+const row=document.createElement("div")
 
 row.innerHTML=`
-
 <div class="flex justify-between text-sm mb-1">
 <span>${k}</span>
-<span>${Math.round(val*100)}</span>
+<span>${Math.round(val*100)}%</span>
 </div>
 
 <div class="bg-slate-700 h-2 rounded">
-<div style="width:${val*100}%" class="bg-indigo-500 h-2 rounded"></div>
+<div class="bar bg-indigo-500 h-2 rounded"
+style="width:${val*100}%"></div>
 </div>
-
 `
 
 container.appendChild(row)
 
-radarData.push(val)
-
 })
-
-createRadar(radarData)
 
 }
 
@@ -250,17 +394,15 @@ async function loadHiring(teamId){
 const res = await fetch(`/teams/${teamId}/hiring-profile`,{headers})
 const data = await res.json()
 
-if(!data) return
-
 document.getElementById("role").innerText =
 data.suggested_role || ""
 
-const traits = document.getElementById("traits")
+const traits=document.getElementById("traits")
 traits.innerHTML=""
 
-if(data.recommended_traits){
+const list = data.recommended_traits || []
 
-data.recommended_traits.forEach(t=>{
+list.forEach(t=>{
 
 const li=document.createElement("li")
 li.innerText="• "+t
@@ -271,41 +413,40 @@ traits.appendChild(li)
 
 }
 
-}
+let demoCandidates=[]
+let demoIndex=0
 
 async function loadCandidates(teamId){
 
 const res = await fetch(`/teams/${teamId}/matches`,{headers})
 const data = await res.json()
 
-const container = document.getElementById("candidates")
+const container=document.getElementById("candidates")
+
 container.innerHTML=""
 
-if(!data.matches) return
+const matches = data.matches || data
 
-data.matches.forEach(c=>{
+demoCandidates = matches
+
+matches.forEach(c=>{
 
 const row=document.createElement("div")
 
-row.className="flex justify-between bg-slate-700 p-3 rounded cursor-pointer hover:bg-slate-600"
+row.className="candidate flex justify-between items-center bg-slate-800 p-3 rounded cursor-pointer"
 
 row.innerHTML=`
-
 <div class="flex items-center gap-3">
-
 <img src="${c.photo || ''}" class="w-10 h-10 rounded-full">
-
 <div>
 <div class="font-semibold">${c.name}</div>
-<div class="text-xs text-slate-400">${c.role || ''}</div>
+<div class="text-xs text-slate-400">${c.role || ""}</div>
 </div>
-
 </div>
 
 <div class="text-indigo-400 font-bold">
 ${c.score || 0}%
 </div>
-
 `
 
 row.onclick=()=>loadCandidateFit(c.user_id)
@@ -318,27 +459,79 @@ container.appendChild(row)
 
 async function loadCandidateFit(candidateId){
 
-const res = await fetch(
-`/teams/${currentTeam}/fit/${candidateId}`,
-{headers}
-)
-
+const res = await fetch(`/teams/${currentTeam}/fit/${candidateId}`,{headers})
 const data = await res.json()
 
-if(!data.block_scores) return
-
-const radarData = labels.map(l=>{
-const v = data.block_scores[l]
+const candidateVector = labels.map(l=>{
+const v=data.block_scores?.[l]
 return v ? v/100 : 0
 })
 
-createRadar(radarData)
+createRadar(teamVector,candidateVector)
+
+document.getElementById("reasoning").innerHTML =
+`
+Strong alignment in <b>${data.top_block}</b>.<br>
+Candidate reinforces team strength in <b>${data.secondary_alignment}</b>.<br>
+Potential friction in <b>${data.potential_friction}</b>.
+`
+
+document.getElementById("candidateScore").innerText =
+data.score || 0
+
+document.getElementById("impact").innerText =
+"+"+(data.score - parseInt(document.getElementById("teamScore").innerText))
 
 }
 
-window.onload = loadTeams
+/* ===============================
+   DEMO MODE
+================================ */
+
+const params = new URLSearchParams(window.location.search)
+const demoMode = params.get("demo") === "true"
+
+function startDemo(){
+
+if(!demoMode) return
+
+setTimeout(()=>{
+
+cycleCandidates()
+
+},2000)
+
+}
+
+function cycleCandidates(){
+
+if(!demoMode) return
+
+if(demoCandidates.length === 0) return
+
+const candidate = demoCandidates[demoIndex]
+
+loadCandidateFit(candidate.user_id)
+
+demoIndex++
+
+if(demoIndex >= demoCandidates.length){
+demoIndex = 0
+}
+
+setTimeout(cycleCandidates,3500)
+
+}
+
+loadTeams()
+
+setTimeout(()=>{
+startDemo()
+},2000)
 
 </script>
 
 </body>
 </html>
+mutari_dashboard_demo_mode.html
+Displaying mutari_dashboard_demo_mode.html.
