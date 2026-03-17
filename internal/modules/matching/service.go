@@ -331,3 +331,8 @@ func GenerateTraits(blocks map[string]float64) []string {
 
 	return traits
 }
+func (s *Service) GetTeamVector(ctx context.Context, teamID int64) (*TeamVector, error) {
+
+	return s.repo.GetTeamVector(ctx, teamID)
+
+}

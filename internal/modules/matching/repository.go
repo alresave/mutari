@@ -40,6 +40,11 @@ type Team struct {
 	Description *string `json:"description"`
 	CompanyID   int64   `json:"company_id"`
 }
+type TeamVector struct {
+	Vector    []float32 `json:"vector"`
+	TeamScore float64   `json:"team_score"`
+	Archetype string    `json:"archetype"`
+}
 
 type Candidate struct {
 	UserID int64 `json:"user_id"`
@@ -339,6 +344,40 @@ func (r *Repository) CreateUser(ctx context.Context, name, email, passwordHash s
 	err := r.db.QueryRow(ctx, query, name, email, passwordHash).Scan(&id)
 
 	return id, err
+}
+
+func (r *Repository) GetTeamVector(ctx context.Context, teamID int64) (*TeamVector, error) {
+
+	query := `
+    SELECT effective_vector
+    FROM team_profiles
+    WHERE team_id = $1
+    `
+
+	var vec pgvector.Vector
+
+	err := r.db.QueryRow(ctx, query, teamID).Scan(&vec)
+	if err != nil {
+		return nil, err
+	}
+
+	vector := vec.Slice()
+
+	var score float64
+
+	for _, v := range vector {
+		score += float64(v)
+	}
+
+	score = score / float64(len(vector)) * 100
+
+	archetype := PredictTeamArchetype(vector)
+
+	return &TeamVector{
+		Vector:    vector,
+		TeamScore: score,
+		Archetype: archetype,
+	}, nil
 }
 
 func (r *Repository) GetUserByEmail(ctx context.Context, email string) (int64, string, int64, string, error) {
@@ -1543,4 +1582,28 @@ func recommendProfile(blocks []string) string {
 	}
 
 	return "Generalist"
+}
+func PredictTeamArchetype(vector []float32) string {
+
+	if len(vector) < 8 {
+		return "Balanced Team"
+	}
+
+	cognitive := vector[1]
+	ambition := vector[5]
+	emotional := vector[2]
+
+	if ambition > 0.75 && cognitive > 0.75 {
+		return "Visionary Team"
+	}
+
+	if ambition > 0.75 {
+		return "Execution Team"
+	}
+
+	if emotional > 0.75 {
+		return "Stability Team"
+	}
+
+	return "Balanced Team"
 }

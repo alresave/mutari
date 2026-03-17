@@ -4,55 +4,48 @@ import (
 	"math"
 )
 
-//
-// ----------------------
-// DOMAIN MODELS
-// ----------------------
-//
-
-// Question defines how a test question maps into the identity vector.
 type Question struct {
-	ID             int  // Unique question identifier
-	DimensionIndex int  // 0–63
-	Reverse        bool // If true, invert value (control polarity)
-	IsControl      bool // If true, used only for consistency scoring
+	ID             int
+	DimensionIndex int
+	Reverse        bool
+	IsControl      bool
 }
 
-// Answer represents a user response.
 type Answer struct {
 	QuestionID int
-	Value      float64 // Expected 0–100 slider input
+	Value      float64
 }
 
-//
-// ----------------------
-// IDENTITY VECTOR BUILDER
-// ----------------------
-//
+const dimensionSize = 64
 
-// BuildIdentityVector builds the 64-d identity vector
-// and calculates a structural confidence score (0–1).
+// dispersion exponent (controla qué tan extremos se vuelven los perfiles)
+const contrastGamma = 1.8
+
+// mixing factor para ortogonalizar dimensiones
+const orthogonalMix = 0.15
+
 func BuildIdentityVector(
 	questions []Question,
 	answers []Answer,
 ) ([]float64, float64) {
 
-	const dimensionSize = 64
-
 	vector := make([]float64, dimensionSize)
 	counts := make([]int, dimensionSize)
 
-	// Map answers by question ID
 	answerMap := make(map[int]float64)
+
 	for _, a := range answers {
-		normalized := a.Value / 100.0
-		if normalized < 0 {
-			normalized = 0
+
+		v := a.Value / 100.0
+
+		if v < 0 {
+			v = 0
 		}
-		if normalized > 1 {
-			normalized = 1
+		if v > 1 {
+			v = 1
 		}
-		answerMap[a.QuestionID] = normalized
+
+		answerMap[a.QuestionID] = v
 	}
 
 	var inconsistency float64
@@ -65,45 +58,107 @@ func BuildIdentityVector(
 			continue
 		}
 
-		// Apply reverse polarity if needed
 		if q.Reverse {
-			val = 1.0 - val
+			val = 1 - val
 		}
 
 		dim := q.DimensionIndex
 
 		if dim < 0 || dim >= dimensionSize {
-			continue // Safety guard
-		}
-
-		if q.IsControl {
-			// Compare against accumulated primary dimension value
-			if counts[dim] > 0 {
-				currentAvg := vector[dim] / float64(counts[dim])
-				diff := math.Abs(currentAvg - val)
-				inconsistency += diff
-				controlChecks++
-			}
 			continue
 		}
 
-		// Primary structural contribution
+		if q.IsControl {
+
+			if counts[dim] > 0 {
+
+				current := vector[dim] / float64(counts[dim])
+				diff := math.Abs(current - val)
+
+				inconsistency += diff
+				controlChecks++
+			}
+
+			continue
+		}
+
 		vector[dim] += val
 		counts[dim]++
 	}
 
-	// Average each dimension
+	// average dimensions
 	for i := 0; i < dimensionSize; i++ {
+
 		if counts[i] > 0 {
 			vector[i] /= float64(counts[i])
 		}
+
+		// center distribution around 0
+		centered := vector[i] - 0.5
+
+		// amplify contrast
+		if centered >= 0 {
+			centered = math.Pow(centered, contrastGamma)
+		} else {
+			centered = -math.Pow(math.Abs(centered), contrastGamma)
+		}
+
+		vector[i] = centered
 	}
 
-	// Confidence calculation
+	// ----------------------
+	// ORTHOGONAL MIXING
+	// ----------------------
+
+	for i := 0; i < dimensionSize; i++ {
+
+		var mix float64
+
+		for j := 0; j < dimensionSize; j++ {
+
+			if i == j {
+				continue
+			}
+
+			mix += vector[j]
+		}
+
+		mix /= float64(dimensionSize - 1)
+
+		vector[i] = vector[i] - orthogonalMix*mix
+	}
+
+	// ----------------------
+	// L2 NORMALIZATION
+	// ----------------------
+
+	var mag float64
+
+	for _, v := range vector {
+		mag += v * v
+	}
+
+	mag = math.Sqrt(mag)
+
+	if mag > 0 {
+
+		for i := range vector {
+			vector[i] /= mag
+		}
+	}
+
+	// ----------------------
+	// CONFIDENCE SCORE
+	// ----------------------
+
 	confidence := 1.0
+
 	if controlChecks > 0 {
+
 		avgInconsistency := inconsistency / float64(controlChecks)
-		confidence = 1.0 - avgInconsistency
+
+		confidence = 1 - avgInconsistency
+
 		if confidence < 0 {
 			confidence = 0
 		}

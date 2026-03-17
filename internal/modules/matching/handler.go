@@ -1,6 +1,7 @@
 package matching
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -464,4 +465,23 @@ func (h *Handler) GetTeamHiringProfile(c *gin.Context) {
 	}
 
 	c.JSON(200, profile)
+}
+func (h *Handler) GetTeamVector(c *gin.Context) {
+
+	teamIDParam := c.Param("team_id")
+	log.Println("**************Team VECTOR*******************************************************")
+
+	teamID, err := strconv.ParseInt(teamIDParam, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team id"})
+		return
+	}
+
+	result, err := h.service.GetTeamVector(c.Request.Context(), teamID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, result)
 }

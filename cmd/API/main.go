@@ -118,6 +118,7 @@ func main() {
 	auth.GET("/teams/:team_id/simulate/:candidate_id", handler.SimulateTeamFit)
 	auth.GET("/teams/:team_id/culture", handler.GetTeamCulture)
 	auth.GET("/teams/:team_id/gaps", handler.GetTeamGaps)
+	auth.GET("/teams/:team_id/vector", handler.GetTeamVector)
 	auth.GET("/teams", handler.GetTeams)
 	auth.GET("/teams/:team_id/hiring-profile", handler.GetTeamHiringProfile)
 

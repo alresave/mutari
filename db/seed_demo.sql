@@ -1,4 +1,11 @@
-BEGIN;
+-- ============================================
+-- COMPANY
+-- ============================================
+
+INSERT INTO companies (name, website)
+VALUES ('Mutari LLC','https://mutari.dev')
+ON CONFLICT DO NOTHING;
+
 
 -- ============================================
 -- MCP BLOCKS
@@ -13,7 +20,9 @@ INSERT INTO mcp_blocks (id,name,description) VALUES
 (5,'Growth','Personal development orientation'),
 (6,'Trust & Collaboration','Emotional bonding and closeness'),
 (7,'Cognitive Style','Thinking and decision making'),
-(8,'Control','Consistency validation questions');
+(8,'Control','Consistency validation questions')
+ON CONFLICT DO NOTHING;
+
 
 -- ============================================
 -- MCP QUESTIONS
@@ -90,14 +99,13 @@ INSERT INTO mcp_questions (id,block,question_text,scale) VALUES
 (61,7,'I enjoy intellectual discussions','likert_1_5'),
 (62,7,'I try to understand multiple perspectives','likert_1_5'),
 (63,7,'I reflect before reacting','likert_1_5'),
-(64,7,'I enjoy solving complex problems','likert_1_5');
+(64,7,'I enjoy solving complex problems','likert_1_5')
+ON CONFLICT DO NOTHING;
+
 
 -- ============================================
--- COMPANY
+-- USERS
 -- ============================================
-
-INSERT INTO companies (name,website)
-VALUES ('Mutari LLC','https://mutari.dev');
 
 INSERT INTO users (name,email,password_hash,photo_url, company_id) VALUES
 ('Alberto Gonzalez','alberto@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/11.jpg',1),
@@ -155,15 +163,48 @@ INSERT INTO users (name,email,password_hash,photo_url, company_id) VALUES
 ('Aurora Diaz','aurora@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/35.jpg',1);
 
 
-
--- pega aquí tu bloque original de 50 usuarios sin modificar
-
 -- ============================================
--- ASSIGN COMPANY
+-- USER MCP PROFILES
 -- ============================================
 
-UPDATE users SET company_id = 1;
-UPDATE companies SET user_id = 1 WHERE id = 1;
+INSERT INTO user_mcp_profiles (user_id,effective_vector)
+SELECT
+    u.id,
+    (
+        ARRAY(
+            SELECT
+                round(
+                    (
+                        CASE
+                            WHEN random() < 0.45 THEN random()*0.25
+                            WHEN random() > 0.55 THEN 0.75 + random()*0.25
+                            ELSE 0.45 + random()*0.1
+                        END
+                        +
+                        (user_bias * 0.15)
+                        +
+                        ((random()-0.5)*0.05)
+                    )::numeric
+                ,3)
+            FROM generate_series(1,64)
+        )
+    )::vector
+FROM (
+    SELECT id,(random()-0.5) AS user_bias
+    FROM users
+) u
+ON CONFLICT (user_id)
+DO UPDATE SET effective_vector = EXCLUDED.effective_vector;
+
+
+-- ============================================
+-- ASSIGN COMPANY OWNER
+-- ============================================
+
+UPDATE companies
+SET user_id = 1
+WHERE id = 1;
+
 
 -- ============================================
 -- TEAMS
@@ -176,10 +217,12 @@ INSERT INTO teams (name,description,company_id) VALUES
 ('Product Team','Product management and design',1),
 ('Growth Team','Marketing and growth strategies',1),
 ('Customer Success Team','Customer support and success',1),
-('Experimental Team','Internal research team',1);
+('Experimental Team','Internal research team',1)
+ON CONFLICT DO NOTHING;
+
 
 -- ============================================
--- TEAM MEMBERS (5 POR TEAM)
+-- TEAM MEMBERS
 -- ============================================
 
 INSERT INTO team_members (team_id,user_id) VALUES
@@ -188,7 +231,7 @@ INSERT INTO team_members (team_id,user_id) VALUES
 (3,11),(3,12),(3,13),(3,14),(3,15),
 (4,16),(4,17),(4,18),(4,19),(4,20),
 (5,21),(5,22),(5,23),(5,24),(5,25),
-(6,26),(6,27),(6,28),(6,29),(6,30),
-(7,31),(7,32),(7,33),(7,34),(7,35);
-
-COMMIT;
+(5,26),(5,27),(5,28),(5,29),(5,30),
+(6,31),(6,32),(6,33),(6,34),(6,35),
+(7,36),(7,37),(7,38),(7,39),(7,40)
+ON CONFLICT DO NOTHING;
