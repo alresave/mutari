@@ -66,24 +66,36 @@ func (s *Service) Signup(ctx context.Context, name, email, password string) (int
 
 	return s.repo.CreateUser(ctx, name, email, string(hash))
 }
-func (s *Service) Login(ctx context.Context, email, password string) (int64, string, bool, error) {
+func (s *Service) Login(ctx context.Context, email, password string) (string, int64, string, error) {
 
-	id, hash, name, err := s.repo.GetUserByEmail(ctx, email)
+	id, hash, companyID, name, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return 0, "", false, err
+		return "", 0, "", err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	err = bcrypt.CompareHashAndPassword(
+		[]byte(hash),
+		[]byte(password),
+	)
+
 	if err != nil {
-		return 0, "", false, errors.New("invalid credentials")
+		return "", 0, "", errors.New("invalid credentials")
 	}
 
-	hasProfile, err := s.repo.HasMCPProfile(ctx, id)
-	if err != nil {
-		return 0, "", false, err
+	claims := jwt.MapClaims{
+		"user_id":    id,
+		"company_id": companyID,
+		"exp":        time.Now().Add(24 * time.Hour).Unix(),
 	}
 
-	return id, name, hasProfile, nil
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString(jwtSecret)
+	if err != nil {
+		return "", 0, "", err
+	}
+
+	return tokenString, id, name, nil
 }
 
 var jwtSecret = []byte("mutari-secret")

@@ -341,21 +341,31 @@ func (r *Repository) CreateUser(ctx context.Context, name, email, passwordHash s
 	return id, err
 }
 
-func (r *Repository) GetUserByEmail(ctx context.Context, email string) (int64, string, string, error) {
+func (r *Repository) GetUserByEmail(ctx context.Context, email string) (int64, string, int64, string, error) {
 
 	query := `
-	SELECT id,password_hash,name
-	FROM users
-	WHERE email=$1
-	`
+    SELECT id, password_hash, company_id, name
+    FROM users
+    WHERE email = $1
+    `
 
 	var id int64
 	var hash string
+	var companyID int64
 	var name string
 
-	err := r.db.QueryRow(ctx, query, email).Scan(&id, &hash, &name)
+	err := r.db.QueryRow(ctx, query, email).Scan(
+		&id,
+		&hash,
+		&companyID,
+		&name,
+	)
 
-	return id, hash, name, err
+	if err != nil {
+		return 0, "", 0, "", err
+	}
+
+	return id, hash, companyID, name, nil
 }
 
 func (r *Repository) HasMCPProfile(ctx context.Context, userID int64) (bool, error) {

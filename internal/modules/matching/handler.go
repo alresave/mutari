@@ -104,46 +104,33 @@ func (h *Handler) Signup(c *gin.Context) {
 
 func (h *Handler) Login(c *gin.Context) {
 
-	ip := c.ClientIP()
+	var body struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 
-	if !h.loginLimiter.Allow(ip) {
-		c.JSON(429, gin.H{
-			"error": "too many login attempts",
-		})
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(400, gin.H{"error": "invalid body"})
 		return
 	}
 
-	var req LoginRequest
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": "invalid request"})
-		return
-	}
-
-	id, name, profileComplete, err := h.service.Login(
+	token, userID, name, err := h.service.Login(
 		c.Request.Context(),
-		req.Email,
-		req.Password,
+		body.Email,
+		body.Password,
 	)
 
 	if err != nil {
-		c.JSON(401, gin.H{"error": "invalid credentials"})
-		return
-	}
-
-	token, err := GenerateJWT(id)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "token error"})
+		c.JSON(401, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(200, gin.H{
 		"token": token,
 		"user": gin.H{
-			"id":   id,
+			"id":   userID,
 			"name": name,
 		},
-		"profile_complete": profileComplete,
 	})
 }
 

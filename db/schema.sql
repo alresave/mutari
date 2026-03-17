@@ -11,7 +11,8 @@ CREATE TABLE users (
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     photo_url TEXT DEFAULT '',
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    company_id INT
 );
 
 -- ============================================
@@ -21,8 +22,21 @@ CREATE TABLE users (
 CREATE TABLE companies (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    owner_user_id BIGINT REFERENCES users(id)
+    website TEXT NOT NULL,
+    user_id BIGINT,
+    created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Add foreign keys after both tables exist
+ALTER TABLE users
+ADD CONSTRAINT fk_user_company
+FOREIGN KEY (company_id) REFERENCES companies(id)
+ON DELETE SET NULL;
+
+ALTER TABLE companies
+ADD CONSTRAINT fk_company_owner
+FOREIGN KEY (user_id) REFERENCES users(id)
+ON DELETE SET NULL;
 
 -- ============================================
 -- TEAMS
@@ -32,7 +46,7 @@ CREATE TABLE teams (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
-    company_id INT REFERENCES companies(id)
+    company_id INT REFERENCES companies(id) ON DELETE CASCADE
 );
 
 -- ============================================
@@ -40,10 +54,10 @@ CREATE TABLE teams (
 -- ============================================
 
 CREATE TABLE team_profiles (
-    team_id INT PRIMARY KEY REFERENCES teams(id),
+    team_id INT PRIMARY KEY REFERENCES teams(id) ON DELETE CASCADE,
     effective_vector VECTOR(64),
     created_at TIMESTAMP DEFAULT NOW(),
-     updated_at TIMESTAMP DEFAULT NOW()
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ============================================
@@ -51,8 +65,8 @@ CREATE TABLE team_profiles (
 -- ============================================
 
 CREATE TABLE team_members (
-    team_id INT REFERENCES teams(id),
-    user_id BIGINT REFERENCES users(id),
+    team_id INT REFERENCES teams(id) ON DELETE CASCADE,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (team_id, user_id)
 );
 
@@ -72,7 +86,7 @@ CREATE TABLE mcp_blocks (
 
 CREATE TABLE mcp_questions (
     id INT PRIMARY KEY,
-    block INT NOT NULL REFERENCES mcp_blocks(id),
+    block INT NOT NULL REFERENCES mcp_blocks(id) ON DELETE CASCADE,
     question_text TEXT NOT NULL,
     scale TEXT DEFAULT 'likert_1_5'
 );
@@ -83,9 +97,9 @@ CREATE TABLE mcp_questions (
 
 CREATE TABLE user_mcp_answers (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id),
-    question_id INT REFERENCES mcp_questions(id),
-    block INT REFERENCES mcp_blocks(id),
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    question_id INT REFERENCES mcp_questions(id) ON DELETE CASCADE,
+    block INT REFERENCES mcp_blocks(id) ON DELETE CASCADE,
     value FLOAT,
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -95,7 +109,7 @@ CREATE TABLE user_mcp_answers (
 -- ============================================
 
 CREATE TABLE user_mcp_profiles (
-    user_id BIGINT PRIMARY KEY REFERENCES users(id),
+    user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     effective_vector VECTOR(64),
     confidence_score FLOAT DEFAULT 1.0,
     created_at TIMESTAMP DEFAULT NOW()

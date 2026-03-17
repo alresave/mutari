@@ -46,9 +46,12 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString := strings.Replace(header, "Bearer ", "", 1)
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return jwtSecret, nil
-		})
+		token, err := jwt.Parse(
+			tokenString,
+			func(token *jwt.Token) (interface{}, error) {
+				return jwtSecret, nil
+			},
+		)
 
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
@@ -58,8 +61,10 @@ func AuthMiddleware() gin.HandlerFunc {
 		claims := token.Claims.(jwt.MapClaims)
 
 		userID := int64(claims["user_id"].(float64))
+		companyID := int64(claims["company_id"].(float64))
 
 		c.Set("userID", userID)
+		c.Set("companyID", companyID)
 
 		c.Next()
 	}
