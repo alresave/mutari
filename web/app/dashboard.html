@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html class="dark">
-
 <head>
 
 <meta charset="UTF-8">
@@ -9,107 +8,94 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<script>
+tailwind.config = { darkMode: "class" }
+</script>
+
 </head>
 
-<body class="bg-slate-950 text-slate-200 h-screen overflow-hidden">
+<body class="bg-slate-900 text-slate-200">
 
-<div class="flex h-screen">
+<div class="max-w-7xl mx-auto p-8">
 
-<!-- LEFT PANEL -->
-<div class="w-1/4 bg-slate-900 p-6 flex flex-col gap-6">
+<!-- HEADER -->
 
-<img src="images/logo.png" class="w-[256px] mx-auto mb-6">
+<div class="flex items-center justify-between mb-10">
 
-<div>
+<div class="flex items-center gap-6">
 
-<div class="text-sm text-slate-400">
-Team Archetype
-</div>
-
-<div id="teamArchetype" class="text-3xl font-bold mt-1">
-—
-</div>
-
-</div>
+<img src="../images/logo.jpg" style="height:120px">
 
 <div>
-
-<div class="text-sm text-slate-400">
-Team Genome Balance
+<div class="text-3xl font-bold">Mutari</div>
+<div class="text-sm text-slate-400">AI Team Intelligence</div>
 </div>
 
-<div id="teamScore" class="text-4xl font-bold mt-1">
-—
-</div>
-
-</div>
-
-<div>
-
-<div class="text-sm text-slate-400 mb-2">
-Team
 </div>
 
 <select
-id="teamSelector"
-class="bg-slate-800 p-2 rounded w-full"
-onchange="loadCandidates()"
->
-
-<option value="1">Team Alpha</option>
-<option value="2">Team Beta</option>
-
-</select>
+id="teamSelect"
+class="bg-slate-800 border border-slate-700 px-4 py-2 rounded"
+></select>
 
 </div>
 
-<button
-onclick="showTeamGaps()"
-class="bg-indigo-600 hover:bg-indigo-700 p-3 rounded mt-4"
->
+<!-- GRID -->
 
-Analyze Team Gaps
+<div class="grid grid-cols-3 gap-8 mb-10">
 
-</button>
+<!-- RADAR -->
 
-<div id="teamGaps" class="mt-4 text-sm"></div>
+<div class="bg-slate-800 p-6 rounded-xl">
 
-<div id="candidateImpact" class="mt-6 text-sm"></div>
+<div class="text-lg font-semibold mb-4">
+Team Genome
+</div>
+
+<canvas id="radarChart"></canvas>
 
 </div>
 
-<!-- CENTER PANEL -->
-<div class="w-2/4 flex flex-col items-center justify-center">
+<!-- GAPS -->
 
-<canvas id="radar" width="500" height="500"></canvas>
+<div class="bg-slate-800 p-6 rounded-xl">
 
-<div class="mt-8 text-center">
-
-<div class="text-sm text-slate-400">
-Candidate Score
+<div class="text-lg font-semibold mb-4">
+Team Gaps
 </div>
 
-<div id="candidateScore" class="text-5xl font-bold mt-2">
-—
-</div>
+<div id="gaps"></div>
 
 </div>
 
+<!-- HIRING PROFILE -->
+
+<div class="bg-slate-800 p-6 rounded-xl">
+
+<div class="text-lg font-semibold mb-4">
+Ideal Hire
 </div>
 
-<!-- RIGHT PANEL -->
-<div class="w-1/4 bg-slate-900 p-6 flex flex-col">
+<div id="role" class="text-xl font-bold mb-4"></div>
+
+<ul id="traits" class="space-y-2 text-sm"></ul>
+
+</div>
+
+</div>
+
+<!-- CANDIDATES -->
+
+<div class="bg-slate-800 p-6 rounded-xl">
 
 <div class="text-lg font-semibold mb-4">
 Candidates
 </div>
 
 <div
-id="candidateList"
-class="flex flex-col gap-3 overflow-y-scroll"
->
-
-</div>
+id="candidates"
+class="space-y-3 max-h-96 overflow-y-auto"
+></div>
 
 </div>
 
@@ -119,232 +105,240 @@ class="flex flex-col gap-3 overflow-y-scroll"
 
 const token = localStorage.getItem("token")
 
-let radar
+if(!token){
+alert("Missing token")
+}
 
-function initRadar(){
+const headers = {
+"Authorization":"Bearer "+token
+}
 
-radar = new Chart(
-document.getElementById("radar"),
-{
-type:"radar",
-data:{
-labels:[
+let radar = null
+let currentTeam = null
+
+const labels = [
 "Core Values",
-"Lifestyle Rhythm",
+"Cognitive Style",
 "Emotional Stability",
 "Relational Architecture",
+"Lifestyle Rhythm",
 "Ambition",
 "Growth",
-"Intimacy",
-"Cognitive Style"
-],
-datasets:[
+"Collaboration"
+]
+
+function createRadar(data){
+
+if(!data || data.length===0) return
+
+if(radar){
+radar.destroy()
+}
+
+radar = new Chart(
+document.getElementById("radarChart"),
 {
-label:"Team",
-data:[0,0,0,0,0,0,0,0],
+type:"radar",
+
+data:{
+labels:labels,
+datasets:[{
+label:"Profile",
+data:data,
 borderColor:"#6366f1",
 backgroundColor:"rgba(99,102,241,0.2)"
+}]
 },
-{
-label:"Candidate",
-data:[0,0,0,0,0,0,0,0],
-borderColor:"#22c55e",
-backgroundColor:"rgba(34,197,94,0.2)"
-}
-]
-},
+
 options:{
+responsive:true,
 scales:{
 r:{
 min:0,
-max:100
+max:1,
+ticks:{display:false}
 }
 }
 }
+
+})
+}
+
+async function loadTeams(){
+
+const res = await fetch("/teams",{headers})
+const data = await res.json()
+
+const select = document.getElementById("teamSelect")
+select.innerHTML=""
+
+if(!data.teams) return
+
+data.teams.forEach(t=>{
+
+const opt = document.createElement("option")
+opt.value = t.id
+opt.innerText = t.name
+
+select.appendChild(opt)
+
+})
+
+select.addEventListener("change",()=>{
+loadTeam(select.value)
+})
+
+if(data.teams.length>0){
+loadTeam(data.teams[0].id)
+}
+
+}
+
+async function loadTeam(teamId){
+
+currentTeam = teamId
+
+await loadGaps(teamId)
+await loadHiring(teamId)
+await loadCandidates(teamId)
+
+}
+
+async function loadGaps(teamId){
+
+const res = await fetch(`/teams/${teamId}/gaps`,{headers})
+const data = await res.json()
+
+const container = document.getElementById("gaps")
+container.innerHTML=""
+
+if(!data.gaps) return
+
+const radarData=[]
+
+Object.entries(data.gaps).forEach(([k,v])=>{
+
+const val = Number(v) || 0
+
+const row = document.createElement("div")
+
+row.innerHTML=`
+
+<div class="flex justify-between text-sm mb-1">
+<span>${k}</span>
+<span>${Math.round(val*100)}</span>
+</div>
+
+<div class="bg-slate-700 h-2 rounded">
+<div style="width:${val*100}%" class="bg-indigo-500 h-2 rounded"></div>
+</div>
+
+`
+
+container.appendChild(row)
+
+radarData.push(val)
+
+})
+
+createRadar(radarData)
+
+}
+
+async function loadHiring(teamId){
+
+const res = await fetch(`/teams/${teamId}/hiring-profile`,{headers})
+const data = await res.json()
+
+if(!data) return
+
+document.getElementById("role").innerText =
+data.suggested_role || ""
+
+const traits = document.getElementById("traits")
+traits.innerHTML=""
+
+if(data.recommended_traits){
+
+data.recommended_traits.forEach(t=>{
+
+const li=document.createElement("li")
+li.innerText="• "+t
+
+traits.appendChild(li)
+
 })
 
 }
 
-async function loadCandidates(){
+}
 
-const team=document.getElementById("teamSelector").value
+async function loadCandidates(teamId){
 
-const res=await fetch(`/teams/${team}/matches`,{
-headers:{Authorization:`Bearer ${token}`}
-})
+const res = await fetch(`/teams/${teamId}/matches`,{headers})
+const data = await res.json()
 
-const data=await res.json()
+const container = document.getElementById("candidates")
+container.innerHTML=""
 
-const list=document.getElementById("candidateList")
-
-list.innerHTML=""
+if(!data.matches) return
 
 data.matches.forEach(c=>{
 
-const div=document.createElement("div")
+const row=document.createElement("div")
 
-div.className="bg-slate-800 p-3 rounded cursor-pointer hover:bg-slate-700"
+row.className="flex justify-between bg-slate-700 p-3 rounded cursor-pointer hover:bg-slate-600"
 
-div.innerHTML=`
+row.innerHTML=`
 
 <div class="flex items-center gap-3">
 
-<img src="${c.photo}" class="w-10 h-10 rounded-full">
+<img src="${c.photo || ''}" class="w-10 h-10 rounded-full">
 
-<div class="flex-1">
-
-<div class="font-semibold">
-${c.name}
-</div>
-
-<div class="text-xs text-slate-400">
-${c.role}
+<div>
+<div class="font-semibold">${c.name}</div>
+<div class="text-xs text-slate-400">${c.role || ''}</div>
 </div>
 
 </div>
 
-<div class="font-bold text-lg">
-${c.score}
-</div>
-
+<div class="text-indigo-400 font-bold">
+${c.score || 0}%
 </div>
 
 `
 
-div.onclick=()=>selectCandidate(c)
+row.onclick=()=>loadCandidateFit(c.user_id)
 
-list.appendChild(div)
-
-})
-
-if(data.matches.length>0){
-selectCandidate(data.matches[0])
-}
-
-}
-
-function selectCandidate(c){
-
-document.getElementById("candidateScore").innerText=c.score
-
-const values=Object.values(c.block_scores)
-
-radar.data.datasets[1].data=values
-radar.update()
-
-calculateTeam(values)
-
-showTeamGaps()
-
-showCandidateImpact(c)
-
-}
-
-function calculateTeam(values){
-
-const avg=Math.round(values.reduce((a,b)=>a+b)/values.length)
-
-document.getElementById("teamScore").innerText=avg
-
-if(avg>90){
-document.getElementById("teamArchetype").innerText="THE BUILDERS"
-}
-else if(avg>80){
-document.getElementById("teamArchetype").innerText="THE STRATEGISTS"
-}
-else{
-document.getElementById("teamArchetype").innerText="THE OPERATORS"
-}
-
-radar.data.datasets[0].data=values.map(v=>v-3)
-radar.update()
-
-}
-
-async function showTeamGaps(){
-
-const team=document.getElementById("teamSelector").value
-
-const res=await fetch(`/teams/${team}/gaps`,{
-headers:{Authorization:`Bearer ${token}`}
-})
-
-const data=await res.json()
-
-const gaps=document.getElementById("teamGaps")
-
-gaps.innerHTML=""
-
-if(!data.gaps || data.gaps.length===0){
-
-gaps.innerHTML=`
-<div class="text-slate-400 text-sm">
-No structural gaps detected
-</div>
-`
-
-return
-}
-
-data.gaps.forEach(g=>{
-
-const div=document.createElement("div")
-
-div.className="bg-slate-800 p-3 rounded mb-2"
-
-div.innerHTML=`
-
-<div class="font-semibold text-indigo-400">
-${g.block}
-</div>
-
-<div class="text-xs text-slate-400">
-${g.message}
-</div>
-
-`
-
-gaps.appendChild(div)
+container.appendChild(row)
 
 })
 
 }
 
-function showCandidateImpact(c){
+async function loadCandidateFit(candidateId){
 
-const impact=document.getElementById("candidateImpact")
+const res = await fetch(
+`/teams/${currentTeam}/fit/${candidateId}`,
+{headers}
+)
 
-impact.innerHTML=`
+const data = await res.json()
 
-<div class="text-indigo-400 font-semibold mb-2">
-Impact if ${c.name} joins
-</div>
+if(!data.block_scores) return
 
-<div class="bg-slate-800 p-3 rounded">
+const radarData = labels.map(l=>{
+const v = data.block_scores[l]
+return v ? v/100 : 0
+})
 
-<div class="text-xs text-green-400">
-✓ Leadership stability improved
-</div>
-
-<div class="text-xs text-green-400">
-✓ Emotional resilience increased
-</div>
-
-<div class="text-xs text-green-400">
-✓ Team balance +${Math.floor(Math.random()*10)+3}%
-</div>
-
-</div>
-
-`
+createRadar(radarData)
 
 }
 
-initRadar()
-loadCandidates()
+window.onload = loadTeams
 
 </script>
 
 </body>
-
 </html>
