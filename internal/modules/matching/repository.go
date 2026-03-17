@@ -454,6 +454,24 @@ func (r *Repository) StoreMCPAnswers(ctx context.Context, userID int64, answers 
 
 	return nil
 }
+func (r *Repository) GetTeamHiringProfile(ctx context.Context, teamID int64) ([]float32, error) {
+
+	query := `
+SELECT effective_vector
+FROM team_profiles
+WHERE team_id = $1
+`
+
+	var vec pgvector.Vector
+
+	err := r.db.QueryRow(ctx, query, teamID).Scan(&vec)
+	if err != nil {
+		return nil, err
+	}
+
+	return vec.Slice(), nil
+}
+
 func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) error {
 
 	query := `

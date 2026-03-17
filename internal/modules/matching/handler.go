@@ -449,3 +449,19 @@ func (h *Handler) GetTeamProfile(c *gin.Context) {
 		"vector":  vector,
 	})
 }
+func (h *Handler) GetTeamHiringProfile(c *gin.Context) {
+
+	teamID, err := strconv.ParseInt(c.Param("team_id"), 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team_id"})
+		return
+	}
+
+	profile, err := h.service.GetTeamHiringProfile(c.Request.Context(), teamID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, profile)
+}
