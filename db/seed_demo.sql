@@ -167,7 +167,7 @@ INSERT INTO users (name,email,password_hash,photo_url, company_id) VALUES
 -- USER MCP PROFILES
 -- ============================================
 
-INSERT INTO user_mcp_profiles (user_id,effective_vector)
+INSERT INTO user_mcp_profiles (user_id, effective_vector)
 SELECT
     u.id,
     (
