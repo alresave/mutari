@@ -120,6 +120,7 @@ func main() {
 
 	// Admin utility
 	r.POST("/admin/rebuild-profiles", handler.RebuildProfiles)
+	auth.POST("/admin/rebuild-team-profiles", handler.RebuildTeamProfiles)
 
 	log.Println("Mutari Engine Started")
 

@@ -106,28 +106,61 @@ INSERT INTO mcp_questions (id,block,question_text,scale) VALUES
 -- USERS
 -- ============================================
 
-INSERT INTO users (name,email,password_hash,photo_url) VALUES
-('Alberto Gonzalez','alberto@mutari.dev','123456','https://randomuser.me/api/portraits/men/11.jpg'),
-('Mateo Torres','mateo@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/12.jpg'),
-('Santiago Ruiz','santiago@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/13.jpg'),
-('Sebastian Vega','sebastian@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/14.jpg'),
-('Daniel Herrera','daniel@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/15.jpg'),
-('Alejandro Cruz','alejandro@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/16.jpg'),
-('Gabriel Medina','gabriel@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/17.jpg'),
-('Nicolas Rojas','nicolas@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/18.jpg'),
-('David Navarro','david@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/19.jpg'),
-('Adrian Campos','adrian@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/men/20.jpg'),
 
-('Emma Collins','emma@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/11.jpg'),
-('Sophia Turner','sophia@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/12.jpg'),
-('Olivia Carter','olivia@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/13.jpg'),
-('Isabella Hughes','isabella@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/14.jpg'),
-('Mia Bennett','mia@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/15.jpg'),
-('Charlotte Reed','charlotte@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/16.jpg'),
-('Amelia Foster','amelia@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/17.jpg'),
-('Harper Brooks','harper@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/18.jpg'),
-('Evelyn Hayes','evelyn@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/19.jpg'),
-('Abigail Stone','abigail@mutari.dev','$2a$10$testhash','https://randomuser.me/api/portraits/women/20.jpg');
+INSERT INTO users (name,email,password_hash,photo_url) VALUES
+('Alberto Gonzalez','alberto@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/11.jpg'),
+('Mateo Torres','mateo@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/12.jpg'),
+('Santiago Ruiz','santiago@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/13.jpg'),
+('Sebastian Vega','sebastian@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/14.jpg'),
+('Daniel Herrera','daniel@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/15.jpg'),
+('Alejandro Cruz','alejandro@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/16.jpg'),
+('Gabriel Medina','gabriel@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/17.jpg'),
+('Nicolas Rojas','nicolas@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/18.jpg'),
+('David Navarro','david@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/19.jpg'),
+('Adrian Campos','adrian@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/20.jpg'),
+
+('Emma Collins','emma@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/11.jpg'),
+('Sophia Turner','sophia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/12.jpg'),
+('Olivia Carter','olivia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/13.jpg'),
+('Isabella Hughes','isabella@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/14.jpg'),
+('Mia Bennett','mia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/15.jpg'),
+('Charlotte Reed','charlotte@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/16.jpg'),
+('Amelia Foster','amelia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/17.jpg'),
+('Harper Brooks','harper@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/18.jpg'),
+('Evelyn Hayes','evelyn@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/19.jpg'),
+('Abigail Stone','abigail@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/20.jpg'),
+
+('Lucas Mendoza','lucas@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/21.jpg'),
+('Diego Castillo','diego@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/22.jpg'),
+('Juan Morales','juan@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/23.jpg'),
+('Andres Silva','andres@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/24.jpg'),
+('Carlos Ortega','carlos@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/25.jpg'),
+('Miguel Vargas','miguel@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/26.jpg'),
+('Fernando Soto','fernando@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/27.jpg'),
+('Ricardo Paredes','ricardo@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/28.jpg'),
+('Pablo Guerrero','pablo@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/29.jpg'),
+('Esteban Fuentes','esteban@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/30.jpg'),
+('Hector Aguilar','hector@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/31.jpg'),
+('Jorge Ibarra','jorge@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/32.jpg'),
+('Ivan Salazar','ivan@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/33.jpg'),
+('Oscar Valdez','oscar@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/34.jpg'),
+('Rafael Lozano','rafael@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/35.jpg'),
+
+('Emily Parker','emily@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/21.jpg'),
+('Lily Watson','lily@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/22.jpg'),
+('Chloe Bennett','chloe@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/23.jpg'),
+('Ella Richardson','ella@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/24.jpg'),
+('Grace Coleman','grace@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/25.jpg'),
+('Scarlett Simmons','scarlett@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/26.jpg'),
+('Victoria Sanders','victoria@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/27.jpg'),
+('Aria Matthews','aria@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/28.jpg'),
+('Hannah Powell','hannah@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/29.jpg'),
+('Zoe Long','zoe@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/30.jpg'),
+('Layla Patterson','layla@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/31.jpg'),
+('Nora Hughes','nora@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/32.jpg'),
+('Lucy Flores','lucy@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/33.jpg'),
+('Stella Kim','stella@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/34.jpg'),
+('Aurora Diaz','aurora@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/35.jpg');
 
 
 -- ============================================
@@ -160,4 +193,8 @@ INSERT INTO team_members (team_id,user_id) VALUES
 (1,1),(1,2),(1,3),(1,4),(1,5),
 (2,6),(2,7),(2,8),(2,9),(2,10),
 (3,11),(3,12),(3,13),(3,14),(3,15),
-(4,16),(4,17),(4,18),(4,19),(4,20);
+(4,16),(4,17),(4,18),(4,19),(4,20),
+(5,21),(5,22),(5,23),(5,24),(5,25),
+(5,26),(5,27),(5,28),(5,29),(5,30),
+(6,31),(6,32),(6,33),(6,34),(6,35),
+(7,36),(7,37),(7,38),(7,39),(7,40);

@@ -18,6 +18,15 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
+type User struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	Password  string `json:"-"`
+	Photo     string `json:"photo"`
+	CompanyID int64  `json:"company_id"`
+}
+
 type TeamFitSimulation struct {
 	TeamID      int64          `json:"team_id"`
 	CandidateID int64          `json:"candidate_id"`
@@ -29,6 +38,7 @@ type Team struct {
 	ID          int64   `json:"id"`
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
+	CompanyID   int64   `json:"company_id"`
 }
 
 type Candidate struct {
@@ -576,6 +586,117 @@ func (r *Repository) GetUserByID(ctx context.Context, userID int64) (int64, stri
 	return id, name, photo, err
 }
 
+func (r *Repository) RebuildAllTeams(ctx context.Context) error {
+
+	query := `SELECT id FROM teams`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var teamID int64
+
+		if err := rows.Scan(&teamID); err != nil {
+			return err
+		}
+
+		err := r.BuildTeamVector(ctx, teamID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *Repository) BuildTeamVector(ctx context.Context, teamID int64) error {
+
+	query := `
+ SELECT p.effective_vector
+ FROM team_members tm
+ JOIN user_mcp_profiles p ON p.user_id = tm.user_id
+ WHERE tm.team_id = $1
+ `
+
+	rows, err := r.db.Query(ctx, query, teamID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	vector := make([]float32, 64)
+	count := 0
+
+	for rows.Next() {
+
+		var v pgvector.Vector
+
+		if err := rows.Scan(&v); err != nil {
+			return err
+		}
+
+		values := v.Slice()
+
+		for i := 0; i < 64; i++ {
+			vector[i] += values[i]
+		}
+
+		count++
+	}
+
+	if count == 0 {
+		return nil
+	}
+
+	for i := 0; i < 64; i++ {
+		vector[i] = vector[i] / float32(count)
+	}
+
+	pgVector := pgvector.NewVector(vector)
+
+	queryInsert := `
+ INSERT INTO team_profiles (team_id,effective_vector)
+ VALUES ($1,$2)
+ ON CONFLICT(team_id)
+ DO UPDATE SET
+ effective_vector = EXCLUDED.effective_vector,
+ updated_at = NOW()
+ `
+
+	_, err = r.db.Exec(ctx, queryInsert, teamID, pgVector)
+
+	return err
+}
+func (r *Repository) GetAllTeamIDs(ctx context.Context) ([]int64, error) {
+
+	query := `SELECT id FROM teams`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int64
+
+	for rows.Next() {
+
+		var id int64
+
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, nil
+}
+
 func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]Candidate, error) {
 
 	query := `
@@ -972,8 +1093,7 @@ func (r *Repository) GetTeamGaps(ctx context.Context, teamID int64) ([]string, s
 func (r *Repository) GetTeams(ctx context.Context) ([]Team, error) {
 
 	query := `
-SELECT id, name,
-description
+SELECT id, name,description, company_id
 FROM teams
 ORDER BY id
 `
@@ -993,7 +1113,9 @@ ORDER BY id
 		err := rows.Scan(
 			&t.ID,
 			&t.Name,
+
 			&t.Description,
+			&t.CompanyID,
 		)
 
 		if err != nil {
@@ -1005,6 +1127,68 @@ ORDER BY id
 	}
 
 	return teams, nil
+}
+func (r *Repository) AddUserToTeam(ctx context.Context, teamID int64, userID int64) error {
+
+	query := `
+    INSERT INTO team_members (team_id, user_id)
+    VALUES ($1,$2)
+    ON CONFLICT DO NOTHING
+    `
+
+	_, err := r.db.Exec(ctx, query, teamID, userID)
+
+	return err
+}
+func (r *Repository) GetCandidates(ctx context.Context, teamID int64) ([]User, error) {
+
+	query := `
+    SELECT id,name,photo_url
+    FROM users
+    WHERE id NOT IN (
+        SELECT user_id
+        FROM team_members
+        WHERE team_id=$1
+    )
+    `
+
+	rows, err := r.db.Query(ctx, query, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+
+	for rows.Next() {
+
+		var u User
+
+		if err := rows.Scan(&u.ID, &u.Name, &u.Photo); err != nil {
+			return nil, err
+		}
+
+		users = append(users, u)
+	}
+
+	return users, nil
+}
+func (r *Repository) GetTeamProfile(ctx context.Context, teamID int64) ([]float32, error) {
+
+	query := `
+    SELECT effective_vector
+    FROM team_profiles
+    WHERE team_id = $1
+    `
+
+	var vec pgvector.Vector
+
+	err := r.db.QueryRow(ctx, query, teamID).Scan(&vec)
+	if err != nil {
+		return nil, err
+	}
+
+	return vec.Slice(), nil
 }
 
 func detectRole(blockScores map[string]int) string {

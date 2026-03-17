@@ -397,3 +397,68 @@ func (h *Handler) GetTeams(c *gin.Context) {
 	})
 
 }
+func (h *Handler) RebuildTeamProfiles(c *gin.Context) {
+
+	err := h.service.RebuildAllTeamProfiles(c.Request.Context())
+	if err != nil {
+
+		c.JSON(500, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"status": "team profiles rebuilt",
+	})
+}
+func (h *Handler) AddUserToTeam(c *gin.Context) {
+
+	teamParam := c.Param("team_id")
+
+	teamID, err := strconv.ParseInt(teamParam, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team id"})
+		return
+	}
+
+	var body struct {
+		UserID int64 `json:"user_id"`
+	}
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(400, gin.H{"error": "invalid body"})
+		return
+	}
+
+	err = h.service.AddUserToTeam(c.Request.Context(), teamID, body.UserID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"status": "user added to team",
+	})
+}
+func (h *Handler) GetTeamProfile(c *gin.Context) {
+
+	idParam := c.Param("team_id")
+
+	teamID, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team id"})
+		return
+	}
+
+	vector, err := h.service.GetTeamProfile(c.Request.Context(), teamID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"team_id": teamID,
+		"vector":  vector,
+	})
+}

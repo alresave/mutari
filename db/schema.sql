@@ -1,4 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ============================================
 -- USERS
@@ -40,7 +41,9 @@ CREATE TABLE teams (
 
 CREATE TABLE team_profiles (
     team_id INT PRIMARY KEY REFERENCES teams(id),
-    effective_vector VECTOR(64)
+    effective_vector VECTOR(64),
+    created_at TIMESTAMP DEFAULT NOW(),
+     updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ============================================

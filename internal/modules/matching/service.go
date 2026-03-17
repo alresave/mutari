@@ -179,3 +179,34 @@ func (s *Service) GetTeamGaps(ctx context.Context, teamID int64) (*TeamGaps, err
 func (s *Service) GetTeams(ctx context.Context) ([]Team, error) {
 	return s.repo.GetTeams(ctx)
 }
+
+func (s *Service) RebuildAllTeamProfiles(ctx context.Context) error {
+
+	teamIDs, err := s.repo.GetAllTeamIDs(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, teamID := range teamIDs {
+
+		err := s.repo.BuildTeamVector(ctx, teamID)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+func (s *Service) AddUserToTeam(ctx context.Context, teamID int64, userID int64) error {
+
+	err := s.repo.AddUserToTeam(ctx, teamID, userID)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.BuildTeamVector(ctx, teamID)
+}
+func (s *Service) GetTeamProfile(ctx context.Context, teamID int64) ([]float32, error) {
+	return s.repo.GetTeamProfile(ctx, teamID)
+}
