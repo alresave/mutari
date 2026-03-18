@@ -83,10 +83,7 @@ func (h *Handler) Signup(c *gin.Context) {
 
 func (h *Handler) Login(c *gin.Context) {
 
-	var body struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	var body LoginRequest
 
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(400, gin.H{"error": "invalid body"})
