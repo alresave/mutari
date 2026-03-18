@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"math/rand/v2"
 	"sort"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -577,9 +578,11 @@ func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) erro
 
 		for i := 0; i < 8; i++ {
 
-			gradient := (float64(i) - 3.5) * 0.15
+			gradient := (float64(i) - 3.5) * (0.25 + float64(block)*0.01)
 
-			val := (base*0.6 + avg*0.4) + gradient
+			noise := (rand.Float64() - 0.5) * (0.10 + float64(block)*0.01)
+
+			val := (base*0.6 + avg*0.4) + gradient + noise
 
 			if val < 0 {
 				val = 0
