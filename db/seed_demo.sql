@@ -15,17 +15,15 @@ INSERT INTO companies (id, name, website) VALUES
 -- MCP BLOCKS
 -- ============================================
 
-INSERT INTO mcp_blocks (id,name,description) VALUES
-(0,'Core Values','Fundamental life principles'),
-(1,'Lifestyle Rhythm','Daily habits and life pace'),
-(2,'Emotional Stability','Emotional regulation and stress'),
-(3,'Relational Architecture','How relationships are structured'),
-(4,'Ambition','Drive and long term goals'),
-(5,'Growth','Personal development orientation'),
-(6,'Trust & Collaboration','Emotional bonding and closeness'),
-(7,'Cognitive Style','Thinking and decision making'),
-(8,'Control','Consistency validation questions')
-ON CONFLICT DO NOTHING;
+INSERT INTO mcp_blocks (id, name, description) VALUES
+(0, 'Drive & Ownership', 'proactive initiative and sense of responsibility for outcomes'),
+(1, 'Cognitive Style', 'approach to problem-solving, analysis, and decision-making'),
+(2, 'Work Values', 'core professional values that guide priorities and motivations'),
+(3, 'Emotional Regulation', 'ability to manage stress, pressure, and emotional responses in professional contexts'),
+(4, 'Learning Agility', 'capacity to learn quickly, adapt to change, and apply new knowledge effectively'),
+(5, 'Collaboration', 'orientation toward teamwork, communication, and collective problem-solving'),
+(6, 'Work Rhythm', 'preferred pace, structure, and flow of work execution'),
+(7, 'Team Architecture', 'natural positioning and functional role within team dynamics');
 
 
 -- ============================================
