@@ -84,7 +84,8 @@ CREATE TABLE team_members (
     user_id BIGINT
         REFERENCES users(id)
         ON DELETE CASCADE,
-    PRIMARY KEY (team_id, user_id)
+    PRIMARY KEY (team_id, user_id),
+    role TEXT DEFAULT 'member'
 );
 
 -- ============================================
