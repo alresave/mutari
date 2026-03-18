@@ -80,3 +80,23 @@ type TeamGaps struct {
 	WeakBlocks         []string `json:"weak_blocks"`
 	RecommendedProfile string   `json:"recommended_profile"`
 }
+type SignupRequest struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type MCPAnswer struct {
+	QuestionID int     `json:"question_id"`
+	Block      int     `json:"block"`
+	Value      float64 `json:"value"`
+}
+type SubmitAnswersRequest struct {
+	UserID  int64       `json:"user_id"`
+	Answers []MCPAnswer `json:"answers"`
+}
