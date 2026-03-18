@@ -12,17 +12,6 @@ import (
 type Service struct {
 	repo *Repository
 }
-type TeamCulture struct {
-	TeamID      int64          `json:"team_id"`
-	Archetype   string         `json:"archetype"`
-	BlockScores map[string]int `json:"block_scores"`
-}
-type HiringProfile struct {
-	TeamID            int64              `json:"team_id"`
-	IdealProfile      map[string]float64 `json:"ideal_profile"`
-	SuggestedRole     string             `json:"suggested_role"`
-	RecommendedTraits []string           `json:"recommended_traits"`
-}
 
 func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
@@ -173,12 +162,6 @@ func (s *Service) GetTeamCulture(ctx context.Context, teamID int64) (*TeamCultur
 	}
 
 	return result, nil
-}
-
-type TeamGaps struct {
-	TeamID             int64    `json:"team_id"`
-	WeakBlocks         []string `json:"weak_blocks"`
-	RecommendedProfile string   `json:"recommended_profile"`
 }
 
 func (s *Service) GetTeamGaps(ctx context.Context, teamID int64) (*TeamGaps, error) {
