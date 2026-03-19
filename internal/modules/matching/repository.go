@@ -108,35 +108,7 @@ func compatibilityType(block string) string {
 
 func frictionExplanation(block string) string {
 
-	switch block {
-
-	case "CDrive & Ownership":
-		return "Possible differences in core life principles"
-
-	case "Cognitive Style":
-		return "Different expectations about team roles and collaboration"
-
-	case "Work Values":
-		return "Potential mismatch in work pace"
-
-	case "Emotional Regulation":
-		return "Different priorities in personal development"
-
-	case "Learning Agility":
-		return "Different ways of thinking"
-
-	case "Collaboration":
-		return "Possible differences in long-term goals"
-
-	case "Work Rythm":
-		return "Different emotional regulation styles"
-
-	case "Team Architecture ":
-		return "Different preferences for team structure and interaction"
-
-	default:
-		return "Potential area of difference"
-	}
+	return BlockDifferences[block]
 }
 
 func compatibilitySummary(primary, secondary, friction string) string {
@@ -231,7 +203,13 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 			}
 		}
 
-		score := (blockSim[best] + blockSim[second]) / 2
+		weights := RoleWeights["engineer"] // luego dinámico
+
+		score := 0.0
+
+		for i := 0; i < 8; i++ {
+			score += blockSim[i] * weights[i]
+		}
 
 		c := Candidate{
 
@@ -257,6 +235,7 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 			),
 
 			RelationshipStability: StabilityScore(score),
+			Role:                  predictRole(blockSim),
 
 			BlockScores: blockScores,
 		}
@@ -793,7 +772,7 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]Candid
 
 		stabilityLabel := StabilityScore(stability)
 
-		role := detectRole(blockScores)
+		role := predictRole(stabilityWeights)
 
 		c := Candidate{
 
@@ -913,7 +892,7 @@ func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64)
 
 	stabilityLabel := StabilityScore(stability)
 
-	role := detectRole(blockScores)
+	role := predictRole(stabilityWeights)
 
 	result := Candidate{
 
@@ -1542,4 +1521,20 @@ func PredictTeamArchetype(vector []float32) string {
 	}
 
 	return "Balanced Team"
+}
+func predictRole(blocks []float64) string {
+
+	if blocks[1] > 0.85 && blocks[4] > 0.8 {
+		return "Visionary"
+	}
+
+	if blocks[0] > 0.8 && blocks[6] > 0.75 {
+		return "Operator"
+	}
+
+	if blocks[5] > 0.85 && blocks[7] > 0.8 {
+		return "Leader"
+	}
+
+	return "Specialist"
 }

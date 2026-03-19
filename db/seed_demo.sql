@@ -15,96 +15,100 @@ INSERT INTO companies (id, name, website) VALUES
 -- MCP BLOCKS
 -- ============================================
 
-INSERT INTO mcp_blocks (id, name, description) VALUES
-(0, 'Drive & Ownership', 'proactive initiative and sense of responsibility for outcomes'),
-(1, 'Cognitive Style', 'approach to problem-solving, analysis, and decision-making'),
-(2, 'Work Values', 'core professional values that guide priorities and motivations'),
-(3, 'Emotional Regulation', 'ability to manage stress, pressure, and emotional responses in professional contexts'),
-(4, 'Learning Agility', 'capacity to learn quickly, adapt to change, and apply new knowledge effectively'),
-(5, 'Collaboration', 'orientation toward teamwork, communication, and collective problem-solving'),
-(6, 'Work Rhythm', 'preferred pace, structure, and flow of work execution'),
-(7, 'Team Architecture', 'natural positioning and functional role within team dynamics');
-
-
+INSERT INTO mcp_blocks (name, description) VALUES
+( 'Execution Drive', 'level of initiative, accountability, and focus on delivering results'),
+( 'Cognitive Processing', 'preferred way of thinking, analyzing information, and making decisions'),
+( 'Professional Values', 'core beliefs and principles that guide professional priorities and motivation'),
+( 'Emotional Resilience', 'ability to manage stress, pressure, and emotional responses effectively'),
+( 'Learning Velocity', 'capacity to learn quickly, adapt, and apply new knowledge in changing contexts'),
+( 'Collaboration Depth', 'quality of engagement in teamwork, communication, and shared problem-solving'),
+( 'Operational Rhythm', 'preferred pace, structure, and consistency in executing tasks and responsibilities'),
+( 'Team Positioning', 'natural role and contribution within team dynamics and organizational structures');
 -- ============================================
 -- MCP QUESTIONS
 -- ============================================
 
-INSERT INTO mcp_questions (id,block,question_text,scale) VALUES
-(1,0,'I prefer stability over constant change','likert_1_5'),
-(2,0,'Long-term commitment is important to me','likert_1_5'),
-(3,0,'I believe loyalty is essential in relationships','likert_1_5'),
-(4,0,'I value honesty above convenience','likert_1_5'),
-(5,0,'Shared values matter more than attraction','likert_1_5'),
-(6,0,'Keeping promises is very important to me','likert_1_5'),
-(7,0,'I believe trust should be built slowly','likert_1_5'),
-(8,0,'I admire people with strong principles','likert_1_5'),
+INSERT INTO mcp_questions (block, question_text, scale) VALUES
 
-(9,1,'I enjoy having a structured daily routine','likert_1_5'),
-(10,1,'I prefer calm evenings over nightlife','likert_1_5'),
-(11,1,'I enjoy planning my week ahead','likert_1_5'),
-(12,1,'I feel comfortable with predictable schedules','likert_1_5'),
-(13,1,'I prefer quiet environments over busy places','likert_1_5'),
-(14,1,'I enjoy peaceful weekends more than parties','likert_1_5'),
-(15,1,'I like consistency in daily habits','likert_1_5'),
-(16,1,'I feel more productive with routines','likert_1_5'),
+-- 1: Execution Drive
+(1,'I take ownership of problems beyond my formal responsibilities.','0-1'),
+(1,'I consistently push tasks to completion without external pressure.','0-1'),
+(1,'I feel responsible for the overall success of my team.','0-1'),
+(1,'I proactively identify and solve inefficiencies.','0-1'),
+(1,'I perform well in high-performance environments.','0-1'),
+(1,'I hold myself accountable for outcomes, not just effort.','0-1'),
+(1,'I maintain high standards even under pressure.','0-1'),
+(1,'I naturally step up when leadership is needed.','0-1'),
 
-(17,2,'I tend to stay calm under stress','likert_1_5'),
-(18,2,'I handle disagreements calmly','likert_1_5'),
-(19,2,'I rarely react impulsively','likert_1_5'),
-(20,2,'I try to understand emotions before reacting','likert_1_5'),
-(21,2,'I recover quickly after difficult situations','likert_1_5'),
-(22,2,'I avoid escalating conflicts','likert_1_5'),
-(23,2,'I remain balanced during emotional discussions','likert_1_5'),
-(24,2,'Emotional maturity is important to me','likert_1_5'),
+-- 2: Cognitive Processing
+(2,'I prefer structured approaches when solving problems.','0-1'),
+(2,'I rely on data and evidence when making decisions.','0-1'),
+(2,'I break complex problems into smaller parts.','0-1'),
+(2,'I enjoy analyzing systems and patterns.','0-1'),
+(2,'I can quickly understand abstract concepts.','0-1'),
+(2,'I consider multiple perspectives before deciding.','0-1'),
+(2,'I prefer logical consistency over intuition.','0-1'),
+(2,'I adapt my thinking based on new information.','0-1'),
 
-(25,3,'I believe relationships should function as a team','likert_1_5'),
-(26,3,'Important decisions should be made together','likert_1_5'),
-(27,3,'Mutual support is essential in relationships','likert_1_5'),
-(28,3,'Communication solves most relationship issues','likert_1_5'),
-(29,3,'Shared goals strengthen relationships','likert_1_5'),
-(30,3,'Both partners should participate in problem solving','likert_1_5'),
-(31,3,'Healthy relationships require effort','likert_1_5'),
-(32,3,'Open dialogue is key to strong partnerships','likert_1_5'),
+-- 3: Professional Values
+(3,'Integrity is more important than short-term results.','0-1'),
+(3,'I value accountability in team environments.','0-1'),
+(3,'I prefer clear expectations and responsibilities.','0-1'),
+(3,'I prioritize long-term impact over quick wins.','0-1'),
+(3,'I value transparency in communication.','0-1'),
+(3,'I believe reliability is critical in teams.','0-1'),
+(3,'I respect structured processes and standards.','0-1'),
+(3,'I align my work with organizational goals.','0-1'),
 
-(33,4,'I have clear long-term goals','likert_1_5'),
-(34,4,'I constantly work to improve my situation','likert_1_5'),
-(35,4,'Professional growth is important to me','likert_1_5'),
-(36,4,'I admire ambitious people','likert_1_5'),
-(37,4,'I enjoy pursuing difficult goals','likert_1_5'),
-(38,4,'I strive to build a meaningful life','likert_1_5'),
-(39,4,'I feel motivated by long-term progress','likert_1_5'),
-(40,4,'I respect people with strong determination','likert_1_5'),
+-- 4: Emotional Resilience
+(4,'I remain calm under pressure.','0-1'),
+(4,'I recover quickly from setbacks.','0-1'),
+(4,'I handle criticism constructively.','0-1'),
+(4,'I maintain focus during stressful situations.','0-1'),
+(4,'I can manage frustration without affecting others.','0-1'),
+(4,'I stay composed in uncertain environments.','0-1'),
+(4,'I regulate my emotions in professional settings.','0-1'),
+(4,'I maintain productivity during difficult periods.','0-1'),
 
-(41,5,'I actively try to learn from mistakes','likert_1_5'),
-(42,5,'Personal development is important to me','likert_1_5'),
-(43,5,'I enjoy learning new perspectives','likert_1_5'),
-(44,5,'I believe people should evolve over time','likert_1_5'),
-(45,5,'Self improvement is part of my life','likert_1_5'),
-(46,5,'I enjoy gaining new knowledge','likert_1_5'),
-(47,5,'I reflect on my behavior regularly','likert_1_5'),
-(48,5,'I welcome opportunities for personal growth','likert_1_5'),
+-- 5: Learning Velocity
+(5,'I actively seek opportunities to learn new skills.','0-1'),
+(5,'I adapt quickly to new tools or processes.','0-1'),
+(5,'I learn effectively from mistakes.','0-1'),
+(5,'I enjoy experimenting with new approaches.','0-1'),
+(5,'I integrate feedback quickly into my work.','0-1'),
+(5,'I stay updated with new knowledge in my field.','0-1'),
+(5,'I am comfortable working outside my expertise.','0-1'),
+(5,'I continuously improve my performance.','0-1'),
 
-(49,6,'I feel comfortable expressing affection','likert_1_5'),
-(50,6,'Emotional closeness is important to me','likert_1_5'),
-(51,6,'I enjoy deep conversations','likert_1_5'),
-(52,6,'Trust grows through emotional openness','likert_1_5'),
-(53,6,'I appreciate meaningful time together','likert_1_5'),
-(54,6,'I value emotional transparency','likert_1_5'),
-(55,6,'I prefer deep bonds over casual connections','likert_1_5'),
-(56,6,'Strong emotional connection matters to me','likert_1_5'),
+-- 6: Collaboration Depth
+(6,'I build trust easily with colleagues.','0-1'),
+(6,'I actively support the success of others.','0-1'),
+(6,'I communicate openly in team settings.','0-1'),
+(6,'I value deep collaboration over individual work.','0-1'),
+(6,'I help resolve conflicts within teams.','0-1'),
+(6,'I share knowledge proactively.','0-1'),
+(6,'I enjoy mentoring others.','0-1'),
+(6,'I adapt my communication style to different people.','0-1'),
 
-(57,7,'I prefer analyzing problems logically','likert_1_5'),
-(58,7,'I enjoy discussing complex ideas','likert_1_5'),
-(59,7,'I like understanding how things work','likert_1_5'),
-(60,7,'I think carefully before making decisions','likert_1_5'),
-(61,7,'I enjoy intellectual discussions','likert_1_5'),
-(62,7,'I try to understand multiple perspectives','likert_1_5'),
-(63,7,'I reflect before reacting','likert_1_5'),
-(64,7,'I enjoy solving complex problems','likert_1_5')
-ON CONFLICT DO NOTHING;
+-- 7: Operational Rhythm
+(7,'I work effectively under tight deadlines.','0-1'),
+(7,'I manage multiple priorities efficiently.','0-1'),
+(7,'I prefer structured workflows.','0-1'),
+(7,'I maintain consistent productivity.','0-1'),
+(7,'I am comfortable in fast-paced environments.','0-1'),
+(7,'I organize my work systematically.','0-1'),
+(7,'I balance speed with quality.','0-1'),
+(7,'I adapt to changing priorities quickly.','0-1'),
 
-
+-- 8: Team Positioning
+(8,'I naturally take leadership in group settings.','0-1'),
+(8,'I help coordinate team efforts.','0-1'),
+(8,'I see how individual work connects to team goals.','0-1'),
+(8,'I support alignment within teams.','0-1'),
+(8,'I clarify roles and responsibilities when needed.','0-1'),
+(8,'I contribute to team cohesion.','0-1'),
+(8,'I help others stay aligned with objectives.','0-1'),
+(8,'I understand my role within a broader system.','0-1');
 -- ============================================
 -- USERS
 -- ============================================
