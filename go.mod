@@ -7,8 +7,6 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/pgvector/pgvector-go v0.3.0
-	github.com/swaggo/files v1.0.1
-	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.8.12
 	golang.org/x/crypto v0.48.0
 )
