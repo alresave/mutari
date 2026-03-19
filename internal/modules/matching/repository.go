@@ -1522,19 +1522,3 @@ func PredictTeamArchetype(vector []float32) string {
 
 	return "Balanced Team"
 }
-func predictRole(blocks []float64) string {
-
-	if blocks[1] > 0.85 && blocks[4] > 0.8 {
-		return "Visionary"
-	}
-
-	if blocks[0] > 0.8 && blocks[6] > 0.75 {
-		return "Operator"
-	}
-
-	if blocks[5] > 0.85 && blocks[7] > 0.8 {
-		return "Leader"
-	}
-
-	return "Specialist"
-}
