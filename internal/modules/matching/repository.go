@@ -110,29 +110,29 @@ func frictionExplanation(block string) string {
 
 	switch block {
 
-	case "Core Values":
+	case "CDrive & Ownership":
 		return "Possible differences in core life principles"
 
-	case "Relational Architecture":
-		return "Different expectations about relationship roles"
+	case "Cognitive Style":
+		return "Different expectations about team roles and collaboration"
 
-	case "Lifestyle Rhythm":
+	case "Work Values":
 		return "Potential mismatch in work pace"
 
-	case "Growth":
+	case "Emotional Regulation":
 		return "Different priorities in personal development"
 
-	case "Cognitive Style":
+	case "Learning Agility":
 		return "Different ways of thinking"
 
-	case "Ambition":
+	case "Collaboration":
 		return "Possible differences in long-term goals"
 
-	case "Emotional Stability":
+	case "Work Rythm":
 		return "Different emotional regulation styles"
 
-	case "Trust & Collaboration ":
-		return "Different bonding needs"
+	case "Team Architecture ":
+		return "Different preferences for team structure and interaction"
 
 	default:
 		return "Potential area of difference"

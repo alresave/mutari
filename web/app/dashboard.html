@@ -154,14 +154,14 @@ let currentTeam = null
 let teamVector = null
 
 const labels = [
-"Core Values",
-"Cognitive Style",
-"Emotional Stability",
-"Relational Architecture",
-"Lifestyle Rhythm",
-"Ambition",
-"Growth",
-"Collaboration"
+"Drive & Ownership",
+	"Cognitive Style",
+	"Work Values",
+	"Emotional Regulation",
+	"Learning Agility",
+	"Collaboration",
+	"Work Rythm ",
+	"Team Architecture"
 ]
 
 /* RADAR */
@@ -321,36 +321,38 @@ console.error("Error loading team info:",err)
 
 async function loadGaps(teamId){
 
-const res = await fetch(`/teams/${teamId}/gaps`,{headers})
-const data = await res.json()
+  const res = await fetch(`/teams/${teamId}/gaps`, { headers })
+  const data = await res.json()
 
-const container=document.getElementById("gaps")
-container.innerHTML=""
+  const container = document.getElementById("gaps")
+  container.innerHTML = ""
 
-const gaps = data.gaps || data
+  const row = document.createElement("div")
 
-Object.entries(gaps).forEach(([k,v])=>{
+  row.innerHTML = `
+    <div class="bg-slate-800 rounded-lg p-4 space-y-3">
 
-const val=Number(v)
+      <div class="flex justify-between text-sm">
+        <span class="text-slate-400">Team ID</span>
+        <span class="font-medium">${data.team_id}</span>
+      </div>
 
-const row=document.createElement("div")
+      <div>
+        <span class="text-slate-400 text-sm">Weak Blocks</span>
+        <ul class="list-disc list-inside text-sm mt-1">
+          ${data.weak_blocks.map(w => `<li>${w}</li>`).join("")}
+        </ul>
+      </div>
 
-row.innerHTML=`
-<div class="flex justify-between text-sm mb-1">
-<span>${k}</span>
-<span>${Math.round(val*100)}%</span>
-</div>
+      <div class="flex justify-between text-sm">
+        <span class="text-slate-400">Recommended Profile</span>
+        <span class="font-medium text-indigo-400">${data.recommended_profile}</span>
+      </div>
 
-<div class="bg-slate-700 h-2 rounded">
-<div class="bar bg-indigo-500 h-2 rounded"
-style="width:${val*100}%"></div>
-</div>
-`
+    </div>
+  `
 
-container.appendChild(row)
-
-})
-
+  container.appendChild(row)
 }
 
 /* HIRING */
@@ -464,7 +466,7 @@ document.getElementById("reasoning").innerHTML =
 `
 Strong alignment in <b>${data.top_block}</b>.<br>
 Candidate reinforces team strength in <b>${data.secondary_alignment}</b>.<br>
-Potential friction in <b>${data.potential_friction}</b>.
+Potential friction  <b>${data.potential_friction}</b>.
 `
 
 document.getElementById("candidateScore").innerText =
