@@ -83,6 +83,7 @@ class="bg-slate-900 border border-slate-700 px-4 py-2 rounded-lg">
     <span class="text-indigo-400 font-semibold">—</span>
   </div>
 </div>
+<div id="decisionSummary" class="mb-6 text-sm"></div>
 
 <div class="grid grid-cols-3 gap-8 mb-8">
 
@@ -158,6 +159,10 @@ Behavioral structure derived from team vectors
 /* AUTH */
 
 const token = localStorage.getItem("token")
+let bestCandidate = null
+let teamScoreGlobal = 0
+let bestRow = null
+const groupOrder = ["best", "strategic", "good", "neutral", "risky"]
 
 const headers = {
 "Authorization":"Bearer "+token
@@ -303,55 +308,47 @@ LOAD TEAM INFO (TU VERSION)
 
 async function loadTeamInfo(teamId){
 
-try{
+  try{
 
-const res = await fetch(`/teams/${teamId}/matches`,{headers})
+    const res = await fetch(`/teams/${teamId}/matches`,{headers})
 
-if(!res.ok){
-console.error("Matches request failed:",res.status)
-return
-}
+    if(!res.ok){
+      console.error("Matches request failed:",res.status)
+      return
+    }
 
-const data = await res.json()
+    const data = await res.json()
 
-let matches = []
+    let matches = []
 
-if(Array.isArray(data)){
-matches = data
-}
-else if(data.matches){
-matches = data.matches
-}
-else if(data.data){
-matches = data.data
-}
+    if(Array.isArray(data)) matches = data
+    else if(data.matches) matches = data.matches
+    else if(data.data) matches = data.data
 
-if(matches.length === 0) return
+    if(matches.length === 0) return
 
-/* usar primer candidato para construir radar base */
+    // 🔥 usar mejor candidato REAL
+    const best = [...matches].sort((a,b)=>(b.score||0)-(a.score||0))[0]
 
-const m = matches[0]
+    if(!best) return
 
-const vector = Object.values(m.block_scores || {}).map(v => v/100)
+    const vector = Object.values(best.block_scores || {}).map(v => v/100)
 
-teamVector = vector
+    teamVector = vector
+    createRadar(teamVector)
 
-createRadar(teamVector)
+    teamScoreGlobal = Math.round(best.score || 0)
 
-document.getElementById("teamScore").innerText =
-Math.round(m.score || 0)
+    document.getElementById("teamScore").innerText = teamScoreGlobal
 
-/* archetype simple */
+    document.getElementById("teamArchetype").innerText =
+      best.role || "Balanced Team"
 
-document.getElementById("teamArchetype").innerText =
-m.role || "Balanced Team"
+  }catch(err){
 
-}
-catch(err){
+    console.error("Error loading team info:",err)
 
-console.error("Error loading team info:",err)
-
-}
+  }
 
 }
 
@@ -411,6 +408,98 @@ async function loadGaps(teamId){
 
   }
 }
+function getBadge(type){
+
+  switch(type){
+
+    case "best":
+      return `<span class="text-green-400 text-xs font-bold">BEST</span>`
+
+    case "strategic":
+      return `<span class="text-yellow-400 text-xs font-bold">STRATEGIC</span>`
+
+    case "good":
+      return `<span class="text-indigo-400 text-xs font-bold">GOOD</span>`
+
+    case "risky":
+      return `<span class="text-red-400 text-xs font-bold">RISKY</span>`
+
+    default:
+      return `<span class="text-slate-400 text-xs">NEUTRAL</span>`
+  }
+}
+function classifyCandidate(candidate){
+
+  const weakBlocks = window.teamGaps?.weak_blocks || []
+  const topBlock = candidate.top_block || "-"
+
+ const teamScore = teamScoreGlobal
+
+const impact = (candidate.score || 0) - teamScore
+
+  const HIGH = 15
+  const MEDIUM = 5
+
+  const fillsGap = weakBlocks.includes(topBlock)
+
+  // 🟢 BEST → SOLO si llena gap + alto impacto
+  if(fillsGap && impact >= HIGH){
+    return "best"
+  }
+
+  // 🟡 STRATEGIC → llena gap (aunque impacto medio)
+  if(fillsGap && impact >= 0){
+    return "strategic"
+  }
+
+  // 🔵 GOOD → mejora fuerte pero NO gap
+  if(impact >= HIGH){
+    return "good"
+  }
+
+  // 🔵 GOOD (media)
+  if(impact >= MEDIUM){
+    return "good"
+  }
+
+  // ⚖️ NEUTRAL
+  if(impact >= 0){
+    return "neutral"
+  }
+
+  // 🔴 RISKY
+  return "risky"
+}
+
+function buildBlockDelta(candidate){
+
+  if(!teamVector || !candidate.block_scores) return ""
+
+  const deltas = []
+
+  const blocks = Object.keys(candidate.block_scores)
+
+  blocks.forEach((block, i)=>{
+
+    const teamVal = teamVector[i] || 0
+    const candidateVal = (candidate.block_scores[block] || 0) / 100
+
+    const diff = Math.round((candidateVal - teamVal) * 100)
+
+    if(Math.abs(diff) >= 5){
+      deltas.push({
+        block,
+        diff
+      })
+    }
+  })
+
+  // ordenar por impacto
+  deltas.sort((a,b)=>Math.abs(b.diff) - Math.abs(a.diff))
+
+  return deltas.slice(0,3)
+}
+
 function buildSmartReasoning(data, candidateName){
 
   const gaps = window.teamGaps
@@ -418,8 +507,7 @@ function buildSmartReasoning(data, candidateName){
   const topBlock = data.top_block || "-"
   const weakBlocks = gaps?.weak_blocks || []
 
-  const teamScore =
-    parseInt(document.getElementById("teamScore").innerText) || 0
+  const teamScore = teamScoreGlobal
 
   const candidateScore = data.score || 0
 
@@ -523,78 +611,252 @@ let demoIndex=0
 
 async function loadCandidates(teamId){
 
-try{
+  try{
 
-const res = await fetch(`/teams/${teamId}/matches`,{headers})
-const data = await res.json()
+    const res = await fetch(`/teams/${teamId}/matches`, { headers })
+    const data = await res.json()
 
-let matches=[]
+    let matches = []
 
-if(Array.isArray(data)) matches=data
-else if(data.matches) matches=data.matches
-else if(data.data) matches=data.data
+    if(Array.isArray(data)) matches = data
+    else if(data.matches) matches = data.matches
+    else if(data.data) matches = data.data
 
-const container = document.getElementById("candidates")
+    const container = document.getElementById("candidates")
+    container.innerHTML = ""
 
-container.innerHTML=""
+    demoCandidates = matches
 
-demoCandidates = matches
+    // 🔥 STEP 1: calcular tipo UNA sola vez
+    matches = matches.map(c => {
+      const type = classifyCandidate(c)
+      return {
+        ...c,
+        type,
+        score: c.score || 0
+      }
+    })
 
-matches.forEach(c=>{
+    // 🔥 STEP 2: ordenar estable
+    const order = {
+      best: 4,
+      strategic: 3,
+      good: 2,
+      neutral: 1,
+      risky: 0
+    }
 
-const row=document.createElement("div")
+    matches.sort((a, b) => {
 
-row.className="candidate flex justify-between items-center bg-slate-800 p-3 rounded cursor-pointer"
+      const aType = order[a.type] ?? 1
+      const bType = order[b.type] ?? 1
 
-row.innerHTML=`
+      if (bType !== aType) return bType - aType
+      if (b.score !== a.score) return b.score - a.score
 
-<div class="flex items-center gap-3">
+      return (a.name || "").localeCompare(b.name || "")
+    })
 
-<img src="${c.photo || 'https://i.pravatar.cc/40'}"
-class="w-10 h-10 rounded-full">
+    // 🔥 BEST
+    bestCandidate = matches.length > 0 ? matches[0] : null
 
-<div>
+    const pinnedBest = bestCandidate
+    const rest = matches.slice(1)
 
-<div class="font-semibold">${c.name || "Candidate"}</div>
+    // 🔥 agrupar
+    const groups = {
+      best: [],
+      strategic: [],
+      good: [],
+      neutral: [],
+      risky: []
+    }
 
-<div class="text-xs text-slate-400">
-${c.role || c.suggested_role || ""}
-</div>
+    rest.forEach(c => {
+      const type = c.type || "neutral"
+      groups[type]?.push(c)
+    })
 
-</div>
+    // 🔥 RENDER BEST
+    if(pinnedBest){
 
-</div>
+      const header = document.createElement("div")
+      header.className = "text-xs text-green-400 mb-2 uppercase tracking-wide"
+      header.innerText = "⭐ Top Recommendation"
 
-<div class="text-indigo-400 font-bold">
-${c.score || 0}%
-</div>
+      container.appendChild(header)
 
+      const row = document.createElement("div")
+      bestRow = row
+
+      row.className = `
+candidate flex justify-between items-center p-4 rounded cursor-pointer
+bg-green-900/50 border border-green-400 shadow-xl scale-[1.02]
 `
 
-row.onclick = () => {
+      row.innerHTML = `
+        <div class="flex items-center gap-3">
+          <img src="${pinnedBest.photo || 'https://i.pravatar.cc/40'}"
+          class="w-10 h-10 rounded-full">
 
-  document.querySelectorAll(".candidate").forEach(el=>{
-    el.classList.remove("active")
-  })
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="font-semibold text-white">${pinnedBest.name}</div>
+              ${getBadge("best")}
+            </div>
 
-  row.classList.add("active")
+            <div class="text-xs text-green-300">
+              Highest impact candidate
+            </div>
+          </div>
+        </div>
 
-  loadCandidateFit(
-    c.user_id || c.id,
-    c.name || "Candidate"
-  )
+        <div class="text-green-400 font-bold text-lg">
+          ${pinnedBest.score}%
+        </div>
+      `
 
+      row.onclick = () => {
+
+        document.querySelectorAll(".candidate").forEach(el=>{
+          el.classList.remove("active")
+          el.style.boxShadow = ""
+        })
+
+        row.classList.add("active")
+
+        loadCandidateFit(
+          pinnedBest.user_id || pinnedBest.id,
+          pinnedBest.name || "Candidate"
+        )
+      }
+
+      container.appendChild(row)
+    }
+
+    // 🔥 RENDER GRUPOS
+    groupOrder.forEach(type => {
+
+      if(groups[type].length === 0) return
+
+      const header = document.createElement("div")
+      header.className = "text-xs text-slate-400 mt-4 mb-1 uppercase tracking-wide"
+
+      header.innerHTML = `
+        <span class="
+          ${type === "best" ? "text-green-400" : ""}
+          ${type === "strategic" ? "text-yellow-400" : ""}
+          ${type === "good" ? "text-indigo-400" : ""}
+          ${type === "risky" ? "text-red-400" : ""}
+        ">
+          ${type.toUpperCase()} (${groups[type].length})
+        </span>
+      `
+
+      container.appendChild(header)
+
+      groups[type].forEach(c => {
+
+        const row = document.createElement("div")
+
+        row.className = `
+candidate flex justify-between items-center p-3 rounded cursor-pointer
+${c.type === "best"
+  ? "bg-green-900/40 border border-green-400/40 shadow-lg"
+  : c.type === "strategic"
+  ? "bg-yellow-900/20 border border-yellow-400/30"
+  : c.type === "good"
+  ? "bg-indigo-900/20 border border-indigo-400/20"
+  : "bg-slate-800"
 }
+`
 
-container.appendChild(row)
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+            <img src="${c.photo || 'https://i.pravatar.cc/40'}"
+            class="w-10 h-10 rounded-full">
 
-})
+            <div>
+              <div class="flex items-center gap-2">
+                <div class="font-semibold">${c.name || "Candidate"}</div>
+                ${getBadge(c.type)}
+              </div>
 
-}catch(err){
+              <div class="text-xs text-slate-400">
+                ${c.role || c.suggested_role || ""}
+              </div>
+            </div>
+          </div>
 
-console.error("Error loading candidates:",err)
+          <div class="text-indigo-400 font-bold">
+            ${c.score || 0}%
+          </div>
+        `
 
-}
+        row.onclick = () => {
+
+          document.querySelectorAll(".candidate").forEach(el=>{
+            el.classList.remove("active")
+            el.style.boxShadow = ""
+          })
+
+          row.classList.add("active")
+
+          loadCandidateFit(
+            c.user_id || c.id,
+            c.name || "Candidate"
+          )
+        }
+
+        container.appendChild(row)
+      })
+    })
+
+    // 🔥 AUTO SELECT BEST
+    if(bestCandidate){
+
+      if(bestRow){
+        bestRow.classList.add("active")
+        bestRow.scrollIntoView({ behavior:"smooth", block:"center" })
+      }
+
+      loadCandidateFit(
+        bestCandidate.user_id || bestCandidate.id,
+        bestCandidate.name || "Candidate"
+      )
+
+      document.getElementById("decisionSummary").innerHTML = `
+        <div class="bg-slate-800 p-4 rounded-lg border border-green-400/30">
+
+          <div class="text-green-400 font-semibold mb-1">
+            💡 Recommended Hire
+          </div>
+
+          <div class="text-white font-bold text-lg">
+            ${bestCandidate.name}
+          </div>
+
+          <div class="text-sm text-slate-400">
+            ${buildSmartReasoning(bestCandidate, bestCandidate.name)}
+
+            <div class="mt-2 space-y-1 text-xs">
+              ${
+                buildBlockDelta(bestCandidate).map(d => `
+                  <div class="${d.diff > 0 ? 'text-green-400' : 'text-red-400'}">
+                    ${d.diff > 0 ? '+' : ''}${d.diff}% ${d.block}
+                  </div>
+                `).join("")
+              }
+            </div>
+          </div>
+
+        </div>
+      `
+    }
+
+  }catch(err){
+    console.error("Error loading candidates:", err)
+  }
 
 }
 
@@ -612,14 +874,16 @@ async function loadCandidateFit(candidateId, candidateName = "Candidate"){
 
     createRadar(teamVector, candidateVector)
 
-    const teamScore =
-      parseInt(document.getElementById("teamScore").innerText) || 0
+    const teamScore = teamScoreGlobal
 
     const candidateScore = data.score || 0
     const impact = candidateScore - teamScore
 
     // 🔥 reasoning inteligente + impacto
     let reasoning = buildSmartReasoning(data, candidateName)
+
+// 🔥 comparación vs best
+reasoning += buildComparisonInsight(data, candidateName)
 
     if(impact !== 0){
       reasoning += `<br><span class="text-sm text-slate-400">
@@ -642,6 +906,47 @@ async function loadCandidateFit(candidateId, candidateName = "Candidate"){
 
   }
 
+}
+
+function buildComparisonInsight(data, candidateName){
+
+  if(!bestCandidate) return ""
+
+  const bestScore = bestCandidate.score || 0
+  const currentScore = data.score || 0
+
+  const diff = currentScore - bestScore
+
+  // si es el mismo candidato → no mostrar nada
+  if((data.user_id || data.id) === (bestCandidate.user_id || bestCandidate.id)){
+    return ""
+  }
+
+  const weakerBlock = data.top_block || "-"
+
+  if(diff < 0){
+    return `
+      <br>
+      <span class="text-xs text-red-400">
+        ${diff}% vs ${bestCandidate.name} (recommended)
+      </span>
+      <br>
+      <span class="text-xs text-slate-500">
+        Weaker in ${weakerBlock}
+      </span>
+    `
+  }
+
+  if(diff > 0){
+    return `
+      <br>
+      <span class="text-xs text-green-400">
+        +${diff}% vs ${bestCandidate.name}
+      </span>
+    `
+  }
+
+  return ""
 }
 
 /* DEMO MODE */
@@ -668,7 +973,7 @@ const candidate = demoCandidates[demoIndex]
 
 loadCandidateFit(
   candidate.user_id || candidate.id,
-  c.name || "Candidate"
+  candidate.name || "Candidate"
 )
 
 demoIndex++
