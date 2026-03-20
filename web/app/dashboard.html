@@ -24,11 +24,21 @@ box-shadow:0 0 30px rgba(99,102,241,0.25);
 
 .candidate{
 transition:all .2s;
+border:1px solid transparent;
 }
 
 .candidate:hover{
-transform:scale(1.03);
+transform:scale(1.05);
 background:#1e293b;
+border-color:#6366f1;
+box-shadow:0 0 20px rgba(99,102,241,0.4);
+}
+
+.candidate.active{
+background:#312e81;
+border-color:#818cf8;
+box-shadow:0 0 25px rgba(129,140,248,0.6);
+transform:scale(1.05);
 }
 
 .bar{
@@ -66,6 +76,12 @@ color:#6366f1;
 class="bg-slate-900 border border-slate-700 px-4 py-2 rounded-lg">
 </select>
 
+</div>
+<div class="mb-6">
+  <div id="selectedTeamLabel" class="text-sm text-slate-400">
+    Selected Team →
+    <span class="text-indigo-400 font-semibold">—</span>
+  </div>
 </div>
 
 <div class="grid grid-cols-3 gap-8 mb-8">
@@ -218,31 +234,45 @@ grid:{color:"#1e293b"}
 
 async function loadTeams(){
 
-const res = await fetch("/teams",{headers})
-const data = await res.json()
+  try{
 
-const teams = Array.isArray(data) ? data : data.teams
+    const res = await fetch("/teams",{headers})
+    const data = await res.json()
 
-const select = document.getElementById("teamSelect")
+    const teams = Array.isArray(data) ? data : data.teams
 
-select.innerHTML=""
+    const select = document.getElementById("teamSelect")
+    select.innerHTML = ""
 
-teams.forEach(team=>{
+    // ✅ crear el mapa UNA sola vez
+    window.teamMap = {}
 
-const option=document.createElement("option")
+    teams.forEach(team=>{
 
-option.value = team.id
-option.innerText = team.name
+      // guardar nombre
+      teamMap[team.id] = team.name
 
-select.appendChild(option)
+      const option = document.createElement("option")
+      option.value = team.id
+      option.innerText = team.name
 
-})
+      select.appendChild(option)
 
-select.onchange = () => loadTeam(select.value)
+    })
 
-if(teams.length > 0){
-loadTeam(teams[0].id)
-}
+    // cambio de team
+    select.onchange = () => loadTeam(select.value)
+
+    // cargar primero automáticamente
+    if(teams.length > 0){
+      loadTeam(teams[0].id)
+    }
+
+  } catch(err){
+
+    console.error("Error loading teams:", err)
+
+  }
 
 }
 
@@ -250,12 +280,20 @@ loadTeam(teams[0].id)
 
 async function loadTeam(teamId){
 
-currentTeam = teamId
+  currentTeam = teamId
 
-await loadTeamInfo(teamId)
-await loadGaps(teamId)
-await loadHiring(teamId)
-await loadCandidates(teamId)
+  // 🔥 actualizar breadcrumb
+  const teamName = teamMap[teamId] || teamId
+
+  document.getElementById("selectedTeamLabel").innerHTML = `
+    Selected Team →
+    <span class="text-indigo-400 font-semibold">${teamName}</span>
+  `
+
+  await loadTeamInfo(teamId)
+  await loadGaps(teamId)
+  await loadHiring(teamId)
+  await loadCandidates(teamId)
 
 }
 
@@ -321,38 +359,135 @@ console.error("Error loading team info:",err)
 
 async function loadGaps(teamId){
 
-  const res = await fetch(`/teams/${teamId}/gaps`, { headers })
-  const data = await res.json()
+  try{
 
-  const container = document.getElementById("gaps")
-  container.innerHTML = ""
+    const res = await fetch(`/teams/${teamId}/gaps`, { headers })
+    const data = await res.json()
 
-  const row = document.createElement("div")
+    // 🔥 guardar global para AI reasoning
+    window.teamGaps = data
 
-  row.innerHTML = `
-    <div class="bg-slate-800 rounded-lg p-4 space-y-3">
+    const container = document.getElementById("gaps")
+    container.innerHTML = ""
 
-      <div class="flex justify-between text-sm">
-        <span class="text-slate-400">Team ID</span>
-        <span class="font-medium">${data.team_id}</span>
+    const row = document.createElement("div")
+
+    const weakBlocks = data.weak_blocks || []
+
+    row.innerHTML = `
+      <div class="bg-slate-800 rounded-lg p-4 space-y-3">
+
+        <div class="flex justify-between text-sm">
+          <span class="text-slate-400">Selected Team</span>
+          <span class="font-medium">${teamMap[data.team_id] || data.team_id}</span>
+        </div>
+
+        <div>
+          <span class="text-slate-400 text-sm">Weak Blocks</span>
+          <ul class="list-disc list-inside text-sm mt-1">
+            ${
+              weakBlocks.length > 0
+              ? weakBlocks.map(w => `<li>${w}</li>`).join("")
+              : `<li class="text-slate-500">No critical gaps</li>`
+            }
+          </ul>
+        </div>
+
+        <div class="flex justify-between text-sm">
+          <span class="text-slate-400">Recommended Profile</span>
+          <span class="font-medium text-indigo-400">
+            ${data.recommended_profile?.role || data.recommended_profile || "-"}
+          </span>
+        </div>
+
       </div>
+    `
 
-      <div>
-        <span class="text-slate-400 text-sm">Weak Blocks</span>
-        <ul class="list-disc list-inside text-sm mt-1">
-          ${data.weak_blocks.map(w => `<li>${w}</li>`).join("")}
-        </ul>
-      </div>
+    container.appendChild(row)
 
-      <div class="flex justify-between text-sm">
-        <span class="text-slate-400">Recommended Profile</span>
-        <span class="font-medium text-indigo-400">${data.recommended_profile}</span>
-      </div>
+  }catch(err){
 
-    </div>
+    console.error("Error loading gaps:", err)
+
+  }
+}
+function buildSmartReasoning(data, candidateName){
+
+  const gaps = window.teamGaps
+
+  const topBlock = data.top_block || "-"
+  const weakBlocks = gaps?.weak_blocks || []
+
+  const teamScore =
+    parseInt(document.getElementById("teamScore").innerText) || 0
+
+  const candidateScore = data.score || 0
+
+  const HIGH_IMPACT = 15
+  const MEDIUM_IMPACT = 5
+
+  const impact = candidateScore - teamScore
+
+  // 🟢 IDEAL HIRE (llena gap + alto impacto)
+  if(weakBlocks.includes(topBlock) && impact >= HIGH_IMPACT){
+    return `
+    <b class="text-green-400">${candidateName}</b> is an ideal hire,
+    filling a critical gap in <b>${topBlock}</b> while significantly improving team performance
+    `
+  }
+
+  // 🟡 GAP + impacto positivo moderado
+  if(weakBlocks.includes(topBlock) && impact >= MEDIUM_IMPACT){
+    return `
+    <b class="text-green-400">${candidateName}</b> fills a key gap in <b>${topBlock}</b>,
+    improving team balance and performance
+    `
+  }
+
+  // 🟡 GAP pero impacto negativo
+  if(weakBlocks.includes(topBlock) && impact < 0){
+    return `
+    <b class="text-yellow-400">${candidateName}</b> fills a critical gap in <b>${topBlock}</b>,
+    but slightly reduces overall team compatibility
+    `
+  }
+
+  // 🟢 HIGH IMPACT SIN GAP
+  if(!weakBlocks.includes(topBlock) && impact >= HIGH_IMPACT){
+    return `
+    <b class="text-green-400">${candidateName}</b> is a high-impact hire,
+    significantly strengthening <b>${topBlock}</b> and boosting team performance
+    `
+  }
+
+  // 🔵 STRONG ADDITION
+  if(!weakBlocks.includes(topBlock) && impact >= MEDIUM_IMPACT){
+    return `
+    <b class="text-indigo-400">${candidateName}</b> is a strong addition,
+    reinforcing <b>${topBlock}</b> and improving overall team performance
+    `
+  }
+
+  // 🔵 IMPACTO BAJO POSITIVO
+  if(impact > 0){
+    return `
+    <b class="text-slate-300">${candidateName}</b> brings a modest improvement,
+    slightly strengthening <b>${topBlock}</b>
+    `
+  }
+
+  // 🔴 NEGATIVO
+  if(impact < 0){
+    return `
+    <b class="text-red-400">${candidateName}</b> may introduce misalignment,
+    reducing team effectiveness despite strengths in <b>${topBlock}</b>
+    `
+  }
+
+  // 🔵 DEFAULT
+  return `
+  <b class="text-indigo-400">${candidateName}</b> reinforces team strength in <b>${topBlock}</b>
   `
-
-  container.appendChild(row)
 }
 
 /* HIRING */
@@ -436,7 +571,20 @@ ${c.score || 0}%
 
 `
 
-row.onclick=()=>loadCandidateFit(c.user_id || c.id)
+row.onclick = () => {
+
+  document.querySelectorAll(".candidate").forEach(el=>{
+    el.classList.remove("active")
+  })
+
+  row.classList.add("active")
+
+  loadCandidateFit(
+    c.user_id || c.id,
+    c.name || "Candidate"
+  )
+
+}
 
 container.appendChild(row)
 
@@ -452,33 +600,47 @@ console.error("Error loading candidates:",err)
 
 /* FIT */
 
-async function loadCandidateFit(candidateId){
+async function loadCandidateFit(candidateId, candidateName = "Candidate"){
 
-const res = await fetch(`/teams/${currentTeam}/fit/${candidateId}`,{headers})
-const data = await res.json()
+  try{
 
-const candidateVector =
-Object.values(data.block_scores || {}).map(v=>v/100)
+    const res = await fetch(`/teams/${currentTeam}/fit/${candidateId}`,{headers})
+    const data = await res.json()
 
-createRadar(teamVector,candidateVector)
+    const candidateVector =
+      Object.values(data.block_scores || {}).map(v=>v/100)
 
-document.getElementById("reasoning").innerHTML =
-`
-Strong alignment in <b>${data.top_block}</b>.<br>
-Candidate reinforces team strength in <b>${data.secondary_alignment}</b>.<br>
-Potential friction  <b>${data.potential_friction}</b>.
-`
+    createRadar(teamVector, candidateVector)
 
-document.getElementById("candidateScore").innerText =
-data.score || 0
+    const teamScore =
+      parseInt(document.getElementById("teamScore").innerText) || 0
 
-const teamScore =
-parseInt(document.getElementById("teamScore").innerText) || 0
+    const candidateScore = data.score || 0
+    const impact = candidateScore - teamScore
 
-const impact = (data.score || 0) - teamScore
+    // 🔥 reasoning inteligente + impacto
+    let reasoning = buildSmartReasoning(data, candidateName)
 
-document.getElementById("impact").innerText =
-(impact >= 0 ? "+" : "") + impact
+    if(impact !== 0){
+      reasoning += `<br><span class="text-sm text-slate-400">
+        Impact: <b class="${impact > 0 ? 'text-green-400' : 'text-red-400'}">
+        ${impact > 0 ? '+' : ''}${impact}%
+        </b>
+      </span>`
+    }
+
+    document.getElementById("reasoning").innerHTML = reasoning
+
+    document.getElementById("candidateScore").innerText = candidateScore
+
+    document.getElementById("impact").innerText =
+      (impact >= 0 ? "+" : "") + impact
+
+  }catch(err){
+
+    console.error("Error loading candidate fit:", err)
+
+  }
 
 }
 
@@ -504,7 +666,10 @@ if(demoCandidates.length === 0) return
 
 const candidate = demoCandidates[demoIndex]
 
-loadCandidateFit(candidate.user_id || candidate.id)
+loadCandidateFit(
+  candidate.user_id || candidate.id,
+  c.name || "Candidate"
+)
 
 demoIndex++
 
