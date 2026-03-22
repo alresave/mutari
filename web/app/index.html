@@ -1,293 +1,229 @@
 <!DOCTYPE html>
+
 <html class="dark">
 <head>
 
 <meta charset="UTF-8">
-<title>Mutari Compatibility Profile</title>
+<title>Mutari — AI Team Intelligence</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="./styles/output.css">
 
-<script>
-tailwind.config = {
-darkMode: "class"
+<style>
+html { scroll-behavior: smooth; }
+
+body{
+  background:#020617;
 }
-</script>
+
+/* 🔹 Linear surface */
+.card{
+  background: rgba(15,23,42,0.5);
+  border: 1px solid rgba(71,85,105,0.2);
+  border-radius: 14px;
+}
+
+/* 🔥 HERO INTERACTIVE */
+.hero-wrap {
+  perspective: 1200px;
+}
+
+.hero-shot {
+  opacity: 0;
+  transform: rotateX(2deg) translateY(40px) scale(0.98);
+  transition: transform .25s ease, box-shadow .25s ease, opacity .8s ease;
+}
+
+.hero-shot.visible {
+  opacity: 1;
+  transform: rotateX(2deg) translateY(0) scale(1);
+}
+
+.hero-shot.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.hero-wrap:hover .hero-shot {
+  box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+}
+
+.hero-glow {
+  background: radial-gradient(circle at center, rgba(99,102,241,0.25), transparent 70%);
+  transition: all .2s ease;
+  pointer-events: none;
+}
+
+/* 🎬 DEMO */
+.demo-frame {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all .6s ease;
+}
+
+.demo-frame.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>
 
 </head>
 
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors">
+<body class="text-slate-200">
 
-<div class="max-w-4xl mx-auto py-12 px-6">
+<div class="max-w-4xl mx-auto px-6 py-16">
 
-<div class="flex justify-between items-center mb-10">
+  <!-- HERO -->
 
-<h1 class="text-4xl font-bold">
-Mutari Compatibility Profile
+  <div class="text-center mb-10">
+
+```
+<img src="./images/logo.png" class="h-10 mx-auto mb-6 opacity-90">
+
+<h1 class="text-3xl font-medium tracking-tight mb-3">
+  Hire better teams with AI
 </h1>
 
-<button
-onclick="toggleDark()"
-class="bg-slate-200 dark:bg-slate-700 px-4 py-2 rounded-lg text-sm"
->
-Toggle
-</button>
+<p class="text-slate-500 text-sm mb-8">
+  See who to hire — and why
+</p>
+
+<a href="#demo"
+  class="bg-white text-black hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium">
+  Watch demo
+</a>
+```
+
+  </div>
+
+  <!-- HERO SCREENSHOT -->
+
+  <div class="mb-14">
+
+```
+<div class="relative max-w-5xl mx-auto hero-wrap">
+
+  <div class="absolute inset-0 blur-3xl opacity-40 hero-glow"></div>
+
+  <img src="./images/dashboard.png"
+    class="relative rounded-lg border border-slate-800 shadow-xl hero-shot">
+
+</div>
+```
+
+  </div>
+
+  <!-- DEMO -->
+
+  <div id="demo" class="mb-14">
+
+```
+<p class="text-center text-slate-500 text-sm mb-6">
+  Analyze a team and see the best hire instantly
+</p>
+
+<div class="card overflow-hidden demo-frame">
+
+  <div class="flex items-center gap-2 px-4 py-2 border-b border-slate-800">
+    <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+    <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+    <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+  </div>
+
+  <iframe
+    src="./dashboard.html?demo=true"
+    class="w-full h-[85vh] min-h-[850px]">
+  </iframe>
+
+</div>
+```
+
+  </div>
+
+  <!-- VALUE -->
+
+  <div class="text-center mb-14 max-w-md mx-auto">
+
+```
+<p class="text-slate-500 text-sm">
+  Mutari analyzes your team, identifies gaps, and shows exactly
+  which candidate will improve performance — with clear reasoning.
+</p>
+```
+
+  </div>
+
+  <!-- FOOTER -->
+
+  <div class="text-center text-xs text-slate-700">
+    Mutari
+  </div>
 
 </div>
 
-<!-- TEST -->
-<div id="testSection">
-
-<form id="testForm" class="space-y-10"></form>
-
-<div class="text-center mt-10">
-
-<button
-onclick="submitAnswers()"
-class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-3 rounded-lg shadow"
->
-Submit
-</button>
-
-</div>
-
-</div>
-
-<!-- MATCHES -->
-<div id="matchesSection" class="hidden">
-
-<h2 class="text-3xl font-bold mb-8 text-center">
-Your Top Matches
-</h2>
-
-<div id="matchesContainer" class="grid md:grid-cols-2 gap-6"></div>
-
-</div>
-
-</div>
+<!-- 🔥 ALL JS IN ONE PLACE -->
 
 <script>
 
-const token = localStorage.getItem("token")
-const user = JSON.parse(localStorage.getItem("user"))
+// elements
+const demo = document.querySelector(".demo-frame")
+const shot = document.querySelector(".hero-shot")
+const wrap = document.querySelector(".hero-wrap")
+const glow = document.querySelector(".hero-glow")
 
-if(!token){
+// 🎬 reveal demo
+new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      demo.classList.add("visible")
+    }
+  })
+}).observe(demo)
 
-window.location="/app/login.html"
+// 🎬 reveal hero
+new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      shot.classList.add("visible")
+      shot.classList.add("float")
+    }
+  })
+}).observe(shot)
 
-}
+// 🧲 mouse interaction
+wrap.addEventListener("mousemove", (e) => {
 
-let questions = []
+  const rect = wrap.getBoundingClientRect()
 
-function toggleDark(){
+  const x = (e.clientX - rect.left) / rect.width - 0.5
+  const y = (e.clientY - rect.top) / rect.height - 0.5
 
-document.documentElement.classList.toggle("dark")
+  const rotateX = y * -6
+  const rotateY = x * 8
 
-}
+  shot.style.transform = `
+    rotateX(${rotateX}deg)
+    rotateY(${rotateY}deg)
+    scale(1.02)
+  `
 
-async function loadQuestions(){
-
-const res = await fetch("/mcp/questions",{
-
-headers:{
-Authorization:"Bearer "+token
-}
-
+  glow.style.background = `
+    radial-gradient(
+      circle at ${e.clientX - rect.left}px ${e.clientY - rect.top}px,
+      rgba(99,102,241,0.35),
+      transparent 60%
+    )
+  `
 })
 
-if(res.status===401){
-
-localStorage.clear()
-window.location="/app/login.html"
-return
-
-}
-
-const data = await res.json()
-
-questions=data.questions
-
-const form=document.getElementById("testForm")
-
-let currentBlock=-1
-
-questions.forEach(q=>{
-
-if(q.block!==currentBlock){
-
-currentBlock=q.block
-
-const block=document.createElement("div")
-
-block.innerHTML=`
-<div class="text-2xl font-semibold border-b pb-2 border-slate-200 dark:border-slate-700">
-${q.block_name}
-</div>
-`
-
-form.appendChild(block)
-
-}
-
-const container=document.createElement("div")
-
-container.className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow"
-
-container.innerHTML=`
-
-<div class="mb-4 font-medium">
-${q.question}
-</div>
-
-<div class="flex justify-between text-sm text-slate-500 mb-2">
-<span>Strongly Disagree</span>
-<span>Strongly Agree</span>
-</div>
-
-<input
-type="range"
-min="0.1"
-max="1"
-step="0.1"
-value="0.5"
-id="q_${q.id}"
-class="w-full accent-indigo-600"
->
-
-<div class="text-center mt-2 text-sm text-slate-500">
-Value: <span id="v_${q.id}">0.5</span>
-</div>
-
-`
-
-form.appendChild(container)
-
-const slider=container.querySelector(`#q_${q.id}`)
-const label=container.querySelector(`#v_${q.id}`)
-
-slider.addEventListener("input",()=>{
-label.innerText=slider.value
+// reset
+wrap.addEventListener("mouseleave", () => {
+  shot.style.transform = "rotateX(2deg) rotateY(0deg) scale(1)"
 })
-
-})
-
-}
-
-async function submitAnswers(){
-
-const answers=[]
-
-questions.forEach(q=>{
-
-const slider=document.getElementById(`q_${q.id}`)
-
-answers.push({
-
-question_id:q.id,
-block:q.block,
-value:parseFloat(slider.value)
-
-})
-
-})
-
-await fetch("/mcp/answers",{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json",
-Authorization:"Bearer "+token
-},
-
-body:JSON.stringify({
-
-user_id:user.id,
-answers:answers
-
-})
-
-})
-
-loadMatches()
-
-}
-
-async function loadMatches(){
-
-const res=await fetch("/matches",{
-
-headers:{
-Authorization:"Bearer "+token
-}
-
-})
-
-const data=await res.json()
-
-document.getElementById("testSection").classList.add("hidden")
-document.getElementById("matchesSection").classList.remove("hidden")
-
-const container=document.getElementById("matchesContainer")
-
-container.innerHTML=""
-
-data.matches.forEach(m=>{
-
-const card=document.createElement("div")
-
-card.className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow"
-
-card.innerHTML=`
-
-<div class="flex justify-between items-center mb-4">
-
-<div class="text-2xl font-bold">
-${m.score}%
-</div>
-
-<div class="text-sm text-indigo-500">
-${m.compatibility_type}
-</div>
-
-</div>
-
-<div class="mb-3">
-
-<div class="text-sm text-slate-500">
-Best Alignment
-</div>
-
-<div class="font-semibold">
-${m.top_block}
-</div>
-
-</div>
-
-<div class="mb-3">
-
-<div class="text-sm text-slate-500">
-Relationship Stability
-</div>
-
-<div class="font-semibold">
-${m.relationship_stability}
-</div>
-
-</div>
-
-<div class="text-sm text-slate-400">
-⚠ ${m.potential_friction}
-</div>
-
-`
-
-container.appendChild(card)
-
-})
-
-}
-
-loadQuestions()
 
 </script>
 
