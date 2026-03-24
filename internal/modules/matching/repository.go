@@ -4,19 +4,26 @@ import (
 	"context"
 	"errors"
 	"math"
-	"math/rand/v2"
 	"sort"
 
+	"github.com/alresave/mutari/internal/modules/mcp"
+	"github.com/alresave/mutari/internal/modules/models"
+	"github.com/alresave/mutari/internal/modules/users"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pgvector/pgvector-go"
 )
 
 type Repository struct {
-	db *pgxpool.Pool
+	db    *pgxpool.Pool
+	users *users.Repository
+	mcp   *mcp.Repository
 }
 
 func NewRepository(db *pgxpool.Pool) *Repository {
-	return &Repository{db: db}
+	return &Repository{db: db,
+		users: users.NewRepository(db),
+		mcp:   mcp.NewRepository(db),
+	}
 }
 
 func blockSimilarity(a, b []float32, start, end int) float64 {
@@ -108,7 +115,7 @@ func compatibilityType(block string) string {
 
 func frictionExplanation(block string) string {
 
-	return BlockDifferences[block]
+	return models.BlockDifferences[block]
 }
 
 func compatibilitySummary(primary, secondary, friction string) string {
@@ -122,7 +129,7 @@ func compatibilitySummary(primary, secondary, friction string) string {
 		"."
 }
 
-func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candidate, error) {
+func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]models.Candidate, error) {
 
 	query := `
 	SELECT
@@ -165,7 +172,7 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 		return nil, errors.New("user vector not found")
 	}
 
-	var results []Candidate
+	var results []models.Candidate
 
 	for id, vec := range vectors {
 
@@ -188,7 +195,7 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 			score := blockSimilarity(source, vec, start, end)
 
 			blockSim[block] = score
-			blockScores[blockNames[block]] = int(score * 100)
+			blockScores[models.BlockNames[block]] = int(score * 100)
 		}
 
 		for i := 0; i < len(blockSim); i++ {
@@ -203,7 +210,7 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 			}
 		}
 
-		weights := RoleWeights["engineer"] // luego dinámico
+		weights := models.RoleWeights["engineer"] // luego dinámico
 
 		score := 0.0
 
@@ -211,7 +218,7 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 			score += blockSim[i] * weights[i]
 		}
 
-		c := Candidate{
+		c := models.Candidate{
 
 			UserID: id,
 			Name:   names[id],
@@ -219,19 +226,19 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 
 			Score: int(score * 100),
 
-			TopBlock:       blockNames[best],
-			SecondaryBlock: blockNames[second],
+			TopBlock:       models.BlockNames[best],
+			SecondaryBlock: models.BlockNames[second],
 
-			CompatibilityType: compatibilityType(blockNames[best]),
+			CompatibilityType: compatibilityType(models.BlockNames[best]),
 
-			Explanation: explainMatch(blockNames[best], score),
+			Explanation: explainMatch(models.BlockNames[best], score),
 
-			PotentialFriction: frictionExplanation(blockNames[worst]),
+			PotentialFriction: frictionExplanation(models.BlockNames[worst]),
 
 			CompatibilitySummary: compatibilitySummary(
-				blockNames[best],
-				blockNames[second],
-				blockNames[worst],
+				models.BlockNames[best],
+				models.BlockNames[second],
+				models.BlockNames[worst],
 			),
 
 			RelationshipStability: StabilityScore(score),
@@ -246,22 +253,7 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]Candida
 	return results, nil
 }
 
-func (r *Repository) CreateUser(ctx context.Context, name, email, passwordHash string) (int64, error) {
-
-	query := `
-	INSERT INTO users (name,email,password_hash)
-	VALUES ($1,$2,$3)
-	RETURNING id
-	`
-
-	var id int64
-
-	err := r.db.QueryRow(ctx, query, name, email, passwordHash).Scan(&id)
-
-	return id, err
-}
-
-func (r *Repository) GetTeamVector(ctx context.Context, teamID int64) (*TeamVector, error) {
+func (r *Repository) GetTeamVector(ctx context.Context, teamID int64) (*models.TeamVector, error) {
 
 	query := `
     SELECT effective_vector
@@ -288,126 +280,13 @@ func (r *Repository) GetTeamVector(ctx context.Context, teamID int64) (*TeamVect
 
 	archetype := PredictTeamArchetype(vector)
 
-	return &TeamVector{
+	return &models.TeamVector{
 		Vector:    vector,
 		TeamScore: score,
 		Archetype: archetype,
 	}, nil
 }
 
-func (r *Repository) GetUserByEmail(ctx context.Context, email string) (int64, string, int64, string, error) {
-
-	query := `
-    SELECT id, password_hash, company_id, name
-    FROM users
-    WHERE email = $1
-    `
-
-	var id int64
-	var hash string
-	var companyID int64
-	var name string
-
-	err := r.db.QueryRow(ctx, query, email).Scan(
-		&id,
-		&hash,
-		&companyID,
-		&name,
-	)
-
-	if err != nil {
-		return 0, "", 0, "", err
-	}
-
-	return id, hash, companyID, name, nil
-}
-
-func (r *Repository) HasMCPProfile(ctx context.Context, userID int64) (bool, error) {
-
-	query := `
-	SELECT EXISTS(
-	SELECT 1 FROM user_mcp_profiles
-	WHERE user_id=$1
-	)
-	`
-
-	var exists bool
-
-	err := r.db.QueryRow(ctx, query, userID).Scan(&exists)
-
-	return exists, err
-}
-
-func (r *Repository) GetMCPQuestions(ctx context.Context) ([]MCPQuestion, error) {
-
-	query := `
-	SELECT
-	q.id,
-	q.block,
-	b.name,
-	b.description,
-	q.question_text,
-	q.scale
-	FROM mcp_questions q
-	JOIN mcp_blocks b ON q.block=b.id
-	ORDER BY q.block,q.id
-	`
-
-	rows, err := r.db.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var questions []MCPQuestion
-
-	for rows.Next() {
-
-		var q MCPQuestion
-
-		err := rows.Scan(
-			&q.ID,
-			&q.Block,
-			&q.BlockName,
-			&q.BlockDescription,
-			&q.Question,
-			&q.Scale,
-		)
-
-		if err != nil {
-			return nil, err
-		}
-
-		questions = append(questions, q)
-	}
-
-	return questions, nil
-}
-
-func (r *Repository) StoreMCPAnswers(ctx context.Context, userID int64, answers []MCPAnswer) error {
-
-	query := `
-	INSERT INTO user_mcp_answers
-	(user_id,question_id,block,value)
-	VALUES ($1,$2,$3,$4)
-	`
-
-	for _, a := range answers {
-
-		_, err := r.db.Exec(ctx, query,
-			userID,
-			a.QuestionID,
-			a.Block,
-			a.Value,
-		)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 func (r *Repository) GetTeamHiringProfile(ctx context.Context, teamID int64) ([]float32, error) {
 
 	query := `
@@ -424,148 +303,6 @@ WHERE team_id = $1
 	}
 
 	return vec.Slice(), nil
-}
-
-func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) error {
-
-	query := `
-	SELECT block,value
-	FROM user_mcp_answers
-	WHERE user_id=$1
-	`
-
-	rows, err := r.db.Query(ctx, query, userID)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	blockSum := make(map[int]float64)
-	blockCount := make(map[int]int)
-
-	for rows.Next() {
-
-		var block int
-		var value float64
-
-		if err := rows.Scan(&block, &value); err != nil {
-			return err
-		}
-
-		blockSum[block] += value
-		blockCount[block]++
-	}
-
-	// MCP archetype bases
-	archetypes := [][]float64{
-
-		// Leader
-		{0.9, 0.7, 0.7, 0.7, 0.95, 0.8, 0.6, 0.8},
-
-		// Strategist
-		{0.8, 0.7, 0.8, 0.7, 0.7, 0.9, 0.7, 0.95},
-
-		// Builder
-		{0.8, 0.75, 0.7, 0.75, 0.9, 0.85, 0.65, 0.7},
-
-		// Connector
-		{0.85, 0.8, 0.9, 0.9, 0.65, 0.75, 0.9, 0.7},
-
-		// Stabilizer
-		{0.9, 0.85, 0.95, 0.85, 0.6, 0.7, 0.8, 0.65},
-	}
-
-	vector := make([]float32, 64)
-
-	for block := 0; block < 8; block++ {
-
-		avg := 0.5
-
-		if blockCount[block] > 0 {
-			avg = blockSum[block] / float64(blockCount[block])
-		}
-
-		archetype := archetypes[int(userID)%len(archetypes)]
-		base := archetype[block]
-
-		start := block * 8
-
-		for i := 0; i < 8; i++ {
-			noise := (rand.Float64() - 0.5) * 0.12
-			gradient := (float64(i) - 3.5) * 0.30
-
-			val := (base*0.6 + avg*0.4) + gradient + noise
-
-			if val < 0 {
-				val = 0
-			}
-
-			if val > 1 {
-				val = 1
-			}
-
-			vector[start+i] = float32(val)
-		}
-	}
-
-	pgVector := pgvector.NewVector(vector)
-
-	queryInsert := `
-	INSERT INTO user_mcp_profiles(user_id,effective_vector)
-	VALUES($1,$2)
-	ON CONFLICT(user_id)
-	DO UPDATE SET effective_vector=EXCLUDED.effective_vector
-	`
-
-	_, err = r.db.Exec(ctx, queryInsert, userID, pgVector)
-
-	return err
-}
-func (r *Repository) GetAllUserIDs(ctx context.Context) ([]int64, error) {
-
-	query := `SELECT id FROM users`
-
-	rows, err := r.db.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var ids []int64
-
-	for rows.Next() {
-
-		var id int64
-
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-
-		ids = append(ids, id)
-	}
-
-	return ids, nil
-}
-
-func (r *Repository) GetUserByID(ctx context.Context, userID int64) (int64, string, string, error) {
-
-	query := `
-	SELECT id, name, photo_url
-	FROM users
-	WHERE id=$1
-	`
-
-	var id int64
-	var name string
-	var photo string
-
-	err := r.db.QueryRow(ctx, query, userID).Scan(
-		&id,
-		&name,
-		&photo,
-	)
-
-	return id, name, photo, err
 }
 
 func (r *Repository) RebuildAllTeams(ctx context.Context) error {
@@ -679,7 +416,7 @@ func (r *Repository) GetAllTeamIDs(ctx context.Context) ([]int64, error) {
 	return ids, nil
 }
 
-func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]Candidate, error) {
+func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]models.Candidate, error) {
 
 	query := `
 	SELECT
@@ -703,7 +440,7 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]Candid
 	}
 	defer rows.Close()
 
-	var results []Candidate
+	var results []models.Candidate
 
 	for rows.Next() {
 
@@ -736,7 +473,7 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]Candid
 			score := blockSimilarity(source, target, start, end)
 
 			blockSim[block] = score
-			blockScores[blockNames[block]] = int(score * 100)
+			blockScores[models.BlockNames[block]] = int(score * 100)
 		}
 
 		for i := 0; i < 8; i++ {
@@ -774,7 +511,7 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]Candid
 
 		role := predictRole(stabilityWeights)
 
-		c := Candidate{
+		c := models.Candidate{
 
 			UserID: id,
 			Name:   name,
@@ -782,19 +519,19 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]Candid
 
 			Score: int(score * 100),
 
-			TopBlock:       blockNames[best],
-			SecondaryBlock: blockNames[second],
+			TopBlock:       models.BlockNames[best],
+			SecondaryBlock: models.BlockNames[second],
 
-			CompatibilityType: compatibilityType(blockNames[best]),
+			CompatibilityType: compatibilityType(models.BlockNames[best]),
 
-			Explanation: explainMatch(blockNames[best], score),
+			Explanation: explainMatch(models.BlockNames[best], score),
 
-			PotentialFriction: frictionExplanation(blockNames[worst]),
+			PotentialFriction: frictionExplanation(models.BlockNames[worst]),
 
 			CompatibilitySummary: compatibilitySummary(
-				blockNames[best],
-				blockNames[second],
-				blockNames[worst],
+				models.BlockNames[best],
+				models.BlockNames[second],
+				models.BlockNames[worst],
 			),
 
 			RelationshipStability: stabilityLabel,
@@ -810,7 +547,7 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]Candid
 	return results, nil
 }
 
-func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64) (Candidate, error) {
+func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64) (models.Candidate, error) {
 
 	query := `
 	SELECT
@@ -835,7 +572,7 @@ func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64)
 		Scan(&id, &name, &photo, &vec, &teamVec)
 
 	if err != nil {
-		return Candidate{}, err
+		return models.Candidate{}, err
 	}
 
 	source := vec.Slice()
@@ -856,7 +593,7 @@ func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64)
 		score := blockSimilarity(source, target, start, end)
 
 		blockSim[block] = score
-		blockScores[blockNames[block]] = int(score * 100)
+		blockScores[models.BlockNames[block]] = int(score * 100)
 	}
 
 	for i := 0; i < len(blockSim); i++ {
@@ -894,7 +631,7 @@ func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64)
 
 	role := predictRole(stabilityWeights)
 
-	result := Candidate{
+	result := models.Candidate{
 
 		UserID: id,
 		Name:   name,
@@ -902,19 +639,19 @@ func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64)
 
 		Score: int(score * 100),
 
-		TopBlock:       blockNames[best],
-		SecondaryBlock: blockNames[second],
+		TopBlock:       models.BlockNames[best],
+		SecondaryBlock: models.BlockNames[second],
 
-		CompatibilityType: compatibilityType(blockNames[best]),
+		CompatibilityType: compatibilityType(models.BlockNames[best]),
 
-		Explanation: explainMatch(blockNames[best], score),
+		Explanation: explainMatch(models.BlockNames[best], score),
 
-		PotentialFriction: frictionExplanation(blockNames[worst]),
+		PotentialFriction: frictionExplanation(models.BlockNames[worst]),
 
 		CompatibilitySummary: compatibilitySummary(
-			blockNames[best],
-			blockNames[second],
-			blockNames[worst],
+			models.BlockNames[best],
+			models.BlockNames[second],
+			models.BlockNames[worst],
 		),
 
 		RelationshipStability: stabilityLabel,
@@ -982,7 +719,7 @@ func (r *Repository) GetTeamCulture(ctx context.Context, teamID int64) (map[stri
 
 		avg := sum / float64(len(vectors))
 
-		blockScores[blockNames[block]] = int(avg * 100)
+		blockScores[models.BlockNames[block]] = int(avg * 100)
 	}
 
 	archetype := detectTeamArchetype(blockScores)
@@ -1044,7 +781,7 @@ func (r *Repository) GetTeamGaps(ctx context.Context, teamID int64) ([]string, s
 
 		avg := sum / float64(len(vectors))
 
-		blockScores[blockNames[block]] = int(avg * 100)
+		blockScores[models.BlockNames[block]] = int(avg * 100)
 	}
 
 	type pair struct {
@@ -1072,7 +809,7 @@ func (r *Repository) GetTeamGaps(ctx context.Context, teamID int64) ([]string, s
 	return weak, profile, nil
 }
 
-func (r *Repository) GetTeams(ctx context.Context) ([]Team, error) {
+func (r *Repository) GetTeams(ctx context.Context) ([]models.Team, error) {
 
 	query := `
 SELECT id, name,description, company_id
@@ -1086,11 +823,11 @@ ORDER BY id
 	}
 	defer rows.Close()
 
-	var teams []Team
+	var teams []models.Team
 
 	for rows.Next() {
 
-		var t Team
+		var t models.Team
 
 		err := rows.Scan(
 			&t.ID,
@@ -1122,7 +859,7 @@ func (r *Repository) AddUserToTeam(ctx context.Context, teamID int64, userID int
 
 	return err
 }
-func (r *Repository) GetCandidates(ctx context.Context, teamID int64) ([]User, error) {
+func (r *Repository) GetCandidates(ctx context.Context, teamID int64) ([]models.User, error) {
 
 	query := `
     SELECT id,name,photo_url
@@ -1140,11 +877,11 @@ func (r *Repository) GetCandidates(ctx context.Context, teamID int64) ([]User, e
 	}
 	defer rows.Close()
 
-	var users []User
+	var users []models.User
 
 	for rows.Next() {
 
-		var u User
+		var u models.User
 
 		if err := rows.Scan(&u.ID, &u.Name, &u.Photo); err != nil {
 			return nil, err
@@ -1286,7 +1023,7 @@ func computeBlockScores(team, candidate []float32) map[string]int {
 
 		score := blockSimilarity(team, candidate, start, end)
 
-		scores[blockNames[block]] = int(score * 100)
+		scores[models.BlockNames[block]] = int(score * 100)
 	}
 
 	return scores
@@ -1296,7 +1033,7 @@ func (r *Repository) SimulateTeamFit(
 	ctx context.Context,
 	teamID int64,
 	candidateID int64,
-) (TeamFitSimulation, error) {
+) (models.TeamFitSimulation, error) {
 
 	// -----------------------------
 	// Candidate vector
@@ -1311,7 +1048,7 @@ func (r *Repository) SimulateTeamFit(
 	`, candidateID).Scan(&candidateVec)
 
 	if err != nil {
-		return TeamFitSimulation{}, err
+		return models.TeamFitSimulation{}, err
 	}
 
 	candidate := candidateVec.Slice()
@@ -1328,7 +1065,7 @@ func (r *Repository) SimulateTeamFit(
 	`, teamID)
 
 	if err != nil {
-		return TeamFitSimulation{}, err
+		return models.TeamFitSimulation{}, err
 	}
 
 	defer rows.Close()
@@ -1340,14 +1077,14 @@ func (r *Repository) SimulateTeamFit(
 		var vec pgvector.Vector
 
 		if err := rows.Scan(&vec); err != nil {
-			return TeamFitSimulation{}, err
+			return models.TeamFitSimulation{}, err
 		}
 
 		teamVectors = append(teamVectors, vec.Slice())
 	}
 
 	if len(teamVectors) == 0 {
-		return TeamFitSimulation{}, errors.New("team has no members")
+		return models.TeamFitSimulation{}, errors.New("team has no members")
 	}
 
 	// -----------------------------
@@ -1439,7 +1176,7 @@ func (r *Repository) SimulateTeamFit(
 
 	blockScores := computeBlockScores(avg, candidate)
 
-	return TeamFitSimulation{
+	return models.TeamFitSimulation{
 		TeamID:      teamID,
 		CandidateID: candidateID,
 		Score:       score,

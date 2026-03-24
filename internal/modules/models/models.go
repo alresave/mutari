@@ -1,4 +1,4 @@
-package matching
+package models
 
 var RoleWeights = map[string][]float64{
 
@@ -36,7 +36,7 @@ var RoleWeights = map[string][]float64{
 	},
 }
 
-var blockNames = []string{
+var BlockNames = []string{
 	"Execution Drive",
 	"Cognitive Processing",
 	"Professional Values",
@@ -145,4 +145,27 @@ type MCPAnswer struct {
 type SubmitAnswersRequest struct {
 	UserID  int64       `json:"user_id"`
 	Answers []MCPAnswer `json:"answers"`
+}
+type SubmitMCPRequest struct {
+	UserID  int64    `json:"user_id"`
+	Answers []Answer `json:"answers"`
+}
+type MCPQuestion struct {
+	ID               int    `json:"id"`
+	Block            int    `json:"block"`
+	BlockName        string `json:"block_name"`
+	BlockDescription string `json:"block_description"`
+	Question         string `json:"question"`
+	Scale            string `json:"scale"`
+}
+type Question struct {
+	ID             int
+	DimensionIndex int
+	Reverse        bool
+	IsControl      bool
+}
+
+type Answer struct {
+	QuestionID int
+	Value      float64
 }

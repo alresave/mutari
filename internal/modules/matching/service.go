@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/alresave/mutari/internal/modules/models"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -17,34 +18,34 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GetMatches(ctx context.Context, userID int64) ([]Candidate, error) {
+func (s *Service) GetMatches(ctx context.Context, userID int64) ([]models.Candidate, error) {
 	return s.repo.GetMCPMatches(ctx, userID)
 }
 
-func (s *Service) SubmitMCPAnswers(ctx context.Context, userID int64, answers []MCPAnswer) error {
+func (s *Service) SubmitMCPAnswers(ctx context.Context, userID int64, answers []models.MCPAnswer) error {
 
-	err := s.repo.StoreMCPAnswers(ctx, userID, answers)
+	err := s.repo.mcp.StoreMCPAnswers(ctx, userID, answers)
 	if err != nil {
 		return err
 	}
 
-	return s.repo.BuildIdentityVector(ctx, userID)
+	return s.repo.mcp.BuildIdentityVector(ctx, userID)
 }
 
-func (s *Service) GetMCPQuestions(ctx context.Context) ([]MCPQuestion, error) {
-	return s.repo.GetMCPQuestions(ctx)
+func (s *Service) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion, error) {
+	return s.repo.mcp.GetMCPQuestions(ctx)
 }
 
 func (s *Service) RebuildAllProfiles(ctx context.Context) error {
 
-	ids, err := s.repo.GetAllUserIDs(ctx)
+	ids, err := s.repo.users.GetAllUserIDs(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, id := range ids {
 
-		err := s.repo.BuildIdentityVector(ctx, id)
+		err := s.repo.mcp.BuildIdentityVector(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -59,11 +60,11 @@ func (s *Service) Signup(ctx context.Context, name, email, password string) (int
 		return 0, err
 	}
 
-	return s.repo.CreateUser(ctx, name, email, string(hash))
+	return s.repo.users.CreateUser(ctx, name, email, string(hash))
 }
 func (s *Service) Login(ctx context.Context, email, password string) (string, int64, string, error) {
 
-	id, hash, companyID, name, err := s.repo.GetUserByEmail(ctx, email)
+	id, hash, companyID, name, err := s.repo.users.GetUserByEmail(ctx, email)
 	if err != nil {
 		return "", 0, "", err
 	}
@@ -98,12 +99,12 @@ func (s *Service) Me(
 	userID int64,
 ) (int64, string, string, bool, error) {
 
-	id, name, photo, err := s.repo.GetUserByID(ctx, userID)
+	id, name, photo, err := s.repo.users.GetUserByID(ctx, userID)
 	if err != nil {
 		return 0, "", "", false, err
 	}
 
-	profileComplete, err := s.repo.HasMCPProfile(ctx, userID)
+	profileComplete, err := s.repo.mcp.HasMCPProfile(ctx, userID)
 	if err != nil {
 		return 0, "", "", false, err
 	}
@@ -111,10 +112,10 @@ func (s *Service) Me(
 	return id, name, photo, profileComplete, nil
 }
 
-func (s *Service) GetTeamMatches(ctx context.Context, teamID int64) ([]Candidate, error) {
+func (s *Service) GetTeamMatches(ctx context.Context, teamID int64) ([]models.Candidate, error) {
 	return s.repo.GetTeamMatches(ctx, teamID)
 }
-func (s *Service) GetTeamFit(ctx context.Context, teamID int64, userID int64) (Candidate, error) {
+func (s *Service) GetTeamFit(ctx context.Context, teamID int64, userID int64) (models.Candidate, error) {
 	return s.repo.GetTeamFit(ctx, teamID, userID)
 }
 
@@ -122,7 +123,7 @@ func (s *Service) SimulateTeamFit(
 	ctx context.Context,
 	teamID int64,
 	candidateID int64,
-) (TeamFitSimulation, error) {
+) (models.TeamFitSimulation, error) {
 
 	result, err := s.repo.SimulateTeamFit(
 		ctx,
@@ -131,20 +132,20 @@ func (s *Service) SimulateTeamFit(
 	)
 
 	if err != nil {
-		return TeamFitSimulation{}, err
+		return models.TeamFitSimulation{}, err
 	}
 
 	return result, nil
 }
 
-func (s *Service) GetTeamCulture(ctx context.Context, teamID int64) (*TeamCulture, error) {
+func (s *Service) GetTeamCulture(ctx context.Context, teamID int64) (*models.TeamCulture, error) {
 
 	scores, archetype, err := s.repo.GetTeamCulture(ctx, teamID)
 	if err != nil {
 		return nil, err
 	}
 
-	result := &TeamCulture{
+	result := &models.TeamCulture{
 		TeamID:      teamID,
 		Archetype:   archetype,
 		BlockScores: scores,
@@ -153,20 +154,20 @@ func (s *Service) GetTeamCulture(ctx context.Context, teamID int64) (*TeamCultur
 	return result, nil
 }
 
-func (s *Service) GetTeamGaps(ctx context.Context, teamID int64) (*TeamGaps, error) {
+func (s *Service) GetTeamGaps(ctx context.Context, teamID int64) (*models.TeamGaps, error) {
 
 	weak, profile, err := s.repo.GetTeamGaps(ctx, teamID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &TeamGaps{
+	return &models.TeamGaps{
 		TeamID:             teamID,
 		WeakBlocks:         weak,
 		RecommendedProfile: profile,
 	}, nil
 }
-func (s *Service) GetTeams(ctx context.Context) ([]Team, error) {
+func (s *Service) GetTeams(ctx context.Context) ([]models.Team, error) {
 	return s.repo.GetTeams(ctx)
 }
 
@@ -200,7 +201,7 @@ func (s *Service) AddUserToTeam(ctx context.Context, teamID int64, userID int64)
 func (s *Service) GetTeamProfile(ctx context.Context, teamID int64) ([]float32, error) {
 	return s.repo.GetTeamProfile(ctx, teamID)
 }
-func (s *Service) GetTeamHiringProfile(ctx context.Context, teamID int64) (*HiringProfile, error) {
+func (s *Service) GetTeamHiringProfile(ctx context.Context, teamID int64) (*models.HiringProfile, error) {
 
 	vector, err := s.repo.GetTeamHiringProfile(ctx, teamID)
 	if err != nil {
@@ -222,10 +223,10 @@ func (s *Service) GetTeamHiringProfile(ctx context.Context, teamID int64) (*Hiri
 
 		avg := sum / 8.0
 
-		blocks[blockNames[i]] = avg
+		blocks[models.BlockNames[i]] = avg
 	}
 
-	profile := &HiringProfile{
+	profile := &models.HiringProfile{
 		TeamID:            teamID,
 		IdealProfile:      blocks,
 		SuggestedRole:     PredictRole(blocks),
@@ -241,7 +242,7 @@ func (s *Service) GetTeamHiringProfile(ctx context.Context, teamID int64) (*Hiri
 // GenerateTraits converts the psychological block profile
 // into readable HR traits for the hiring profile response.
 
-func (s *Service) GetTeamVector(ctx context.Context, teamID int64) (*TeamVector, error) {
+func (s *Service) GetTeamVector(ctx context.Context, teamID int64) (*models.TeamVector, error) {
 
 	return s.repo.GetTeamVector(ctx, teamID)
 

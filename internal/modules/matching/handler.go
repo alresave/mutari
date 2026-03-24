@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/alresave/mutari/internal/modules/models"
 	"github.com/alresave/mutari/internal/security"
 	"github.com/gin-gonic/gin"
 )
@@ -36,7 +37,7 @@ func NewHandler(service *Service, limiter *security.RateLimiter) *Handler {
 
 func (h *Handler) Signup(c *gin.Context) {
 
-	var req SignupRequest
+	var req models.SignupRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": "invalid request"})
@@ -83,7 +84,7 @@ func (h *Handler) Signup(c *gin.Context) {
 
 func (h *Handler) Login(c *gin.Context) {
 
-	var body LoginRequest
+	var body models.LoginRequest
 
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(400, gin.H{"error": "invalid body"})
@@ -139,7 +140,7 @@ func (h *Handler) GetMCPQuestions(c *gin.Context) {
 
 func (h *Handler) SubmitMCPAnswers(c *gin.Context) {
 
-	var req SubmitAnswersRequest
+	var req models.SubmitAnswersRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": "invalid request"})
