@@ -15,8 +15,8 @@ CREATE TABLE users (
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     photo_url TEXT DEFAULT '',
-    created_at TIMESTAMP DEFAULT NOW(),
-    company_id INT
+    
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ============================================
@@ -27,29 +27,19 @@ CREATE TABLE companies (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     website TEXT NOT NULL,
-    user_id BIGINT,
+    owner BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- ============================================
--- ADD FOREIGN KEYS AFTER BOTH TABLES EXIST
--- ============================================
+CREATE TABLE company_members (
+    id BIGSERIAL PRIMARY KEY,
+    company_id INT REFERENCES companies(id) ON DELETE CASCADE,
 
-ALTER TABLE users
-ADD CONSTRAINT fk_user_company
-FOREIGN KEY (company_id)
-REFERENCES companies(id)
-ON DELETE SET NULL;
-
-ALTER TABLE companies
-ADD CONSTRAINT fk_company_owner
-FOREIGN KEY (user_id)
-REFERENCES users(id)
-ON DELETE SET NULL;
-
--- ============================================
--- TEAMS
--- ============================================
+    name TEXT NOT NULL,
+    role TEXT,
+    
+    created_at TIMESTAMP DEFAULT NOW()
+);
 
 CREATE TABLE teams (
     id SERIAL PRIMARY KEY,
@@ -59,6 +49,33 @@ CREATE TABLE teams (
         REFERENCES companies(id)
         ON DELETE CASCADE
 );
+CREATE TABLE team_members (
+    team_id INT REFERENCES teams(id) ON DELETE CASCADE,
+    company_member_id BIGINT REFERENCES company_members(id) ON DELETE CASCADE,
+    PRIMARY KEY (team_id, company_member_id)
+);
+
+-- ============================================
+-- ADD FOREIGN KEYS AFTER BOTH TABLES EXIST
+-- ============================================
+
+
+CREATE TABLE candidates (
+    id BIGSERIAL PRIMARY KEY,
+    company_id INT REFERENCES companies(id) ON DELETE CASCADE,
+
+    name TEXT NOT NULL,
+    photo_url TEXT DEFAULT '',
+    states TEXT[] DEFAULT ARRAY['active'],
+    
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================
+-- TEAMS
+-- ============================================
+
+
 
 -- ============================================
 -- TEAM PROFILES (VECTOR CULTURE)
@@ -77,16 +94,7 @@ CREATE TABLE team_profiles (
 -- TEAM MEMBERS
 -- ============================================
 
-CREATE TABLE team_members (
-    team_id INT
-        REFERENCES teams(id)
-        ON DELETE CASCADE,
-    user_id BIGINT
-        REFERENCES users(id)
-        ON DELETE CASCADE,
-    PRIMARY KEY (team_id, user_id),
-    role TEXT DEFAULT 'member'
-);
+
 
 -- ============================================
 -- MCP BLOCKS
@@ -112,33 +120,82 @@ CREATE TABLE mcp_questions (
 );
 
 -- ============================================
--- USER MCP ANSWERS
+-- COMPANY MEMBER MCP ANSWERS
 -- ============================================
 
-CREATE TABLE user_mcp_answers (
+CREATE TABLE company_member_mcp_answers (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT
-        REFERENCES users(id)
+
+    company_member_id BIGINT
+        REFERENCES company_members(id)
         ON DELETE CASCADE,
+
     question_id INT
         REFERENCES mcp_questions(id)
         ON DELETE CASCADE,
-    block INT
-        REFERENCES mcp_blocks(id),
-    value FLOAT,
+
+  value FLOAT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+-- ============================================
+-- COMPANY MEMBER MCP PROFILES
+-- ============================================
+
+CREATE TABLE company_member_mcp_profiles (
+    company_member_id BIGINT PRIMARY KEY
+        REFERENCES company_members(id)
+        ON DELETE CASCADE,
+
+    effective_vector VECTOR(64),
+    confidence_score FLOAT DEFAULT 1.0,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ============================================
--- USER MCP PROFILES (VECTOR EMBEDDINGS)
+-- CANDIDATE MCP ANSWERS
 -- ============================================
 
-CREATE TABLE user_mcp_profiles (
-    user_id BIGINT PRIMARY KEY
-        REFERENCES users(id)
+CREATE TABLE candidate_mcp_answers (
+    id BIGSERIAL PRIMARY KEY,
+
+    candidate_id BIGINT
+        REFERENCES candidates(id)
         ON DELETE CASCADE,
+
+    question_id INT
+        REFERENCES mcp_questions(id)
+        ON DELETE CASCADE,
+
+  value FLOAT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================
+-- CANDIDATE MCP PROFILES
+-- ============================================
+
+CREATE TABLE candidate_mcp_profiles (
+    candidate_id BIGINT PRIMARY KEY
+        REFERENCES candidates(id)
+        ON DELETE CASCADE,
+
     effective_vector VECTOR(64),
     confidence_score FLOAT DEFAULT 1.0,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE mcp_tokens (
+    token TEXT PRIMARY KEY,
+
+    entity_type TEXT NOT NULL CHECK (
+        entity_type IN ('member', 'candidate')
+    ),
+
+    entity_id BIGINT NOT NULL,
+
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -146,22 +203,79 @@ CREATE TABLE user_mcp_profiles (
 -- INDEXES
 -- ============================================
 
-CREATE INDEX idx_user_vectors
-ON user_mcp_profiles
-USING ivfflat (effective_vector vector_cosine_ops)
-WITH (lists = 100);
+
 
 CREATE INDEX idx_user_email
 ON users(email);
-
-CREATE INDEX idx_answers_user
-ON user_mcp_answers(user_id);
-
-CREATE INDEX idx_answers_question
-ON user_mcp_answers(question_id);
-
 CREATE INDEX idx_team_members_team
 ON team_members(team_id);
 
-CREATE INDEX idx_team_members_user
-ON team_members(user_id);
+CREATE INDEX idx_team_members_company_member
+ON team_members(company_member_id);
+
+CREATE INDEX idx_candidates_company
+ON candidates(company_id);
+
+CREATE INDEX idx_companies_owner
+ON companies(owner);
+CREATE INDEX idx_teams_company
+ON teams(company_id);
+
+CREATE INDEX idx_company_members_company
+ON company_members(company_id);
+
+-- ============================================
+-- INDEXES FOR PERFORMANCE
+-- ============================================
+
+CREATE INDEX idx_cm_answers_member
+ON company_member_mcp_answers(company_member_id);
+
+CREATE INDEX idx_cm_answers_question
+ON company_member_mcp_answers(question_id);
+
+CREATE INDEX idx_candidate_answers_candidate
+ON candidate_mcp_answers(candidate_id);
+
+CREATE INDEX idx_candidate_answers_question
+ON candidate_mcp_answers(question_id);
+
+ALTER TABLE company_member_mcp_answers
+ADD CONSTRAINT unique_member_question
+UNIQUE (company_member_id, question_id);
+
+ALTER TABLE candidate_mcp_answers
+ADD CONSTRAINT unique_candidate_question
+UNIQUE (candidate_id, question_id);
+
+CREATE INDEX idx_candidate_vectors
+ON candidate_mcp_profiles
+USING ivfflat (effective_vector vector_cosine_ops)
+WITH (lists = 50);
+
+CREATE INDEX idx_team_vectors
+ON team_profiles
+USING ivfflat (effective_vector vector_cosine_ops)
+WITH (lists = 50);
+
+CREATE INDEX idx_member_vectors
+ON company_member_mcp_profiles
+USING ivfflat (effective_vector vector_cosine_ops)
+WITH (lists = 50);
+
+ALTER TABLE mcp_tokens
+ADD CONSTRAINT chk_entity_valid
+CHECK (
+    (entity_type = 'member' AND entity_id IS NOT NULL)
+ OR (entity_type = 'candidate' AND entity_id IS NOT NULL)
+);
+
+CREATE UNIQUE INDEX unique_active_token
+ON mcp_tokens(entity_type, entity_id)
+WHERE used = FALSE;
+
+CREATE INDEX idx_mcp_tokens_lookup
+ON mcp_tokens(token, used, expires_at);
+CREATE INDEX idx_mcp_tokens_valid
+ON mcp_tokens(entity_type, entity_id, expires_at)
+WHERE used = FALSE;
