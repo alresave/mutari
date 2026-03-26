@@ -36,8 +36,9 @@ CREATE TABLE company_members (
     company_id INT REFERENCES companies(id) ON DELETE CASCADE,
 
     name TEXT NOT NULL,
+    email TEXT NOT NULL,
     role TEXT,
-    
+
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -59,15 +60,17 @@ CREATE TABLE team_members (
 -- ADD FOREIGN KEYS AFTER BOTH TABLES EXIST
 -- ============================================
 
-
 CREATE TABLE candidates (
     id BIGSERIAL PRIMARY KEY,
     company_id INT REFERENCES companies(id) ON DELETE CASCADE,
 
     name TEXT NOT NULL,
     photo_url TEXT DEFAULT '',
-    states TEXT[] DEFAULT ARRAY['active'],
-    
+
+    status TEXT DEFAULT 'active' CHECK (
+        status IN ('active', 'archived', 'hired', 'rejected')
+    ),
+
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -90,9 +93,6 @@ CREATE TABLE team_profiles (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- ============================================
--- TEAM MEMBERS
--- ============================================
 
 
 
@@ -185,17 +185,11 @@ CREATE TABLE candidate_mcp_profiles (
 );
 
 CREATE TABLE mcp_tokens (
-    token TEXT PRIMARY KEY,
-
-    entity_type TEXT NOT NULL CHECK (
-        entity_type IN ('member', 'candidate')
-    ),
-
-    entity_id BIGINT NOT NULL,
-
+    id BIGSERIAL PRIMARY KEY,
+    candidate_id BIGINT REFERENCES candidates(id) ON DELETE CASCADE,
+    token TEXT UNIQUE NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     used BOOLEAN DEFAULT FALSE,
-
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -279,3 +273,12 @@ ON mcp_tokens(token, used, expires_at);
 CREATE INDEX idx_mcp_tokens_valid
 ON mcp_tokens(entity_type, entity_id, expires_at)
 WHERE used = FALSE;
+CREATE INDEX idx_team_profiles_team
+ON team_profiles(team_id);
+CREATE INDEX idx_candidates_status
+ON candidates(status);
+ALTER TABLE company_members
+ADD CONSTRAINT unique_company_member_email
+UNIQUE (company_id, email);
+CREATE INDEX idx_company_members_email
+ON company_members(email);

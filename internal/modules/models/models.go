@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 var RoleWeights = map[string][]float64{
 
 	"engineer": {
@@ -168,4 +170,40 @@ type Question struct {
 type Answer struct {
 	QuestionID int
 	Value      float64
+}
+type Company struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	Website   string    `json:"website"`
+	Owner     int64     `json:"owner"`
+	CreatedAt time.Time `json:"created_at"`
+}
+type CreateCompanyRequest struct {
+	Name    string `json:"name" binding:"required,min=2,max=100"`
+	Website string `json:"website" binding:"required,url"`
+}
+type CreateCompanyMemberRequest struct {
+	Name  string `json:"name" binding:"required"`
+	Email string `json:"email" binding:"required,email"`
+	Role  string `json:"role"`
+}
+type CompanyMember struct {
+	ID        int64     `json:"id"`
+	CompanyID int64     `json:"company_id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+}
+type CreateTeamRequest struct {
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
+}
+type AddTeamMemberRequest struct {
+	CompanyMemberID int64 `json:"company_member_id" binding:"required"`
+}
+
+type CreateCandidateRequest struct {
+	Name  string `json:"name" binding:"required"`
+	Email string `json:"email" binding:"required,email"`
 }

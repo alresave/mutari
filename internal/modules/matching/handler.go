@@ -1,6 +1,8 @@
 package matching
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -460,4 +462,190 @@ func (h *Handler) GetTeamVector(c *gin.Context) {
 	}
 
 	c.JSON(200, result)
+}
+func (h *Handler) CreateCompany(c *gin.Context) {
+
+	var req models.CreateCompanyRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	userID := c.GetInt64("user_id") // 👈 viene del JWT middleware
+
+	company, err := h.service.CreateCompany(
+		c.Request.Context(),
+		req.Name,
+		req.Website,
+		userID,
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, company)
+}
+func (h *Handler) CreateCompanyMember(c *gin.Context) {
+
+	var req models.CreateCompanyMemberRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	companyID := c.GetInt64("company_id")
+
+	member, err := h.service.CreateCompanyMember(
+		c.Request.Context(),
+		companyID,
+		req.Name,
+		req.Email,
+		req.Role,
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, member)
+}
+func (h *Handler) CreateTeam(c *gin.Context) {
+
+	var req models.CreateTeamRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	companyID := c.GetInt64("company_id")
+
+	team, err := h.service.CreateTeam(
+		c.Request.Context(),
+		companyID,
+		req.Name,
+		req.Description,
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, team)
+}
+
+func (h *Handler) AddTeamMember(c *gin.Context) {
+
+	// 🔹 team_id desde URL
+	teamIDParam := c.Param("team_id")
+
+	teamID, err := strconv.ParseInt(teamIDParam, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team id"})
+		return
+	}
+
+	// 🔹 body
+	var req models.AddTeamMemberRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// 🔹 company_id desde JWT (middleware)
+	companyID := c.GetInt64("company_id")
+
+	// 🔹 lógica
+	err = h.service.AddTeamMember(
+		c.Request.Context(),
+		companyID,
+		teamID,
+		req.CompanyMemberID,
+	)
+
+	if err != nil {
+
+		switch err.Error() {
+		case "team not found":
+			c.JSON(404, gin.H{"error": errors.New("team not found " + teamIDParam + strconv.FormatInt(companyID, 10)).Error()})
+			return
+		case "member not found":
+			c.JSON(404, gin.H{"error": err.Error()})
+			return
+		case "member already in team":
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		default:
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	// ✅ success
+	c.JSON(200, gin.H{
+		"status": "member added",
+	})
+}
+
+func (h *Handler) GenerateToken(c *gin.Context) {
+
+	candidateParam := c.Param("candidate_id")
+
+	candidateID, err := strconv.ParseInt(candidateParam, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid candidate id"})
+		return
+	}
+
+	token, err := h.service.GenerateToken(
+		c.Request.Context(),
+		candidateID,
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	link := fmt.Sprintf("http://localhost:8080/quiz?token=%s", token)
+
+	c.JSON(200, gin.H{
+		"token": token,
+		"link":  link,
+	})
+}
+
+func (h *Handler) CreateCandidate(c *gin.Context) {
+
+	var req models.CreateCandidateRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	companyID := c.GetInt64("company_id")
+
+	id, err := h.service.CreateCandidate(
+		c.Request.Context(),
+		companyID,
+		req.Name,
+		req.Email,
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"id": id,
+	})
 }

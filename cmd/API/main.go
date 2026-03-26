@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -58,13 +59,26 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		claims := token.Claims.(jwt.MapClaims)
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid claims"})
+			return
+		}
 
-		userID := int64(claims["user_id"].(float64))
-		companyID := int64(claims["company_id"].(float64))
+		userIDFloat, ok := claims["user_id"].(float64)
+		if !ok {
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid user_id"})
+			return
+		}
 
-		c.Set("userID", userID)
-		c.Set("companyID", companyID)
+		userID := int64(userIDFloat)
+
+		companyIDFloat, _ := claims["company_id"].(float64)
+		companyID := int64(companyIDFloat)
+
+		// 🔥 IMPORTANTE: usar keys correctas
+		c.Set("user_id", userID)
+		c.Set("company_id", companyID)
 
 		c.Next()
 	}
@@ -121,6 +135,13 @@ func main() {
 	auth.GET("/teams/:team_id/vector", handler.GetTeamVector)
 	auth.GET("/teams", handler.GetTeams)
 	auth.GET("/teams/:team_id/hiring-profile", handler.GetTeamHiringProfile)
+	auth.POST("/companies", handler.CreateCompany)
+	auth.POST("/company-members", handler.CreateCompanyMember)
+	auth.POST("/candidates/:candidate_id/token", handler.GenerateToken)
+	auth.POST("/candidates", handler.CreateCandidate)
+
+	auth.POST("/teams/:team_id/members", handler.AddTeamMember)
+	auth.POST("/teams", handler.CreateTeam)
 
 	// TEAM ENGINE
 	auth.GET("/teams/:team_id/matches", handler.GetTeamMatches)
@@ -130,6 +151,9 @@ func main() {
 	auth.POST("/admin/rebuild-team-profiles", handler.RebuildTeamProfiles)
 
 	log.Println("Mutari Engine Started")
+	for _, r := range r.Routes() {
+		fmt.Println(r.Method, r.Path)
+	}
 
 	r.Run(":8080")
 }

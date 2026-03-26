@@ -1,7 +1,10 @@
 package matching
 
 import (
+	"crypto/rand"
 	"time"
+
+	"encoding/hex"
 
 	"github.com/golang-jwt/jwt"
 )
@@ -97,4 +100,14 @@ func predictRole(blocks []float64) string {
 	}
 
 	return "Specialist"
+}
+
+func GenerateToken() (string, error) {
+	bytes := make([]byte, 32)
+
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(bytes), nil
 }

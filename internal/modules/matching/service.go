@@ -3,6 +3,7 @@ package matching
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/alresave/mutari/internal/modules/models"
@@ -246,4 +247,87 @@ func (s *Service) GetTeamVector(ctx context.Context, teamID int64) (*models.Team
 
 	return s.repo.GetTeamVector(ctx, teamID)
 
+}
+func (s *Service) CreateCompany(ctx context.Context, name, website string, owner int64) (models.Company, error) {
+	return s.repo.users.CreateCompany(ctx, name, website, owner)
+}
+func (s *Service) CreateCompanyMember(
+	ctx context.Context,
+	companyID int64,
+	name, email, role string,
+) (models.CompanyMember, error) {
+
+	return s.repo.users.CreateCompanyMember(ctx, companyID, name, email, role)
+}
+func (s *Service) CreateTeam(
+	ctx context.Context,
+	companyID int64,
+	name, description string,
+) (models.Team, error) {
+
+	return s.repo.users.CreateTeam(ctx, companyID, name, description)
+}
+func (s *Service) AddTeamMember(
+	ctx context.Context,
+	companyID int64,
+	teamID int64,
+	memberID int64,
+) error {
+
+	// 🔒 validar team pertenece a la empresa
+	exists, err := s.repo.users.TeamExistsForCompany(ctx, teamID, companyID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("team not found")
+	}
+
+	// 🔒 validar member pertenece a la empresa (también importante)
+	memberExists, err := s.repo.users.CompanyMemberExistsForCompany(ctx, memberID, companyID)
+	if err != nil {
+		return err
+	}
+	if !memberExists {
+		return errors.New("member not found")
+	}
+
+	// 🔥 insertar
+	err = s.repo.users.AddTeamMember(ctx, teamID, memberID)
+	if err != nil {
+
+		if strings.Contains(err.Error(), "duplicate") {
+			return errors.New("member already in team")
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) GenerateToken(ctx context.Context, candidateID int64) (string, error) {
+
+	token, err := GenerateToken()
+	if err != nil {
+		return "", err
+	}
+
+	expiresAt := time.Now().Add(24 * time.Hour)
+
+	err = s.repo.users.CreateToken(ctx, candidateID, token, expiresAt)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+func (s *Service) CreateCandidate(
+	ctx context.Context,
+	companyID int64,
+	name string,
+	email string,
+) (int64, error) {
+
+	return s.repo.users.CreateCandidate(ctx, companyID, name, email)
 }
