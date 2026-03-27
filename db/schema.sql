@@ -14,7 +14,7 @@ CREATE TABLE users (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    photo_url TEXT DEFAULT '',
+    photo_url TEXT, 
     
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -48,7 +48,8 @@ CREATE TABLE teams (
     description TEXT,
     company_id INT
         REFERENCES companies(id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE TABLE team_members (
     team_id INT REFERENCES teams(id) ON DELETE CASCADE,
@@ -65,7 +66,8 @@ CREATE TABLE candidates (
     company_id INT REFERENCES companies(id) ON DELETE CASCADE,
 
     name TEXT NOT NULL,
-    photo_url TEXT DEFAULT '',
+    photo_url TEXT,      
+    email TEXT NOT NULL,
 
     status TEXT DEFAULT 'active' CHECK (
         status IN ('active', 'archived', 'hired', 'rejected')
@@ -186,7 +188,13 @@ CREATE TABLE candidate_mcp_profiles (
 
 CREATE TABLE mcp_tokens (
     id BIGSERIAL PRIMARY KEY,
-    candidate_id BIGINT REFERENCES candidates(id) ON DELETE CASCADE,
+
+    entity_type TEXT NOT NULL CHECK (
+        entity_type IN ('member', 'candidate')
+    ),
+
+    entity_id BIGINT NOT NULL,
+
     token TEXT UNIQUE NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     used BOOLEAN DEFAULT FALSE,
@@ -282,3 +290,37 @@ ADD CONSTRAINT unique_company_member_email
 UNIQUE (company_id, email);
 CREATE INDEX idx_company_members_email
 ON company_members(email);
+CREATE INDEX idx_candidates_company_status
+ON candidates(company_id, status);
+CREATE INDEX idx_mcp_token_fast
+ON mcp_tokens(token)
+WHERE used = FALSE;
+CREATE INDEX idx_mcp_questions_block
+ON mcp_questions(block);
+
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_team_profiles
+BEFORE UPDATE ON team_profiles
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
+
+ALTER TABLE candidates
+ADD CONSTRAINT unique_candidate_email
+UNIQUE (company_id, email);
+
+CREATE TRIGGER trg_update_candidate_profiles
+BEFORE UPDATE ON candidate_mcp_profiles
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
+
+CREATE TRIGGER trg_update_member_profiles
+BEFORE UPDATE ON company_member_mcp_profiles
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();

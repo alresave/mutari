@@ -207,3 +207,11 @@ type CreateCandidateRequest struct {
 	Name  string `json:"name" binding:"required"`
 	Email string `json:"email" binding:"required,email"`
 }
+type MCPToken struct {
+	ID         int64
+	EntityType string
+	EntityID   int64
+	Token      string
+	ExpiresAt  time.Time
+	Used       bool
+}

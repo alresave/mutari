@@ -649,3 +649,34 @@ func (h *Handler) CreateCandidate(c *gin.Context) {
 		"id": id,
 	})
 }
+
+func (h *Handler) GetQuiz(c *gin.Context) {
+
+	token := c.Query("token")
+
+	if token == "" {
+		c.JSON(400, gin.H{"error": "missing token"})
+		return
+	}
+
+	// 🔹 validar token
+	t, err := h.service.ValidateToken(c.Request.Context(), token)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 🔹 obtener preguntas MCP
+	questions, err := h.service.GetMCPQuestions(c.Request.Context())
+	if err != nil {
+		c.JSON(500, gin.H{"error": "failed to load questions"})
+		return
+	}
+
+	// 🔥 respuesta correcta (nuevo modelo)
+	c.JSON(200, gin.H{
+		"entity_type": t.EntityType,
+		"entity_id":   t.EntityID,
+		"questions":   questions,
+	})
+}

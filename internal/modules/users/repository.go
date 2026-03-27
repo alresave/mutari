@@ -20,10 +20,16 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 func (r *Repository) GetUserByEmail(ctx context.Context, email string) (int64, string, int64, string, error) {
 
 	query := `
-    SELECT id, password_hash, company_id, name
-    FROM users
-    WHERE email = $1
-    `
+	SELECT 
+		u.id,
+		u.password_hash,
+		COALESCE(c.id, 0) AS company_id,
+		u.name
+	FROM users u
+	LEFT JOIN companies c ON c.owner = u.id
+	WHERE u.email = $1
+	LIMIT 1
+	`
 
 	var id int64
 	var hash string
@@ -272,4 +278,43 @@ func (r *Repository) CreateCandidate(
 
 	err := r.db.QueryRow(ctx, query, companyID, name, email).Scan(&id)
 	return id, err
+}
+
+func (r *Repository) GetToken(ctx context.Context, token string) (*models.MCPToken, error) {
+
+	query := `
+	SELECT id, entity_type, entity_id, token, expires_at, used
+	FROM mcp_tokens
+	WHERE token = $1
+	`
+
+	var t models.MCPToken
+
+	err := r.db.QueryRow(ctx, query, token).Scan(
+		&t.ID,
+		&t.EntityType,
+		&t.EntityID,
+		&t.Token,
+		&t.ExpiresAt,
+		&t.Used,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &t, nil
+}
+func (r *Repository) GetCompanyByOwner(ctx context.Context, userID int64) (int64, error) {
+
+	query := `
+	SELECT id FROM companies
+	WHERE owner = $1
+	LIMIT 1
+	`
+
+	var companyID int64
+
+	err := r.db.QueryRow(ctx, query, userID).Scan(&companyID)
+	return companyID, err
 }

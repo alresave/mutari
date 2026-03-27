@@ -123,7 +123,7 @@ schema:
 	docker exec -i $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME) < db/schema.sql
 
 seed:
-	docker exec -i $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME) < db/seed_demo.sql
+	docker exec -i $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME) < db/seed_base.sql
 
 reseed: seed
 

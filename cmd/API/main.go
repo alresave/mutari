@@ -139,6 +139,7 @@ func main() {
 	auth.POST("/company-members", handler.CreateCompanyMember)
 	auth.POST("/candidates/:candidate_id/token", handler.GenerateToken)
 	auth.POST("/candidates", handler.CreateCandidate)
+	r.GET("/quiz", handler.GetQuiz)
 
 	auth.POST("/teams/:team_id/members", handler.AddTeamMember)
 	auth.POST("/teams", handler.CreateTeam)

@@ -187,8 +187,8 @@ func (r *Repository) HasMCPProfile(ctx context.Context, userID int64) (bool, err
 
 	query := `
 	SELECT EXISTS(
-	SELECT 1 FROM user_mcp_profiles
-	WHERE user_id=$1
+	SELECT 1 FROMcompany_member_mcp_profiles 
+	WHERE company_member_id=$1
 	)
 	`
 

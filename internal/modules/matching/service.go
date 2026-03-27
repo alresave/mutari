@@ -331,3 +331,21 @@ func (s *Service) CreateCandidate(
 
 	return s.repo.users.CreateCandidate(ctx, companyID, name, email)
 }
+
+func (s *Service) ValidateToken(ctx context.Context, token string) (*models.MCPToken, error) {
+
+	t, err := s.repo.users.GetToken(ctx, token)
+	if err != nil {
+		return nil, errors.New("invalid token")
+	}
+
+	if t.Used {
+		return nil, errors.New("token already used")
+	}
+
+	if time.Now().After(t.ExpiresAt) {
+		return nil, errors.New("token expired")
+	}
+
+	return t, nil
+}
