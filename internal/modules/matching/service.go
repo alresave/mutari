@@ -3,6 +3,8 @@ package matching
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -35,6 +37,7 @@ func (s *Service) SubmitMCPAnswers(ctx context.Context, userID int64, answers []
 
 func (s *Service) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion, error) {
 	return s.repo.mcp.GetMCPQuestions(ctx)
+
 }
 
 func (s *Service) RebuildAllProfiles(ctx context.Context) error {
@@ -348,4 +351,121 @@ func (s *Service) ValidateToken(ctx context.Context, token string) (*models.MCPT
 	}
 
 	return t, nil
+}
+func BuildVector(answers []models.AnswerInput) []float32 {
+
+	vector := make([]float32, len(answers))
+
+	for i, a := range answers {
+		vector[i] = float32(a.Value)
+	}
+
+	return vector
+}
+func (s *Service) ProcessAnswers(
+	ctx context.Context,
+	token *models.MCPToken,
+	answers []models.AnswerInput,
+) error {
+
+	// 🔹 1. obtener preguntas (fuente de verdad)
+	questions, err := s.repo.mcp.GetMCPQuestions(ctx)
+	if err != nil {
+		return err
+	}
+
+	// 🔹 2. construir vector inteligente
+	vector := BuildBlockVector(questions, answers)
+
+	// 🔹 3. guardar respuestas
+	if token.EntityType == "candidate" {
+
+		err := s.repo.users.InsertCandidateAnswers(ctx, token.EntityID, answers)
+		if err != nil {
+			return err
+		}
+
+	} else if token.EntityType == "member" {
+
+		err := s.repo.users.InsertCompanyMemberAnswers(ctx, token.EntityID, answers)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		return fmt.Errorf("invalid entity type")
+	}
+
+	// 🔹 4. guardar profile
+	if token.EntityType == "candidate" {
+
+		err := s.repo.users.UpsertCandidateProfile(ctx, token.EntityID, vector)
+		if err != nil {
+			return err
+		}
+
+	} else {
+
+		err := s.repo.users.UpsertCompanyMemberProfile(ctx, token.EntityID, vector)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 🔹 5. marcar token usado
+	return s.repo.users.MarkTokenUsed(ctx, token.Token)
+}
+
+func BuildBlockVector(
+	questions []models.MCPQuestion,
+	answers []models.AnswerInput,
+) []float32 {
+
+	answerMap := make(map[int64]float32)
+	for _, a := range answers {
+		answerMap[a.QuestionID] = float32(a.Value)
+	}
+
+	blockSum := make(map[int64]float32)
+	blockCount := make(map[int64]int)
+
+	// 🔹 registrar TODOS los bloques
+	blockSet := make(map[int64]struct{})
+
+	for _, q := range questions {
+
+		blockSet[q.Block] = struct{}{}
+
+		if val, ok := answerMap[q.ID]; ok {
+			blockSum[q.Block] += val
+			blockCount[q.Block]++
+		}
+	}
+
+	// 🔹 ordenar bloques
+	var blocks []int64
+	for b := range blockSet {
+		blocks = append(blocks, b)
+	}
+
+	sort.Slice(blocks, func(i, j int) bool {
+		return blocks[i] < blocks[j]
+	})
+
+	vector := make([]float32, len(blocks))
+
+	for i, b := range blocks {
+
+		count := blockCount[b]
+
+		if count == 0 {
+			vector[i] = 0
+			continue
+		}
+
+		avg := blockSum[b] / float32(count)
+		vector[i] = avg / 5.0
+	}
+
+	return vector
 }

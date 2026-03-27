@@ -140,31 +140,6 @@ func (h *Handler) GetMCPQuestions(c *gin.Context) {
 // SUBMIT MCP ANSWERS
 //
 
-func (h *Handler) SubmitMCPAnswers(c *gin.Context) {
-
-	var req models.SubmitAnswersRequest
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": "invalid request"})
-		return
-	}
-
-	err := h.service.SubmitMCPAnswers(
-		c.Request.Context(),
-		req.UserID,
-		req.Answers,
-	)
-
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, gin.H{
-		"status": "answers stored",
-	})
-}
-
 //
 // GET MATCHES
 //
@@ -678,5 +653,37 @@ func (h *Handler) GetQuiz(c *gin.Context) {
 		"entity_type": t.EntityType,
 		"entity_id":   t.EntityID,
 		"questions":   questions,
+	})
+}
+func (h *Handler) SubmitAnswers(c *gin.Context) {
+
+	var req models.SubmitAnswersRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// 🔹 validar token
+	t, err := h.service.ValidateToken(c.Request.Context(), req.Token)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 🔹 procesar respuestas
+	err = h.service.ProcessAnswers(
+		c.Request.Context(),
+		t,
+		req.Answers,
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"status": "ok",
 	})
 }

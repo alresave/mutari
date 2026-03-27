@@ -125,7 +125,7 @@ func main() {
 	auth.Use(AuthMiddleware())
 	auth.GET("/me", handler.Me)
 
-	auth.POST("/mcp/answers", handler.SubmitMCPAnswers)
+	auth.POST("/mcp/answers", handler.SubmitAnswers)
 
 	auth.GET("/matches", handler.GetMatches)
 	auth.GET("/teams/:team_id/fit/:user_id", handler.GetTeamFit)

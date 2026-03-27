@@ -145,16 +145,16 @@ type MCPAnswer struct {
 	Value      float64 `json:"value"`
 }
 type SubmitAnswersRequest struct {
-	UserID  int64       `json:"user_id"`
-	Answers []MCPAnswer `json:"answers"`
+	Token   string        `json:"token" binding:"required"`
+	Answers []AnswerInput `json:"answers" binding:"required"`
 }
 type SubmitMCPRequest struct {
 	UserID  int64    `json:"user_id"`
 	Answers []Answer `json:"answers"`
 }
 type MCPQuestion struct {
-	ID               int    `json:"id"`
-	Block            int    `json:"block"`
+	ID               int64  `json:"id"`
+	Block            int64  `json:"block"`
 	BlockName        string `json:"block_name"`
 	BlockDescription string `json:"block_description"`
 	Question         string `json:"question"`
@@ -214,4 +214,9 @@ type MCPToken struct {
 	Token      string
 	ExpiresAt  time.Time
 	Used       bool
+}
+
+type AnswerInput struct {
+	QuestionID int64   `json:"question_id"`
+	Value      float64 `json:"value"`
 }
