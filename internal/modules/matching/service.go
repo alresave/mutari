@@ -37,7 +37,6 @@ func (s *Service) SubmitMCPAnswers(ctx context.Context, userID int64, answers []
 
 func (s *Service) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion, error) {
 	return s.repo.mcp.GetMCPQuestions(ctx)
-
 }
 
 func (s *Service) RebuildAllProfiles(ctx context.Context) error {
@@ -368,16 +367,7 @@ func (s *Service) ProcessAnswers(
 	answers []models.AnswerInput,
 ) error {
 
-	// 🔹 1. obtener preguntas (fuente de verdad)
-	questions, err := s.repo.mcp.GetMCPQuestions(ctx)
-	if err != nil {
-		return err
-	}
-
-	// 🔹 2. construir vector inteligente
-	vector := BuildBlockVector(questions, answers)
-
-	// 🔹 3. guardar respuestas
+	// 🔹 guardar respuestas según tipo
 	if token.EntityType == "candidate" {
 
 		err := s.repo.users.InsertCandidateAnswers(ctx, token.EntityID, answers)
@@ -396,7 +386,10 @@ func (s *Service) ProcessAnswers(
 		return fmt.Errorf("invalid entity type")
 	}
 
-	// 🔹 4. guardar profile
+	// 🔹 construir vector
+	vector := BuildVector(answers)
+
+	// 🔹 guardar profile
 	if token.EntityType == "candidate" {
 
 		err := s.repo.users.UpsertCandidateProfile(ctx, token.EntityID, vector)
@@ -412,7 +405,7 @@ func (s *Service) ProcessAnswers(
 		}
 	}
 
-	// 🔹 5. marcar token usado
+	// 🔹 marcar token usado
 	return s.repo.users.MarkTokenUsed(ctx, token.Token)
 }
 

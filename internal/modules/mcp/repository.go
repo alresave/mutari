@@ -198,3 +198,53 @@ func (r *Repository) HasMCPProfile(ctx context.Context, userID int64) (bool, err
 
 	return exists, err
 }
+
+func (r *Repository) GetTeamVectorRaw(
+	ctx context.Context,
+	teamID int64,
+) ([]float64, error) {
+
+	query := `
+	SELECT effective_vector
+	FROM team_profiles
+	WHERE team_id = $1
+	`
+
+	var vec pgvector.Vector
+
+	err := r.db.QueryRow(ctx, query, teamID).Scan(&vec)
+	if err != nil {
+		return nil, err
+	}
+
+	// 🔹 convertir []float32 → []float64
+	raw := vec.Slice()
+
+	vector := make([]float64, len(raw))
+
+	for i, v := range raw {
+		vector[i] = float64(v)
+	}
+
+	return vector, nil
+}
+func (r *Repository) GetCandidateVector(
+	ctx context.Context,
+	candidateID int64,
+) ([]float32, error) {
+
+	query := `
+	SELECT effective_vector
+	FROM candidate_mcp_profiles
+	WHERE candidate_id = $1
+	`
+
+	var vec pgvector.Vector
+
+	err := r.db.QueryRow(ctx, query, candidateID).Scan(&vec)
+	if err != nil {
+		return nil, err
+	}
+
+	return vec.Slice(), nil
+}
