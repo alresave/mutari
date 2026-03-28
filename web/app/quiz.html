@@ -1,32 +1,235 @@
 <!DOCTYPE html>
 <html class="dark">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment — Mutari</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #020617;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
 
-<meta charset="UTF-8">
-<title>Mutari Assessment</title>
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-<link rel="stylesheet" href="./styles/output.css">
+        .glass-card:focus-within {
+            border-color: #6366f1;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
+        }
 
+        /* Custom Slider Styling */
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #1e293b;
+            border-radius: 999px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #6366f1;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+            transition: transform 0.1s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .progress-container {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(8px);
+        }
+    </style>
 </head>
 
-<body class="bg-slate-950 text-slate-200">
+<body class="text-slate-200 font-sans antialiased">
 
-<div class="max-w-2xl mx-auto py-12 px-6">
-
-  <h1 class="text-2xl font-bold mb-6">
-    Assessment
-  </h1>
-
-  <div id="questions" class="space-y-6"></div>
-
-  <button id="submitBtn"
-    class="mt-8 bg-indigo-600 px-6 py-3 rounded-lg">
-    Submit
-  </button>
-
+<div class="progress-container border-b border-slate-800/50 mb-12">
+    <div class="max-w-2xl mx-auto px-6 py-4">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold tracking-widest uppercase text-indigo-400">Mutari Assessment</span>
+            <span id="progressText" class="text-xs text-slate-500 font-mono">0% Complete</span>
+        </div>
+        <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+            <div id="progressFill" class="h-full bg-indigo-500 transition-all duration-500 ease-out" style="width: 0%"></div>
+        </div>
+    </div>
 </div>
 
-<script src="javascript/quiz.js"></script>
+<div class="max-w-2xl mx-auto px-6 pb-24">
+    <header class="mb-16">
+        <h1 class="text-4xl font-bold text-white tracking-tight mb-4">Work Style Assessment</h1>
+        <p class="text-slate-400 text-lg leading-relaxed">
+            We use your insights to optimize team intelligence and match you with projects where you'll thrive.
+        </p>
+        
+        <div class="mt-8 flex flex-wrap gap-3">
+            <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-300">⚡ 3 min read</span>
+            <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-300">🧠 Cognitive matching</span>
+        </div>
+    </header>
 
+    <div id="questions" class="space-y-12">
+        </div>
+
+    <div class="mt-20 pt-10 border-t border-slate-800">
+        <button id="submitBtn"
+            class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
+            Complete Assessment
+        </button>
+        <p class="text-center text-slate-500 text-xs mt-4">By submitting, you agree to our data processing terms.</p>
+    </div>
+</div>
+
+<script>
+    const API = "http://localhost:8080";
+    const token = new URLSearchParams(window.location.search).get("token");
+    const container = document.getElementById("questions");
+    const progressFill = document.getElementById("progressFill");
+    const progressText = document.getElementById("progressText");
+
+    let answers = [];
+    let totalQuestions = 0;
+
+    async function loadQuiz() {
+        try {
+            const res = await fetch(`${API}/quiz?token=${token}`);
+            const data = await res.json();
+            totalQuestions = data.questions.length;
+            renderQuestions(data.questions);
+        } catch (e) {
+            console.error("Failed to load quiz", e);
+        }
+    }
+
+    function renderQuestions(questions) {
+        questions.forEach((q, index) => {
+            const section = document.createElement("div");
+            section.className = "glass-card p-8 rounded-2xl group";
+            
+            section.innerHTML = `
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">
+                        ${index + 1}
+                    </span>
+                    <span class="text-xs font-bold uppercase tracking-widest text-slate-500 group-focus-within:text-indigo-400 transition-colors">
+                        ${q.block_name}
+                    </span>
+                </div>
+
+                <h2 class="text-xl font-medium text-white mb-8 leading-snug">
+                    "${q.question}"
+                </h2>
+
+                <div class="space-y-6">
+                    <input
+                        type="range"
+                        min="1"
+                        max="5"
+                        value="3"
+                        step="1"
+                        class="slider"
+                        onchange="selectAnswer(${q.id}, this.value)"
+                        oninput="updateDisplayValue(${q.id}, this.value)"
+                    />
+
+                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-tighter text-slate-500 px-1">
+                        <span class="w-1/3">Strongly Disagree</span>
+                        <span class="w-1/3 text-center">Neutral</span>
+                        <span class="w-1/3 text-right">Strongly Agree</span>
+                    </div>
+
+                    <div id="indicator-${q.id}" class="text-center transition-all opacity-0">
+                         <span class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/30">
+                            Selection: <span id="value-${q.id}" class="font-mono font-bold">3</span>
+                         </span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(section);
+        });
+    }
+
+    function updateDisplayValue(id, val) {
+        const indicator = document.getElementById(`indicator-${id}`);
+        const label = document.getElementById(`value-${id}`);
+        indicator.classList.remove('opacity-0');
+        label.innerText = val;
+    }
+
+    function selectAnswer(questionId, value) {
+        updateDisplayValue(questionId, value);
+        answers = answers.filter(a => a.question_id !== questionId);
+        answers.push({
+            question_id: questionId,
+            value: Number(value)
+        });
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const percent = Math.round((answers.length / totalQuestions) * 100);
+        progressFill.style.width = percent + "%";
+        progressText.innerText = `${percent}% Complete`;
+    }
+
+    document.getElementById("submitBtn").onclick = async () => {
+        if (answers.length < totalQuestions) {
+            alert(`Please complete all questions. (${answers.length}/${totalQuestions})`);
+            return;
+        }
+
+        const btn = document.getElementById("submitBtn");
+        btn.innerText = "Submitting...";
+        btn.disabled = true;
+
+        const res = await fetch(`${API}/quiz/answers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, answers })
+        });
+
+        if (res.ok) {
+            document.body.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center p-6">
+                    <div class="glass-card p-12 rounded-3xl text-center max-w-md">
+                        <div class="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">✓</div>
+                        <h2 class="text-2xl font-bold text-white mb-2">Assessment Complete</h2>
+                        <p class="text-slate-400">Your profile is being processed by the Mutari engine. We'll be in touch with your team matches shortly.</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            alert("Error submitting. Please try again.");
+            btn.innerText = "Complete Assessment";
+            btn.disabled = false;
+        }
+    }
+
+    loadQuiz();
+</script>
 </body>
 </html>
