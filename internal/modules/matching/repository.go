@@ -42,7 +42,7 @@ func blockSimilarity(a, b []float32, start, end int) float64 {
 		normB += bv * bv
 	}
 
-	if normA == 0 || normB == 0 {
+	if end > len(a) || end > len(b) {
 		return 0
 	}
 
