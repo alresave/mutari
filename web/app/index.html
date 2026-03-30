@@ -1,231 +1,253 @@
 <!DOCTYPE html>
-
-<html class="dark">
+<html lang="es" class="dark">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutari — Inteligencia Artificial para Equipos de Alto Rendimiento</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = { 
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { slate: { 950: '#020617' } },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<meta charset="UTF-8">
-<title>Mutari — AI Team Intelligence</title>
-
-<link rel="stylesheet" href="./styles/output.css">
-
-<style>
-html { scroll-behavior: smooth; }
-
-body{
-  background:#020617;
-}
-
-/* 🔹 Linear surface */
-.card{
-  background: rgba(15,23,42,0.5);
-  border: 1px solid rgba(71,85,105,0.2);
-  border-radius: 14px;
-}
-
-/* 🔥 HERO INTERACTIVE */
-.hero-wrap {
-  perspective: 1200px;
-}
-
-.hero-shot {
-  opacity: 0;
-  transform: rotateX(2deg) translateY(40px) scale(0.98);
-  transition: transform .25s ease, box-shadow .25s ease, opacity .8s ease;
-}
-
-.hero-shot.visible {
-  opacity: 1;
-  transform: rotateX(2deg) translateY(0) scale(1);
-}
-
-.hero-shot.float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%   { transform: translateY(0px); }
-  50%  { transform: translateY(-8px); }
-  100% { transform: translateY(0px); }
-}
-
-.hero-wrap:hover .hero-shot {
-  box-shadow: 0 40px 100px rgba(0,0,0,0.7);
-}
-
-.hero-glow {
-  background: radial-gradient(circle at center, rgba(99,102,241,0.25), transparent 70%);
-  transition: all .2s ease;
-  pointer-events: none;
-}
-
-/* 🎬 DEMO */
-.demo-frame {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: all .6s ease;
-}
-
-.demo-frame.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-</style>
-
+    <style>
+        body { background-color: #020617; background-image: radial-gradient(at 10% 10%, rgba(30, 58, 138, 0.18) 0px, transparent 50%), radial-gradient(at 90% 90%, rgba(79, 70, 229, 0.12) 0px, transparent 50%); background-attachment: fixed; overflow-x: hidden; }
+        .glow-bg { position: relative; }
+        .glow-bg::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%); z-index: -1; filter: blur(50px); }
+        .glass-card { background: rgba(15, 23, 42, 0.3); border: 1px solid rgba(51, 65, 85, 0.3); backdrop-filter: blur(10px); }
+        .btn-glow { box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); transition: all 0.3s ease; }
+        .btn-glow:hover { box-shadow: 0 0 25px rgba(99, 102, 241, 0.4); transform: translateY(-1px); }
+        .btn-glow-emerald { transition: all 0.3s ease; box-shadow: 0 0 15px rgba(16, 185, 129, 0.15); }
+        .btn-glow-emerald:hover { box-shadow: 0 0 25px rgba(16, 185, 129, 0.3); transform: translateY(-1px); }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-down { animation: fadeInDown 0.8s ease-out; }
+        .demo-loader { border: 3px solid rgba(148, 163, 184, 0.1); border-top: 3px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
 
-<body class="text-slate-200">
+<body class="text-slate-200 font-sans antialiased overflow-x-hidden">
 
-<div class="max-w-4xl mx-auto px-6 py-16">
+    <nav class="fixed top-0 left-0 w-full z-50 bg-slate-950/80 backdrop-blur-sm border-b border-slate-800/50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg width="32" height="26" viewBox="0 0 40 32" fill="none"><defs><linearGradient id="mutari-gradient" x1="0" y1="0" x2="40" y2="32" gradientUnits="userSpaceOnUse"><stop stop-color="#818CF8"/><stop offset="1" stop-color="#C084FC"/></linearGradient></defs><path d="M0 32V8L12 20L20 12L28 20L40 8V32H32V18L28 22L20 14L12 22L8 18V32H0Z" fill="url(#mutari-gradient)"/><path d="M20 0L12 8L20 16L28 8L20 0Z" fill="#818CF8"/></svg>
+                <span class="text-2xl font-bold text-white tracking-tight">Mutari</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="#demo" class="text-sm font-semibold text-slate-300 hover:text-white px-4 py-2 transition-colors">Ver Demo</a>
+                <a href="/login.html" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold btn-glow transition-all active:scale-95 shadow-lg shadow-indigo-500/10">Acceso Cliente →</a>
+            </div>
+        </div>
+    </nav>
 
-  <!-- HERO -->
+    <header class="relative pt-40 pb-24 md:pt-48 md:pb-32 px-6 glow-bg animate-fade-in-down text-center space-y-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-xs font-semibold tracking-wide uppercase">⚡ Talent Intelligence Engine</div>
+        <h1 class="text-5xl md:text-7xl font-extrabold text-white tracking-tighter leading-[0.95]">La IA que construye tu<br> <span class="text-emerald-400">equipo perfecto.</span></h1>
+        <p class="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto font-medium tracking-tight">Mutari utiliza algoritmos avanzados de inteligencia conductual para medir la compatibilidad, cerrar brechas de talento y predecir el rendimiento del equipo antes de contratar.</p>
+        <div class="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="#contacto" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-4 rounded-xl font-bold text-lg btn-glow-emerald transition-all active:scale-95">Solicitar Demo →</a>
+            <a href="#beneficios" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-slate-200 px-10 py-4 rounded-xl font-bold text-lg transition-colors">Saber más</a>
+        </div>
+    </header>
 
-  <div class="text-center mb-10">
+    <section id="demo" class="py-16 px-6 relative">
+        <div class="max-w-7xl mx-auto overflow-visible">
+            <div class="text-center mb-16 space-y-3">
+                <h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest">Inteligencia Visual en Tiempo Real</h2>
+                <p class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">Decisiones basadas en datos, no en corazonadas.</p>
+                <p class="text-xs text-amber-500 mt-2">Conectado a Backend: <span class="font-mono">localhost:8080</span></p>
+            </div>
+            
+            <div class="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl relative overflow-hidden">
+                
+                <div id="demoLoading" class="absolute inset-0 bg-slate-900 z-20 flex flex-col items-center justify-center rounded-3xl p-10 text-center transition-opacity duration-500">
+                    <div id="demoStatusSpinner" class="demo-loader mb-4"></div>
+                    <div id="demoStatusMessage" class="text-sm text-slate-600 animate-pulse">Connecting to Mutari Intelligence Engine...</div>
+                    <div id="demoErrorDetails" class="text-xs text-red-500 mt-4 font-mono hidden max-w-md bg-red-950/50 p-3 rounded-lg border border-red-500/50"></div>
+                </div>
 
-```
-<img src="./images/logo.png" class="h-10 mx-auto mb-6 opacity-90">
+                <div class="flex flex-col lg:flex-row gap-8 relative z-10">
+                    <div class="flex-1 space-y-6 overflow-hidden">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pb-4 border-b border-slate-800">
+                            <div class="text-lg font-semibold text-white">Live Compatibility Analysis</div>
+                            <div class="text-sm px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400">Team: <span id="demoTeamName" class="text-indigo-400 font-semibold">—</span></div>
+                        </div>
+                        <div class="aspect-[2/1] relative pt-4"><canvas id="radarChartDemo"></canvas></div>
+                        <div class="grid grid-cols-2 gap-4 text-center pt-4 border-t border-slate-800">
+                            <div class="p-4 rounded-xl bg-slate-950/50 border border-slate-800"><p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Current Team Score</p><div id="teamScoreDemo" class="text-4xl font-extrabold text-white leading-none tracking-tight">—</div></div>
+                            <div class="p-4 rounded-xl bg-slate-950/50 border border-slate-800"><p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">AI Archetype</p><div id="teamArchetypeDemo" class="text-2xl font-bold text-indigo-400 leading-tight">—</div></div>
+                        </div>
+                    </div>
 
-<h1 class="text-3xl font-medium tracking-tight mb-3">
-  Hire better teams with AI
-</h1>
+                    <div class="w-full lg:w-80 flex-shrink-0">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 ml-1">Top Recommendation</div>
+                        <div id="bestCandidateCardDemo" class="p-6 rounded-2xl bg-slate-800/50 border border-slate-700 space-y-5 flex flex-col items-center text-center"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<p class="text-slate-500 text-sm mb-8">
-  See who to hire — and why
-</p>
+    <section id="beneficios" class="py-24 px-6 bg-slate-950/50 border-y border-slate-800/50 relative glow-bg">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="glass-card p-8 rounded-2xl flex flex-col gap-4 hover:shadow-2xl transition-all"><div class="text-2xl">🧠</div><h3 class="text-xl font-bold text-white mt-2">Compatibilidad Predictiva</h3><p class="text-slate-400 text-sm flex-1">IA avanzada que mide la alineación conductual y cognitiva con el ADN del equipo.</p></div>
+            <div class="glass-card p-8 rounded-2xl flex flex-col gap-4 hover:shadow-2xl transition-all"><div class="text-2xl">🧩</div><h3 class="text-xl font-bold text-white mt-2">Cierre de Brechas</h3><p class="text-slate-400 text-sm flex-1">Identifica automáticamente debilidades ocultas y recomienda el perfil exacto.</p></div>
+            <div class="glass-card p-8 rounded-2xl flex flex-col gap-4 hover:shadow-2xl transition-all"><div class="text-2xl">🚀</div><h3 class="text-xl font-bold text-white mt-2">Reducción de Rotación</h3><p class="text-slate-400 text-sm flex-1">Aumenta drásticamente la retención y satisfacción al contratar por compatibilidad real.</p></div>
+        </div>
+    </section>
 
-<a href="#demo"
-  class="bg-white text-black hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium">
-  Watch demo
-</a>
-```
-
-  </div>
-
-  <!-- HERO SCREENSHOT -->
-
-  <div class="mb-14">
-
-```
-<div class="relative max-w-5xl mx-auto hero-wrap">
-
-  <div class="absolute inset-0 blur-3xl opacity-40 hero-glow"></div>
-
-  <img src="./images/dashboard.png"
-    class="relative rounded-lg border border-slate-800 shadow-xl hero-shot">
-
-</div>
-```
-
-  </div>
-
-  <!-- DEMO -->
-
-  <div id="demo" class="mb-14">
-
-```
-<p class="text-center text-slate-500 text-sm mb-6">
-  Analyze a team and see the best hire instantly
-</p>
-
-<div class="card overflow-hidden demo-frame">
-
-  <div class="flex items-center gap-2 px-4 py-2 border-b border-slate-800">
-    <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
-    <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
-    <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
-  </div>
-
-  <iframe
-    src="./dashboard.html?demo=true"
-    class="w-full h-[85vh] min-h-[850px]">
-  </iframe>
-
-</div>
-```
-
-  </div>
-
-  <!-- VALUE -->
-
-  <div class="text-center mb-14 max-w-md mx-auto">
-
-```
-<p class="text-slate-500 text-sm">
-  Mutari analyzes your team, identifies gaps, and shows exactly
-  which candidate will improve performance — with clear reasoning.
-</p>
-```
-
-  </div>
-
-  <!-- FOOTER -->
-
-  <div class="text-center text-xs text-slate-700">
-    Mutari
-  </div>
-
-</div>
-
-<!-- 🔥 ALL JS IN ONE PLACE -->
+    <footer class="py-10 px-6 border-t border-slate-800/50 bg-slate-950 text-center text-xs text-slate-700">&copy; 2024 Mutari. AI Team Intelligence.</footer>
 
 <script>
+/* ==========================================================
+   🛠️ LÓGICA DE JAVASCRIPT TRANSPLANTADA (CON GUEST AUTH)
+   ========================================================== */
 
-// elements
-const demo = document.querySelector(".demo-frame")
-const shot = document.querySelector(".hero-shot")
-const wrap = document.querySelector(".hero-wrap")
-const glow = document.querySelector(".hero-glow")
+const API_URL = "http://localhost:8080";
 
-// 🎬 reveal demo
-new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if(entry.isIntersecting){
-      demo.classList.add("visible")
+// ✅ 1. PEGA AQUÍ UN TOKEN VÁLIDO GENERADO POR TU BACKEND
+const GUEST_TOKEN = "PEGA_AQUI_TU_TOKEN_VALIDO"; 
+
+const headers = { 
+    "Content-Type": "application/json",
+    // ✅ 2. Usamos el Guest Token hardcodeado
+    "Authorization": "Bearer " + GUEST_TOKEN 
+};
+
+let radarDemo = null;
+const labels = ["Execution Drive", "Cognitive Processing", "Professional Values", "Emotional Resilience", "Learning Velocity", "Collaboration Depth", "Operational Rhythm", "Team Positioning"];
+
+const COLORS = { indigo: '#6366f1', indigoDark: 'rgba(99, 102, 241, 0.15)', emerald: '#10b981', slate: '#475569', grid: '#1e293b' };
+
+// Iniciar Demo Viewer al cargar
+async function initDemo() {
+    console.log("[Mutari Landing] Conectando al backend con Guest Token...");
+    
+    // Blindaje contra token vacío
+    if (GUEST_TOKEN === "PEGA_AQUI_TU_TOKEN_VALIDO") {
+        handleDemoError("GUEST_TOKEN is missing in the JavaScript code. Please add a valid token generated by your backend.");
+        return;
     }
-  })
-}).observe(demo)
 
-// 🎬 reveal hero
-new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if(entry.isIntersecting){
-      shot.classList.add("visible")
-      shot.classList.add("float")
+    try {
+        const teamsRes = await fetch(`${API_URL}/teams`, { method: 'GET', headers: headers });
+        
+        if (!teamsRes.ok) {
+            const errorData = await teamsRes.json().catch(() => ({}));
+            // Blindaje específico para error de Auth (401/403)
+            if (teamsRes.status === 401 || teamsRes.status === 403) {
+                throw new Error(`Authentication Failed (HTTP ${teamsRes.status}): The provided GUEST_TOKEN is invalid or has expired. Message: ${errorData.error || 'No message'}`);
+            }
+            throw new Error(`HTTP Error: ${teamsRes.status}. Message: ${errorData.error || 'No message'}`);
+        }
+        
+        const teamsData = await teamsRes.json();
+        const teams = Array.isArray(teamsData) ? teamsData : teamsData.teams;
+
+        if (teams && teams.length > 0) {
+            loadDemoTeamData(teams[0].id, teams[0].name);
+        } else {
+            handleDemoError("Connected to backend, but no teams were found.");
+        }
+    } catch (err) {
+        handleDemoError(err.message);
     }
-  })
-}).observe(shot)
+}
 
-// 🧲 mouse interaction
-wrap.addEventListener("mousemove", (e) => {
+async function loadDemoTeamData(teamId, teamName) {
+    document.getElementById("demoTeamName").innerText = teamName;
+    console.log(`[Mutari Landing] Cargando compatibilidad para equipo: ${teamId}`);
+    
+    try {
+        const matchesRes = await fetch(`${API_URL}/teams/${teamId}/matches`, { method: 'GET', headers: headers });
+        if (!matchesRes.ok) {
+             if (matchesRes.status === 401 || matchesRes.status === 403) {
+                 throw new Error(`Authentication expired during data load (HTTP ${matchesRes.status}).`);
+             }
+             throw new Error(`HTTP Error: ${matchesRes.status}`);
+        }
+        
+        const matchesData = await matchesRes.json();
+        let matches = Array.isArray(matchesData) ? matchesData : (matchesData.matches || matchesData.data || []);
 
-  const rect = wrap.getBoundingClientRect()
+        if (!matches || matches.length === 0) {
+            handleDemoError("Team exists, but no candidate compatibility data available.");
+            return;
+        }
 
-  const x = (e.clientX - rect.left) / rect.width - 0.5
-  const y = (e.clientY - rect.top) / rect.height - 0.5
+        // Lógica original transplantada
+        const baseMatch = [...matches].sort((a,b) => (b.score||0) - (a.score||0))[0];
+        const teamVector = Object.values(baseMatch.block_scores || {}).map(v => v / 100);
+        const teamScore = Math.round(baseMatch.score || 0);
 
-  const rotateX = y * -6
-  const rotateY = x * 8
+        renderDemoRadar(teamVector);
+        document.getElementById("teamScoreDemo").innerText = teamScore;
+        document.getElementById("teamArchetypeDemo").innerText = baseMatch.role || "Balanced Team";
+        renderBestCandidateDemo(baseMatch);
 
-  shot.style.transform = `
-    rotateX(${rotateX}deg)
-    rotateY(${rotateY}deg)
-    scale(1.02)
-  `
+        // Ocultar loading state suavemente
+        const loadingEl = document.getElementById("demoLoading");
+        loadingEl.style.opacity = '0';
+        setTimeout(() => loadingEl.classList.add('hidden'), 500);
 
-  glow.style.background = `
-    radial-gradient(
-      circle at ${e.clientX - rect.left}px ${e.clientY - rect.top}px,
-      rgba(99,102,241,0.35),
-      transparent 60%
-    )
-  `
-})
+    } catch (err) {
+        handleDemoError(`Data Load Error: ${err.message}`);
+    }
+}
 
-// reset
-wrap.addEventListener("mouseleave", () => {
-  shot.style.transform = "rotateX(2deg) rotateY(0deg) scale(1)"
-})
+function handleDemoError(message) {
+    console.error("[Mutari Demo Error]", message);
+    const loadingEl = document.getElementById("demoLoading");
+    const spinner = document.getElementById("demoStatusSpinner");
+    const msgEl = document.getElementById("demoStatusMessage");
+    const detailsEl = document.getElementById("demoErrorDetails");
+
+    if (spinner) spinner.classList.add('hidden');
+    
+    msgEl.innerText = "Demo Connection Failed";
+    msgEl.classList.remove('animate-pulse');
+    msgEl.classList.add('text-red-500', 'font-bold');
+    
+    // Inyectar el mensaje de error real (ej: "missing token") para diagnóstico
+    detailsEl.innerText = `REASON: ${message}`;
+    detailsEl.classList.remove('hidden');
+    
+    loadingEl.classList.remove('bg-slate-900');
+    loadingEl.classList.add('bg-slate-900/95', 'border-2', 'border-red-500/50', 'shadow-2xl', 'shadow-red-500/10');
+}
+
+/* --- ✅ GESTIÓN DEL GRÁFICO RADAR (Adaptada visualmente) --- */
+function renderDemoRadar(teamData) {
+    const ctx = document.getElementById("radarChartDemo");
+    if (radarDemo) radarDemo.destroy();
+    radarDemo = new Chart(ctx, { type: "radar", data: { labels: labels, datasets: [{ data: teamData, borderColor: COLORS.indigo, backgroundColor: COLORS.indigoDark, borderWidth: 2, pointBackgroundColor: COLORS.indigo, pointRadius: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { min: 0, max: 1, ticks: { display: false }, grid: { color: COLORS.grid }, angleLines: { color: COLORS.grid }, pointLabels: { font: { size: 9, weight: '600' }, color: COLORS.slate } } } } });
+}
+
+/* --- ✅ LÓGICA DE RENDERIZADO DE CANDIDATO (Transplantada visualmente) --- */
+function renderBestCandidateDemo(candidate) {
+    const container = document.getElementById("bestCandidateCardDemo");
+    const topBlock = candidate.top_block || "N/A";
+    container.innerHTML = `<div class="relative flex-shrink-0 mb-4"><img src="${candidate.photo || 'https://i.pravatar.cc/96'}" class="w-24 h-24 rounded-full border-4 border-emerald-500/30 mx-auto shadow-xl"><span class="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">✓ BEST FIT</span></div><div class="w-full text-center flex-1"><h4 class="text-2xl font-bold text-white tracking-tight leading-tight">${candidate.name}</h4><p class="text-sm text-emerald-300 font-medium">${candidate.role || "Candidate"}</p></div><div class="w-full text-4xl font-extrabold text-emerald-400 py-2 border-y border-slate-700/50 leading-none tracking-tight">${candidate.score}%</div><div class="w-full space-y-2 text-left pt-2"><p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Core Capability</p><div class="p-3 rounded-lg bg-slate-900 border border-slate-700 hover:border-emerald-500/50 transition-colors"><div class="flex items-center justify-between gap-3"><span class="text-sm font-semibold text-white truncate">${topBlock}</span><span class="text-xl font-mono font-bold text-emerald-400 flex-shrink-0">${candidate.block_scores?.[topBlock] || '—'}%</span></div></div></div>`;
+}
+
+// Iniciar al cargar el DOM
+window.addEventListener('DOMContentLoaded', initDemo);
 
 </script>
-
 </body>
 </html>
