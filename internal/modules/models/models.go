@@ -168,8 +168,9 @@ type Question struct {
 }
 
 type Answer struct {
-	QuestionID int
-	Value      float64
+	QuestionID int64   `json:"question_id"`
+	Block      int     `json:"block"`
+	Value      float64 `json:"value"`
 }
 type Company struct {
 	ID        int64     `json:"id"`
@@ -219,4 +220,8 @@ type MCPToken struct {
 type AnswerInput struct {
 	QuestionID int64   `json:"question_id"`
 	Value      float64 `json:"value"`
+}
+type QuizResult struct {
+	CandidateID int64
+	BlockScores map[string]float64
 }

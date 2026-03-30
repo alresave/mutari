@@ -2,8 +2,10 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/rand/v2"
+	"strings"
 
 	"github.com/alresave/mutari/internal/modules/models"
 	"github.com/pgvector/pgvector-go"
@@ -302,4 +304,47 @@ func cosineDistance(a, b []float32) float32 {
 	)
 
 	return 1 - (dot / denominator)
+}
+
+func (r *Repository) SaveAnswers(
+	ctx context.Context,
+	candidateID int64,
+	answers []models.Answer,
+) error {
+
+	if len(answers) == 0 {
+		return nil
+	}
+
+	// 🔥 construir query dinámica
+	query := `
+	INSERT INTO candidate_mcp_answers (candidate_id, question_id, block, value)
+	VALUES 
+	`
+
+	args := []interface{}{}
+	values := []string{}
+
+	for i, a := range answers {
+
+		// ($1, $2, $3, $4), ($5, $6, $7, $8)...
+		idx := i * 4
+
+		values = append(values,
+			fmt.Sprintf("($%d, $%d, $%d, $%d)",
+				idx+1, idx+2, idx+3, idx+4),
+		)
+
+		args = append(args,
+			candidateID,
+			a.QuestionID,
+			a.Block,
+			a.Value,
+		)
+	}
+
+	query += strings.Join(values, ",")
+
+	_, err := r.db.Exec(ctx, query, args...)
+	return err
 }

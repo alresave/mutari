@@ -462,3 +462,178 @@ func BuildBlockVector(
 
 	return vector
 }
+
+func BuildBlockScores(answers []models.Answer) map[string]float64 {
+
+	blockMap := map[int][]float64{}
+
+	for _, a := range answers {
+		blockMap[a.Block] = append(blockMap[a.Block], a.Value)
+	}
+
+	result := map[string]float64{}
+
+	for block, values := range blockMap {
+
+		var sum float64
+		for _, v := range values {
+			sum += v
+		}
+
+		avg := sum / float64(len(values)) / 5.0
+
+		switch block {
+		case 1:
+			result["ownership"] = avg
+		case 2:
+			result["communication"] = avg
+		case 3:
+			result["execution"] = avg
+		default:
+			result[fmt.Sprintf("block_%d", block)] = avg
+		}
+	}
+
+	return result
+}
+func BuildCandidateVector(answers []models.Answer) []float32 {
+
+	// vector final (64 dims para pgvector)
+	vec := make([]float32, 64)
+
+	// agrupar por bloque
+	blockMap := map[int][]float64{}
+
+	for _, a := range answers {
+		blockMap[a.Block] = append(blockMap[a.Block], a.Value)
+	}
+
+	// orden de bloques (IMPORTANTE: consistente siempre)
+	blockOrder := []int{1, 2, 3, 4, 5, 6, 7, 8}
+
+	index := 0
+
+	for _, block := range blockOrder {
+
+		values := blockMap[block]
+
+		if len(values) == 0 {
+			continue
+		}
+
+		// promedio del bloque
+		var sum float64
+		for _, v := range values {
+			sum += v
+		}
+
+		avg := sum / float64(len(values)) // escala 1–5
+
+		// normalizar 0–1
+		normalized := avg / 5.0
+
+		// 🔥 expandir en múltiples dimensiones (más robusto)
+		for i := 0; i < 8; i++ {
+
+			if index >= len(vec) {
+				break
+			}
+
+			vec[index] = float32(normalized)
+			index++
+		}
+	}
+
+	return vec
+}
+
+func (s *Service) SubmitAnswers(
+	ctx context.Context,
+	token string,
+	answers []models.Answer,
+) (*models.QuizResult, error) {
+
+	// -----------------------------
+	// 1. VALIDAR TOKEN
+	// -----------------------------
+	t, err := s.repo.users.GetToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	if t.Used {
+		return nil, fmt.Errorf("token already used")
+	}
+
+	if time.Now().After(t.ExpiresAt) {
+		return nil, fmt.Errorf("token expired")
+	}
+
+	candidateID := t.EntityID
+
+	// -----------------------------
+	// 2. MAPEAR QUESTIONS → BLOCK
+	// -----------------------------
+	questions, err := s.repo.mcp.GetMCPQuestions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	blockMap := make(map[int64]int)
+
+	for _, q := range questions {
+		blockMap[q.ID] = int(q.Block)
+	}
+
+	// -----------------------------
+	// 3. ENRIQUECER ANSWERS
+	// -----------------------------
+	for i := range answers {
+
+		block, ok := blockMap[answers[i].QuestionID]
+		if !ok {
+			return nil, fmt.Errorf("invalid question id")
+		}
+
+		answers[i].Block = block
+	}
+
+	// -----------------------------
+	// 4. GUARDAR RESPUESTAS
+	// -----------------------------
+	err = s.repo.mcp.SaveAnswers(ctx, candidateID, answers)
+	if err != nil {
+		return nil, err
+	}
+
+	// -----------------------------
+	// 5. BUILD VECTOR
+	// -----------------------------
+	vector := BuildCandidateVector(answers)
+
+	// -----------------------------
+	// 6. BLOCK SCORES
+	// -----------------------------
+	blockScores := BuildBlockScores(answers)
+
+	// -----------------------------
+	// 7. GUARDAR PERFIL
+	// -----------------------------
+	err = s.repo.users.UpsertCandidateProfile(ctx, candidateID, vector)
+	if err != nil {
+		return nil, err
+	}
+
+	// -----------------------------
+	// 8. MARCAR TOKEN USADO
+	// -----------------------------
+	_ = s.repo.users.MarkTokenUsed(ctx, token)
+
+	// -----------------------------
+	// 9. RETORNAR RESULTADO
+	// -----------------------------
+	return &models.QuizResult{
+		CandidateID: candidateID,
+		BlockScores: blockScores,
+	}, nil
+}
