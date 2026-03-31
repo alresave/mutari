@@ -150,7 +150,10 @@ async function handleSubmit() {
     }
 }
 
+// --- DENTRO DE LOGIN.HTML ---
+
 async function signup() {
+    // ... (tu lógica existente para obtener name, email, password) ...
     const name = document.getElementById("name").value;
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -162,14 +165,18 @@ async function signup() {
     });
 
     const data = await res.json();
+
     if (data.error) {
         document.getElementById("error").innerText = data.error;
         return;
     }
 
+    // ✅ GUARDAR DATOS EN LOCALSTORAGE (Importante para el siguiente paso)
     localStorage.setItem("token", data.token);
     localStorage.setItem("user_id", data.user_id);
-    window.location.href = "/app/index.html";
+
+    // ✅ REDIRECCIONAR A CREAR EMPRESA EN LUGAR DEL DASHBOARD
+    window.location.href = "create-company.html"; 
 }
 
 async function login() {

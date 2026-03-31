@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Miembros y Candidatos — Mutari</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = { 
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { slate: { 950: '#020617' } },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #020617;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-field {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        /* Estilos de enfoque específicos por tipo */
+        .indigo-focus:focus {
+            border-color: #6366f1;
+            background: rgba(30, 41, 59, 0.8);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+        
+        .emerald-focus:focus {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+            outline: none;
+        }
+
+        /* Botones con brillo sutil */
+        .btn-glow-indigo {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+        }
+        .btn-glow-indigo:hover {
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .btn-glow-emerald {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+        }
+        .btn-glow-emerald:hover {
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Animación sutil de entrada para nuevos elementos de lista */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="text-slate-200 min-h-screen p-6 md:p-12">
+
+<div class="max-w-6xl mx-auto space-y-12 pb-16">
+    
+    <div class="text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mb-4 shadow-inner">
+            <span class="text-3xl font-bold text-indigo-400">M</span>
+        </div>
+        <h1 class="text-3xl font-bold text-white tracking-tight">Poblar el equipo</h1>
+        <p class="text-slate-400 mt-2 text-sm">Agrega a los miembros actuales y registra candidatos para analizar la compatibilidad.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+        
+        <section class="glass-card p-10 rounded-3xl space-y-6 flex flex-col">
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-4 mb-2">
+                <span class="text-2xl">👥</span>
+                <h2 class="text-xl font-bold text-white tracking-tight">Miembros Actuales</h2>
+                <span class="text-xs px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 ml-auto">Team Member</span>
+            </div>
+            
+            <p class="text-sm text-slate-400 leading-relaxed">Personas que ya trabajan en la empresa. Recibirán una invitación para completar su evaluación conductual.</p>
+            
+            <div class="space-y-4 pt-2">
+                <input id="member_name" type="text" placeholder="Alberto Gonzalez" 
+                    class="w-full p-4 rounded-xl input-field indigo-focus text-white placeholder:text-slate-600 text-sm" />
+                
+                <input id="member_email" type="email" placeholder="alberto@empresa.com" 
+                    class="w-full p-4 rounded-xl input-field indigo-focus text-white placeholder:text-slate-600 font-mono text-sm" />
+                
+                <input id="member_role" type="text" placeholder="Ej: engineer o product_manager" 
+                    class="w-full p-4 rounded-xl input-field indigo-focus text-white placeholder:text-slate-600 text-sm" />
+                
+                <button onclick="addMember()" 
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-xl font-bold btn-glow-indigo transition-all active:scale-95 text-sm shadow-lg shadow-indigo-500/10">
+                    Invitar Miembro al Equipo →
+                </button>
+            </div>
+
+            <div id="membersError" class="text-red-400 text-xs font-medium text-center min-h-[1rem]"></div>
+
+            <div class="flex-1 pt-4 border-t border-slate-800">
+                <ul id="membersList" class="space-y-2.5 text-sm text-slate-300 max-h-48 overflow-y-auto pr-2">
+                    </ul>
+            </div>
+        </section>
+
+        <section class="glass-card p-10 rounded-3xl space-y-6 flex flex-col border border-emerald-500/20 shadow-emerald-500/5">
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-4 mb-2">
+                <span class="text-2xl">🧠</span>
+                <h2 class="text-xl font-bold text-white tracking-tight">Nuevos Candidatos</h2>
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 ml-auto">Candidate</span>
+            </div>
+
+            <p class="text-sm text-slate-400 leading-relaxed">Personas que están aplicando para trabajar en este equipo. Registra sus datos para generarles un enlace único de evaluación.</p>
+            
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <input id="candidate_name" type="text" placeholder="Nombre completo" 
+                    class="w-full p-4 rounded-xl input-field emerald-focus text-white placeholder:text-slate-600 text-sm" />
+                
+                <input id="candidate_email" type="email" placeholder="email@personal.com" 
+                    class="w-full p-4 rounded-xl input-field emerald-focus text-white placeholder:text-slate-600 font-mono text-sm" />
+            </div>
+            
+            <button onclick="addCandidate()" 
+                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-xl font-bold btn-glow-emerald transition-all active:scale-95 text-sm shadow-lg shadow-emerald-500/10">
+                Registrar Candidato →
+            </button>
+
+            <div id="candidatesError" class="text-red-400 text-xs font-medium text-center min-h-[1rem]"></div>
+
+            <div class="flex-1 pt-4 border-t border-slate-800">
+                <ul id="candidatesList" class="space-y-2.5 text-sm text-slate-300 max-h-48 overflow-y-auto pr-2">
+                    </ul>
+            </div>
+        </section>
+    </div>
+
+    <div class="mt-16 pt-10 border-t border-slate-800 text-center">
+        <button onclick="finishOnboarding()" 
+            class="w-full md:w-auto bg-slate-100 hover:bg-white text-slate-950 px-10 py-4 rounded-xl font-bold transition-all shadow-lg shadow-slate-950/20 active:scale-95 text-lg">
+            Finalizar y Ver Dashboard Principal →
+        </button>
+        <p class="text-slate-500 text-xs mt-4 leading-relaxed">
+            Puedes agregar más miembros y candidatos más tarde desde el panel de control.
+        </p>
+    </div>
+
+</div>
+
+<script>
+// ✅ VERIFICACIÓN DE SEGURIDAD AL CARGAR
+const token = localStorage.getItem("token");
+// Asumimos que guardaste el ID del equipo en el paso anterior (create-team.html)
+const teamId = localStorage.getItem("current_team_id"); 
+
+if (!token) {
+    // Si no hay token, el usuario no se ha logueado. Redirigir a login.
+    window.location.href = "login.html";
+}
+
+if (!teamId) {
+    // Si no hay teamId, el usuario no ha creado un equipo. Redirigir atrás.
+    window.location.href = "create-team.html";
+}
+
+const membersList = document.getElementById("membersList");
+const candidatesList = document.getElementById("candidatesList");
+
+/* --- ✅ AGREGAR MIEMBRO EXISTENTE (👥) --- */
+async function addMember() {
+    const name = document.getElementById("member_name").value;
+    const email = document.getElementById("member_email").value;
+    const role = document.getElementById("member_role").value;
+    const errorDiv = document.getElementById("membersError");
+    
+    errorDiv.innerText = ""; // Reset error
+
+    // Validación básica frontend
+    if (!name || !email) {
+        errorDiv.innerText = "Nombre y email son obligatorios.";
+        return;
+    }
+
+    try {
+        // ✅ PETICIÓN POST A LOCALHOST:8080/TEAMS/{ID}/MEMBERS
+        // Usando el Team ID guardado en localStorage
+        const res = await fetch(`http://localhost:8080/teams/${teamId}/members`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                // ✅ ENVIAR EL JWT BEARER TOKEN
+                "Authorization": "Bearer " + token 
+            },
+            // ✅ ✅ ✅ MODELO EXACTO REQUERIDO: {name, email, role}
+            body: JSON.stringify({ 
+                name, 
+                email, 
+                role: role || "member" // Rol por defecto si está vacío
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            // ✅ ÉXITO: Miembro invitado. Actualizar UI de vista previa.
+            console.log("Miembro invitado:", data);
+            
+            const li = document.createElement("li");
+            li.className = "flex justify-between items-center bg-slate-900 p-3 rounded-lg animate-slide-in border border-slate-800";
+            li.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 text-xs font-bold text-slate-500">M</span>
+                    <div>
+                        <div class="font-semibold text-white">${data.name || name}</div>
+                        <div class="text-xs text-slate-500 font-mono">${data.email || email}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-indigo-400 font-bold uppercase tracking-wider">${data.role || role || 'member'}</div>
+                    <span class="text-[10px] text-amber-400">Invited</span>
+                </div>
+            `;
+            membersList.appendChild(li);
+
+            // Limpiar inputs
+            document.getElementById("member_name").value = "";
+            document.getElementById("member_email").value = "";
+            document.getElementById("member_role").value = "";
+        } else {
+            // Error devuelto por el backend
+            errorDiv.innerText = data.error || "Error al invitar miembro. Inténtalo de nuevo.";
+            
+            if (res.status === 401) {
+                // Token inválido o expirado.
+                localStorage.removeItem("token");
+                setTimeout(() => window.location.href = "login.html", 2000);
+            }
+        }
+
+    } catch (err) {
+        console.error("Error de red:", err);
+        errorDiv.innerText = "Error de conexión con el servidor.";
+    }
+}
+
+/* --- ✅ AGREGAR CANDIDATO (🧠) --- */
+async function addCandidate() {
+    // (Esta sección asume un modelo diferente o el mismo, adaptémoslo si es necesario)
+    const name = document.getElementById("candidate_name").value;
+    const email = document.getElementById("candidate_email").value;
+    const errorDiv = document.getElementById("candidatesError");
+    
+    errorDiv.innerText = ""; // Reset error
+
+    // Validación básica frontend
+    if (!name || !email) {
+        errorDiv.innerText = "Nombre y email son obligatorios.";
+        return;
+    }
+
+    try {
+        // ✅ PETICIÓN POST A LOCALHOST:8080/TEAMS/{ID}/CANDIDATES
+        // Usando el Team ID guardado en localStorage
+        const res = await fetch(`http://localhost:8080/teams/${teamId}/candidates`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                // ✅ ENVIAR EL JWT BEARER TOKEN
+                "Authorization": "Bearer " + token 
+            },
+            // Asumiendo modelo {name, email} para candidatos públicos
+            body: JSON.stringify({ 
+                name, 
+                email
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            // ✅ ÉXITO: Candidato registrado. Actualizar UI de vista previa.
+            console.log("Candidato registrado:", data);
+            
+            const li = document.createElement("li");
+            li.className = "flex justify-between items-center bg-emerald-950/20 p-3 rounded-lg animate-slide-in border border-emerald-500/20";
+            li.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/10 text-xs font-bold text-emerald-300">C</span>
+                    <div>
+                        <div class="font-semibold text-white">${data.name || name}</div>
+                        <div class="text-xs text-slate-500 font-mono">${data.email || email}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">Registered</span>
+                </div>
+            `;
+            candidatesList.appendChild(li);
+
+            // Limpiar inputs
+            document.getElementById("candidate_name").value = "";
+            document.getElementById("candidate_email").value = "";
+        } else {
+            // Error devuelto por el backend
+            errorDiv.innerText = data.error || "Error al registrar candidato. Inténtalo de nuevo.";
+            
+            if (res.status === 401) {
+                // Token inválido o expirado.
+                localStorage.removeItem("token");
+                setTimeout(() => window.location.href = "login.html", 2000);
+            }
+        }
+
+    } catch (err) {
+        console.error("Error de red:", err);
+        errorDiv.innerText = "Error de conexión con el servidor.";
+    }
+}
+
+function finishOnboarding() {
+    // ✅ FIN DEL FLUJO DE ONBOARDING.
+    // Limpiar IDs temporales e ir al Dashboard principal.
+    localStorage.removeItem("current_team_id");
+    // Opcional: Marcar en localStorage que el onboarding se completó.
+    localStorage.setItem("profile_complete", "true"); 
+    
+    // Redirigir al dashboard principal de la aplicación
+    window.location.href = "/app/index.html"; 
+}
+</script>
+
+</body>
+</html>

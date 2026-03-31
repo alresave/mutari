@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Empresa — Mutari</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = { 
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { slate: { 950: '#020617' } },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #020617;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-field {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            border-color: #6366f1;
+            background: rgba(30, 41, 59, 0.8);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+
+        .btn-glow {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body class="text-slate-200 min-h-screen flex items-center justify-center p-6">
+
+<div class="w-full max-w-md">
+    
+    <div class="text-center mb-10">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mb-4 shadow-inner">
+            <span class="text-3xl font-bold text-indigo-400">M</span>
+        </div>
+        <h1 class="text-3xl font-bold text-white tracking-tight">Configura tu organización</h1>
+        <p class="text-slate-400 mt-2 text-sm">Cuéntanos sobre tu empresa para empezar.</p>
+    </div>
+
+    <div class="glass-card p-10 rounded-3xl">
+        
+        <div class="space-y-6">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Nombre de la Empresa</label>
+                <input id="company_name" type="text" placeholder="Ej: Alresave Dev Labs" 
+                    class="w-full p-4 rounded-xl input-field text-white placeholder:text-slate-600" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Sitio Web (Opcional)</label>
+                <input id="company_website" type="url" placeholder="https://www.tuempresa.com" 
+                    class="w-full p-4 rounded-xl input-field text-white placeholder:text-slate-600 font-mono text-sm" />
+            </div>
+
+            <div id="error" class="text-red-400 text-xs font-medium text-center min-h-[1rem]"></div>
+
+            <button onclick="createCompany()" 
+                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-xl font-bold btn-glow transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
+                Finalizar Configuración →
+            </button>
+        </div>
+
+        <p class="text-slate-500 text-center text-xs mt-8 leading-relaxed">
+            Paso 2 de 2: Configuración de la cuenta.
+        </p>
+    </div>
+</div>
+
+<script>
+// ✅ VERIFICACIÓN DE SEGURIDAD AL CARGAR
+const token = localStorage.getItem("token");
+if (!token) {
+    // Si no hay token, el usuario no se ha registrado/logueado. Redirigir a login.
+    window.location.href = "login.html";
+}
+
+async function createCompany() {
+    const name = document.getElementById("company_name").value;
+    const website = document.getElementById("company_website").value;
+    const errorDiv = document.getElementById("error");
+    
+    errorDiv.innerText = ""; // Reset error
+
+    // Validación básica frontend
+    if (!name) {
+        errorDiv.innerText = "El nombre de la empresa es obligatorio.";
+        return;
+    }
+
+    try {
+        // ✅ PETICIÓN POST A LOCALHOST:8080/COMPANIES
+        const res = await fetch("http://localhost:8080/companies", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                // ✅ ENVIAR EL TOKEN COMO BEARER TOKEN
+                "Authorization": "Bearer " + token 
+            },
+            body: JSON.stringify({ name, website })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            // ✅ ÉXITO: Empresa creada. Redirigir al dashboard principal.
+            console.log("Empresa creada:", data);
+            
+            // Opcional: Actualizar el estado del perfil en localStorage si tu backend lo devuelve
+            if (data.profile_complete) {
+                localStorage.setItem("profile_complete", "true");
+            }
+            
+            window.location.href = "index.html"; 
+        } else {
+            // Error devuelto por el backend (ej: 400, 401, 500)
+            errorDiv.innerText = data.error || "Error al crear la empresa. Inténtalo de nuevo.";
+            
+            // Si el error es de autenticación (401), el token expiró o es inválido.
+            if (res.status === 401) {
+                localStorage.removeItem("token");
+                setTimeout(() => window.location.href = "login.html", 2000);
+            }
+        }
+
+    } catch (err) {
+        console.error("Error de red:", err);
+        errorDiv.innerText = "Error de conexión con el servidor.";
+    }
+}
+</script>
+
+</body>
+</html>
