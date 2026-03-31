@@ -181,7 +181,7 @@ type Company struct {
 }
 type CreateCompanyRequest struct {
 	Name    string `json:"name" binding:"required,min=2,max=100"`
-	Website string `json:"website" binding:"required,url"`
+	Website string `json:"website" binding:"omitempty,url"`
 }
 type CreateCompanyMemberRequest struct {
 	Name  string `json:"name" binding:"required"`
