@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agregar Miembros y Candidatos — Mutari</title>
+    <title>Gestión de Equipo — Mutari</title>
     
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:8080; img-src 'self' data: https://i.pravatar.cc;">
+
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script>
@@ -22,343 +24,332 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        body {
-            background-color: #020617;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%);
-            background-attachment: fixed;
-        }
-
-        .glass-card {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(51, 65, 85, 0.5);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .input-field {
-            background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(71, 85, 105, 0.4);
-            transition: all 0.2s ease;
-        }
-
-        /* Estilos de enfoque específicos por tipo */
-        .indigo-focus:focus {
-            border-color: #6366f1;
-            background: rgba(30, 41, 59, 0.8);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-            outline: none;
-        }
+        body { background-color: #020617; background-image: radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%); background-attachment: fixed; }
+        .glass-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); backdrop-filter: blur(12px); border-radius: 1rem; }
+        .glow-indigo { box-shadow: 0 0 20px rgba(99, 102, 241, 0.1); }
         
-        .emerald-focus:focus {
-            border-color: #10b981;
-            background: rgba(16, 185, 129, 0.1);
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-            outline: none;
-        }
+        /* Interacción de lista mejorada */
+        .member-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; }
+        .member-item:hover { background: rgba(30, 41, 59, 0.5); border-color: rgba(71, 85, 105, 0.5); }
+        .member-item.team-member { background: rgba(79, 70, 229, 0.05); border-color: rgba(99, 102, 241, 0.2); }
+        .member-item.team-member:hover { background: rgba(79, 70, 229, 0.1); border-color: rgba(99, 102, 241, 0.5); }
 
-        /* Botones con brillo sutil */
-        .btn-glow-indigo {
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
-        }
-        .btn-glow-indigo:hover {
-            box-shadow: 0 0 25px rgba(99, 102, 241, 0.3);
-            transform: translateY(-1px);
-        }
+        /* Scrollbar personalizado y fino */
+        .member-list::-webkit-scrollbar { width: 5px; }
+        .member-list::-webkit-scrollbar-track { background: transparent; }
+        .member-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 5px; }
         
-        .btn-glow-emerald {
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
-        }
-        .btn-glow-emerald:hover {
-            box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);
-            transform: translateY(-1px);
-        }
-
-        /* Animación sutil de entrada para nuevos elementos de lista */
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slide-in {
-            animation: slideIn 0.3s ease-out;
-        }
+        /* Animación de entrada */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
     </style>
 </head>
 
-<body class="text-slate-200 min-h-screen p-6 md:p-12">
+<body class="text-slate-200 font-sans antialiased overflow-x-hidden">
 
-<div class="max-w-6xl mx-auto space-y-12 pb-16">
-    
-    <div class="text-center">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mb-4 shadow-inner">
-            <span class="text-3xl font-bold text-indigo-400">M</span>
+<div class="max-w-[90rem] mx-auto p-6 md:p-10 animate-fade-in">
+
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10 pb-6 border-b border-slate-800/50">
+        <div class="flex items-center gap-4">
+            <svg width="40" height="32" viewBox="0 0 40 32" fill="none"><defs><linearGradient id="mutari-gradient" x1="0" y1="0" x2="40" y2="32" gradientUnits="userSpaceOnUse"><stop stop-color="#818CF8"/><stop offset="1" stop-color="#C084FC"/></linearGradient></defs><path d="M0 32V8L12 20L20 12L28 20L40 8V32H32V18L28 22L20 14L12 22L8 18V32H0Z" fill="url(#mutari-gradient)"/><path d="M20 0L12 8L20 16L28 8L20 0Z" fill="#818CF8"/></svg>
+            <div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">Gestión de Equipo</h1>
+                <p class="text-xs text-slate-400 font-medium tracking-wide uppercase">Populate & Refine <span id="headerTeamName" class="text-indigo-400 font-semibold">—</span></p>
+            </div>
         </div>
-        <h1 class="text-3xl font-bold text-white tracking-tight">Poblar el equipo</h1>
-        <p class="text-slate-400 mt-2 text-sm">Agrega a los miembros actuales y registra candidatos para analizar la compatibilidad.</p>
-    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-        
-        <section class="glass-card p-10 rounded-3xl space-y-6 flex flex-col">
-            <div class="flex items-center gap-3 border-b border-slate-800 pb-4 mb-2">
-                <span class="text-2xl">👥</span>
-                <h2 class="text-xl font-bold text-white tracking-tight">Miembros Actuales</h2>
-                <span class="text-xs px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 ml-auto">Team Member</span>
-            </div>
+        <div class="flex flex-wrap items-center gap-3 ml-auto">
+            <input type="text" id="searchInput" placeholder="Buscar por nombre o email..." 
+                class="bg-slate-900 border border-slate-700 text-sm text-white px-4 py-2 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors cursor-text">
             
-            <p class="text-sm text-slate-400 leading-relaxed">Personas que ya trabajan en la empresa. Recibirán una invitación para completar su evaluación conductual.</p>
-            
-            <div class="space-y-4 pt-2">
-                <input id="member_name" type="text" placeholder="Alberto Gonzalez" 
-                    class="w-full p-4 rounded-xl input-field indigo-focus text-white placeholder:text-slate-600 text-sm" />
-                
-                <input id="member_email" type="email" placeholder="alberto@empresa.com" 
-                    class="w-full p-4 rounded-xl input-field indigo-focus text-white placeholder:text-slate-600 font-mono text-sm" />
-                
-                <input id="member_role" type="text" placeholder="Ej: engineer o product_manager" 
-                    class="w-full p-4 rounded-xl input-field indigo-focus text-white placeholder:text-slate-600 text-sm" />
-                
-                <button onclick="addMember()" 
-                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-xl font-bold btn-glow-indigo transition-all active:scale-95 text-sm shadow-lg shadow-indigo-500/10">
-                    Invitar Miembro al Equipo →
-                </button>
-            </div>
-
-            <div id="membersError" class="text-red-400 text-xs font-medium text-center min-h-[1rem]"></div>
-
-            <div class="flex-1 pt-4 border-t border-slate-800">
-                <ul id="membersList" class="space-y-2.5 text-sm text-slate-300 max-h-48 overflow-y-auto pr-2">
-                    </ul>
-            </div>
-        </section>
-
-        <section class="glass-card p-10 rounded-3xl space-y-6 flex flex-col border border-emerald-500/20 shadow-emerald-500/5">
-            <div class="flex items-center gap-3 border-b border-slate-800 pb-4 mb-2">
-                <span class="text-2xl">🧠</span>
-                <h2 class="text-xl font-bold text-white tracking-tight">Nuevos Candidatos</h2>
-                <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 ml-auto">Candidate</span>
-            </div>
-
-            <p class="text-sm text-slate-400 leading-relaxed">Personas que están aplicando para trabajar en este equipo. Registra sus datos para generarles un enlace único de evaluación.</p>
-            
-            <div class="grid grid-cols-2 gap-4 pt-2">
-                <input id="candidate_name" type="text" placeholder="Nombre completo" 
-                    class="w-full p-4 rounded-xl input-field emerald-focus text-white placeholder:text-slate-600 text-sm" />
-                
-                <input id="candidate_email" type="email" placeholder="email@personal.com" 
-                    class="w-full p-4 rounded-xl input-field emerald-focus text-white placeholder:text-slate-600 font-mono text-sm" />
-            </div>
-            
-            <button onclick="addCandidate()" 
-                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-xl font-bold btn-glow-emerald transition-all active:scale-95 text-sm shadow-lg shadow-emerald-500/10">
-                Registrar Candidato →
+            <button onclick="finishOnboarding()" 
+                class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg active:scale-95 transition-all flex items-center gap-1.5">
+                Ver Dashboard Principal →
             </button>
+        </div>
+    </header>
 
-            <div id="candidatesError" class="text-red-400 text-xs font-medium text-center min-h-[1rem]"></div>
-
-            <div class="flex-1 pt-4 border-t border-slate-800">
-                <ul id="candidatesList" class="space-y-2.5 text-sm text-slate-300 max-h-48 overflow-y-auto pr-2">
-                    </ul>
+    <div class="flex flex-col lg:flex-row gap-8">
+        
+        <section class="glass-card p-6 flex-1 space-y-6">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                <div class="text-lg font-semibold text-white flex items-center gap-3">
+                    <span class="text-xl">👥</span> Talent Pool de la Empresa
+                </div>
+                <div class="text-xs font-mono text-slate-500">Available to join</div>
             </div>
+            
+            <div id="companyError" class="text-red-400 text-xs font-medium text-center min-h-[1rem]"></div>
+
+            <div id="companyTalentList" class="member-list space-y-2 max-h-[700px] overflow-y-auto pr-2">
+                </div>
         </section>
+
+        <section class="glass-card p-6 w-full lg:w-96 flex-shrink-0 space-y-6 border border-indigo-500/20 glow-indigo">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                <div class="text-lg font-semibold text-white flex items-center gap-3">
+                    <span class="text-xl">🛡️</span> Roster del Equipo
+                </div>
+                <div class="text-xs font-mono text-indigo-400">Current Members</div>
+            </div>
+
+            <div id="teamError" class="text-red-400 text-xs font-medium text-center min-h-[1rem]"></div>
+
+            <div id="teamRosterList" class="member-list space-y-2 max-h-[700px] overflow-y-auto pr-2">
+                </div>
+        </section>
+
     </div>
 
-    <div class="mt-16 pt-10 border-t border-slate-800 text-center">
-        <button onclick="finishOnboarding()" 
-            class="w-full md:w-auto bg-slate-100 hover:bg-white text-slate-950 px-10 py-4 rounded-xl font-bold transition-all shadow-lg shadow-slate-950/20 active:scale-95 text-lg">
-            Finalizar y Ver Dashboard Principal →
-        </button>
-        <p class="text-slate-500 text-xs mt-4 leading-relaxed">
-            Puedes agregar más miembros y candidatos más tarde desde el panel de control.
-        </p>
-    </div>
+    <footer class="mt-16 pt-8 border-t border-slate-800/50 text-center text-xs text-slate-700">&copy; 2024 Mutari. Proprietary Team Intelligence.</footer>
 
 </div>
 
 <script>
-// ✅ VERIFICACIÓN DE SEGURIDAD AL CARGAR
+/* ==========================================================
+   🛠️ LÓGICA DE CONEXIÓN & GESTIÓN DE EQUIPOS (Funcional)
+   ========================================================== */
+const API_URL = "http://localhost:8080";
 const token = localStorage.getItem("token");
-// Asumimos que guardaste el ID del equipo en el paso anterior (create-team.html)
-const teamId = localStorage.getItem("current_team_id"); 
+// IDs de la Empresa y Equipo guardados en pasos anteriores
+const companyId = localStorage.getItem("company_id"); // Asegúrate de guardar esto en create-company.html
+const teamId = localStorage.getItem("current_team_id");
 
-if (!token) {
-    // Si no hay token, el usuario no se ha logueado. Redirigir a login.
+if (!token || !companyId || !teamId) {
+    // Seguridad: Redirigir a login o al paso anterior si falta algún ID
+    console.error("[Mutari Error] Faltan IDs de autenticación o contexto.");
     window.location.href = "login.html";
 }
 
-if (!teamId) {
-    // Si no hay teamId, el usuario no ha creado un equipo. Redirigir atrás.
-    window.location.href = "create-team.html";
+const headers = { 
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + token 
+};
+
+// Estado Global de datos (Miembros de empresa vs miembros de equipo)
+let allCompanyMembers = [];
+let currentTeamMembers = [];
+
+const searchInput = document.getElementById("searchInput");
+
+/* --- ✅ UTILS DE UI --- */
+
+function getBadge(role) {
+    const base = "text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider";
+    switch (role) {
+        case "engineer": return `<span class="${base} bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Engineer</span>`;
+        case "product_manager": return `<span class="${base} bg-purple-500/10 text-purple-300 border border-purple-500/20">PM</span>`;
+        default: return `<span class="${base} bg-slate-800 text-slate-400 border border-slate-700">${role || 'member'}</span>`;
+    }
 }
 
-const membersList = document.getElementById("membersList");
-const candidatesList = document.getElementById("candidatesList");
+function handleFetchError(err, containerId) {
+    console.error(`[Mutari Error] fetchApi ${containerId}:`, err);
+    document.getElementById(containerId).innerText = err.message || "Connection Error.";
+}
 
-/* --- ✅ AGREGAR MIEMBRO EXISTENTE (👥) --- */
-async function addMember() {
-    const name = document.getElementById("member_name").value;
-    const email = document.getElementById("member_email").value;
-    const role = document.getElementById("member_role").value;
-    const errorDiv = document.getElementById("membersError");
+/* --- ✅ INICIALIZACIÓN --- */
+async function init() {
+    console.log("[Mutari Hub] Iniciando gestión de equipos...");
+    await fetchTeamName();
+    await Promise.all([
+        fetchAllCompanyMembers(),
+        fetchCurrentTeamMembers()
+    ]);
+    // Lógica para filtrar y renderizar las dos columnas
+    updateLists();
     
-    errorDiv.innerText = ""; // Reset error
+    // Configurar buscador
+    searchInput.addEventListener('input', updateLists);
+}
 
-    // Validación básica frontend
-    if (!name || !email) {
-        errorDiv.innerText = "Nombre y email son obligatorios.";
+/* --- ✅ API CALLS (Originales/Restauradas) --- */
+
+async function fetchApi(endpoint, method = 'GET', body = null) {
+    const res = await fetch(`${API_URL}${endpoint}`, { method, headers, ...(body && { body: JSON.stringify(body) }) });
+    
+    if (res.status === 401) { window.location.href = "login.html"; return; } // Auth expired
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+}
+
+async function fetchTeamName() {
+    try {
+        const data = await fetchApi(`/teams/${teamId}`); // Endpoint original tuyo
+        document.getElementById("headerTeamName").innerText = data.name || "Team Hub";
+    } catch (err) { console.error("Error cargando nombre del equipo:", err); }
+}
+
+async function fetchAllCompanyMembers() {
+    try {
+        const data = await fetchApi(`/companies/${companyId}/members`); // Endpoint hipotético
+        allCompanyMembers = Array.isArray(data) ? data : data.members || [];
+    } catch (err) { handleFetchError(err, "companyError"); }
+}
+
+async function fetchCurrentTeamMembers() {
+    try {
+        const data = await fetchApi(`/teams/${teamId}/members`); // Endpoint original tuyo
+        currentTeamMembers = Array.isArray(data) ? data : data.members || [];
+    } catch (err) { handleFetchError(err, "teamError"); }
+}
+
+/* --- ✅ LÓGICA DE GESTIÓN DE MIEMBROS (El corazón de la interfaz) --- */
+
+async function updateLists() {
+    const searchTerm = searchInput.value.toLowerCase();
+    
+    // Crear un set de emails de los miembros actuales para filtrar rápidamente
+    const teamEmailsSet = new Set(currentTeamMembers.map(m => m.email));
+    
+    // 1. Filtrar Miembros de la Piscina de Talento
+    const talentPoolData = allCompanyMembers.filter(member => {
+        // No está en el equipo Y coincide con la búsqueda (si hay búsqueda)
+        const isNotTeamMember = !teamEmailsSet.has(member.email);
+        const matchesSearch = searchTerm ? (
+            member.name.toLowerCase().includes(searchTerm) || 
+            member.email.toLowerCase().includes(searchTerm)
+        ) : true;
+        
+        return isNotTeamMember && matchesSearch;
+    });
+
+    // 2. Filtrar Miembros del Roster del Equipo
+    const rosterData = currentTeamMembers.filter(member => {
+        const matchesSearch = searchTerm ? (
+            member.name.toLowerCase().includes(searchTerm) || 
+            member.email.toLowerCase().includes(searchTerm)
+        ) : true;
+        return matchesSearch;
+    });
+
+    // 3. Renderizar las listas actualizadas
+    renderTalentPool(talentPoolData);
+    renderTeamRoster(rosterData);
+}
+
+function renderTalentPool(members) {
+    const container = document.getElementById("companyTalentList");
+    container.innerHTML = "";
+    
+    if (members.length === 0) {
+        container.innerHTML = `<p class="text-sm text-slate-600 italic py-6 text-center">No available talent found.</p>`;
         return;
     }
+
+    members.forEach(member => {
+        const li = document.createElement("div");
+        li.className = "member-item flex justify-between items-center p-3 rounded-lg";
+        
+        li.innerHTML = `
+            <div class="flex items-center gap-3">
+                <img src="${member.photo || 'https://i.pravatar.cc/32?u=' + member.email}" class="w-8 h-8 rounded-full border-2 border-slate-700">
+                <div>
+                    <div class="font-semibold text-white leading-tight">${member.name || "Member"}</div>
+                    <div class="text-xs text-slate-500 font-mono">${member.email}</div>
+                </div>
+                ${getBadge(member.role)}
+            </div>
+            
+            <button onclick="addMemberToTeam('${member.name}', '${member.email}', '${member.role}')" 
+                class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-bold transition-all active:scale-95 flex items-center gap-1.5">
+                Añadir al Equipo →
+            </button>
+        `;
+        container.appendChild(li);
+    });
+}
+
+function renderTeamRoster(members) {
+    const container = document.getElementById("teamRosterList");
+    container.innerHTML = "";
+    
+    if (members.length === 0) {
+        container.innerHTML = `<p class="text-sm text-slate-700 italic py-6 text-center">Roster is empty. Add members.</p>`;
+        return;
+    }
+
+    members.forEach(member => {
+        const li = document.createElement("div");
+        li.className = "member-item team-member flex justify-between items-center p-3 rounded-lg";
+        
+        li.innerHTML = `
+            <div class="flex items-center gap-3 overflow-hidden">
+                <img src="${member.photo || 'https://i.pravatar.cc/32?u=' + member.email}" class="w-8 h-8 rounded-full border-2 border-indigo-900 flex-shrink-0">
+                <div class="overflow-hidden">
+                    <div class="font-semibold text-white leading-tight truncate">${member.name || "Member"}</div>
+                    <div class="text-[11px] text-slate-500 font-mono truncate">${member.email}</div>
+                </div>
+            </div>
+            
+            <button onclick="removeMemberFromTeam('${member.email}')" 
+                class="px-3 py-1.5 rounded-lg bg-red-950/30 hover:bg-red-950/70 border border-red-900/50 text-xs text-red-300 transition-all active:scale-95">
+                ← Quitar
+            </button>
+        `;
+        container.appendChild(li);
+    });
+}
+
+/* --- ✅ LÓGICA DE ACCIONES (Añadir/Quitar) --- */
+
+async function addMemberToTeam(name, email, role) {
+    // Resetear errores anteriores
+    document.getElementById("teamError").innerText = "";
 
     try {
         // ✅ PETICIÓN POST A LOCALHOST:8080/TEAMS/{ID}/MEMBERS
-        // Usando el Team ID guardado en localStorage
-        const res = await fetch(`http://localhost:8080/teams/${teamId}/members`, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                // ✅ ENVIAR EL JWT BEARER TOKEN
-                "Authorization": "Bearer " + token 
-            },
-            // ✅ ✅ ✅ MODELO EXACTO REQUERIDO: {name, email, role}
-            body: JSON.stringify({ 
-                name, 
-                email, 
-                role: role || "member" // Rol por defecto si está vacío
-            })
+        // Usamos tu modelo exacto requerido: {name, email, role}
+        await fetchApi(`/teams/${teamId}/members`, 'POST', { 
+            name, 
+            email, 
+            role: role || "member" // Rol por defecto
         });
 
-        const data = await res.json();
-
-        if (res.ok) {
-            // ✅ ÉXITO: Miembro invitado. Actualizar UI de vista previa.
-            console.log("Miembro invitado:", data);
-            
-            const li = document.createElement("li");
-            li.className = "flex justify-between items-center bg-slate-900 p-3 rounded-lg animate-slide-in border border-slate-800";
-            li.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <span class="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 text-xs font-bold text-slate-500">M</span>
-                    <div>
-                        <div class="font-semibold text-white">${data.name || name}</div>
-                        <div class="text-xs text-slate-500 font-mono">${data.email || email}</div>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <div class="text-xs text-indigo-400 font-bold uppercase tracking-wider">${data.role || role || 'member'}</div>
-                    <span class="text-[10px] text-amber-400">Invited</span>
-                </div>
-            `;
-            membersList.appendChild(li);
-
-            // Limpiar inputs
-            document.getElementById("member_name").value = "";
-            document.getElementById("member_email").value = "";
-            document.getElementById("member_role").value = "";
-        } else {
-            // Error devuelto por el backend
-            errorDiv.innerText = data.error || "Error al invitar miembro. Inténtalo de nuevo.";
-            
-            if (res.status === 401) {
-                // Token inválido o expirado.
-                localStorage.removeItem("token");
-                setTimeout(() => window.location.href = "login.html", 2000);
-            }
+        // Actualizar estado local y UI
+        // En lugar de llamar a la API de nuevo, simulamos el cambio local para mejor performance
+        const member = allCompanyMembers.find(m => m.email === email);
+        if(member){
+            currentTeamMembers.push(member);
+            // No quitamos de allCompanyMembers, solo usamos el filtro para ocultar
+            updateLists();
         }
 
     } catch (err) {
-        console.error("Error de red:", err);
-        errorDiv.innerText = "Error de conexión con el servidor.";
+        handleFetchError(err, "teamError");
     }
 }
 
-/* --- ✅ AGREGAR CANDIDATO (🧠) --- */
-async function addCandidate() {
-    // (Esta sección asume un modelo diferente o el mismo, adaptémoslo si es necesario)
-    const name = document.getElementById("candidate_name").value;
-    const email = document.getElementById("candidate_email").value;
-    const errorDiv = document.getElementById("candidatesError");
-    
-    errorDiv.innerText = ""; // Reset error
-
-    // Validación básica frontend
-    if (!name || !email) {
-        errorDiv.innerText = "Nombre y email son obligatorios.";
-        return;
-    }
+async function removeMemberFromTeam(email) {
+    // Resetear errores anteriores
+    document.getElementById("teamError").innerText = "";
 
     try {
-        // ✅ PETICIÓN POST A LOCALHOST:8080/TEAMS/{ID}/CANDIDATES
-        // Usando el Team ID guardado en localStorage
-        const res = await fetch(`http://localhost:8080/teams/${teamId}/candidates`, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                // ✅ ENVIAR EL JWT BEARER TOKEN
-                "Authorization": "Bearer " + token 
-            },
-            // Asumiendo modelo {name, email} para candidatos públicos
-            body: JSON.stringify({ 
-                name, 
-                email
-            })
-        });
+        // ✅ PETICIÓN DELETE A LOCALHOST:8080/TEAMS/{ID}/MEMBERS/{EMAIL} (Hipotético, o POST /teams/{id}/members/remove)
+        await fetchApi(`/teams/${teamId}/members/${email}`, 'DELETE'); 
 
-        const data = await res.json();
-
-        if (res.ok) {
-            // ✅ ÉXITO: Candidato registrado. Actualizar UI de vista previa.
-            console.log("Candidato registrado:", data);
-            
-            const li = document.createElement("li");
-            li.className = "flex justify-between items-center bg-emerald-950/20 p-3 rounded-lg animate-slide-in border border-emerald-500/20";
-            li.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <span class="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/10 text-xs font-bold text-emerald-300">C</span>
-                    <div>
-                        <div class="font-semibold text-white">${data.name || name}</div>
-                        <div class="text-xs text-slate-500 font-mono">${data.email || email}</div>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">Registered</span>
-                </div>
-            `;
-            candidatesList.appendChild(li);
-
-            // Limpiar inputs
-            document.getElementById("candidate_name").value = "";
-            document.getElementById("candidate_email").value = "";
-        } else {
-            // Error devuelto por el backend
-            errorDiv.innerText = data.error || "Error al registrar candidato. Inténtalo de nuevo.";
-            
-            if (res.status === 401) {
-                // Token inválido o expirado.
-                localStorage.removeItem("token");
-                setTimeout(() => window.location.href = "login.html", 2000);
-            }
-        }
+        // Actualizar estado local y UI
+        currentTeamMembers = currentTeamMembers.filter(m => m.email !== email);
+        updateLists();
 
     } catch (err) {
-        console.error("Error de red:", err);
-        errorDiv.innerText = "Error de conexión con el servidor.";
+        handleFetchError(err, "teamError");
     }
 }
 
 function finishOnboarding() {
-    // ✅ FIN DEL FLUJO DE ONBOARDING.
-    // Limpiar IDs temporales e ir al Dashboard principal.
+    // ✅ FIN DEL FLUJO. Limpiar contexto temporal de onboarding
     localStorage.removeItem("current_team_id");
-    // Opcional: Marcar en localStorage que el onboarding se completó.
     localStorage.setItem("profile_complete", "true"); 
-    
     // Redirigir al dashboard principal de la aplicación
     window.location.href = "/app/index.html"; 
 }
-</script>
 
+/* --- ✅ INICIAR MANUALMENTE --- */
+init();
+
+</script>
 </body>
 </html>

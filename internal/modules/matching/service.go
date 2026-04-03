@@ -637,3 +637,11 @@ func (s *Service) SubmitAnswers(
 		BlockScores: blockScores,
 	}, nil
 }
+func (s *Service) GetCandidates(ctx context.Context, companyID int64) ([]models.Candidate2, error) {
+
+	if companyID == 0 {
+		return nil, fmt.Errorf("invalid company")
+	}
+
+	return s.repo.users.GetCandidatesByCompany(ctx, companyID)
+}

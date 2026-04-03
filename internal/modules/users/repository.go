@@ -465,3 +465,41 @@ func BuildBlockVector(
 
 	return vector
 }
+func (r *Repository) GetCandidatesByCompany(ctx context.Context, companyID int64) ([]models.Candidate2, error) {
+
+	query := `
+	SELECT id, name, photo_url, email, status, created_at
+	FROM candidates
+	WHERE company_id = $1
+	ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, companyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var candidates []models.Candidate2
+
+	for rows.Next() {
+		var c models.Candidate2
+
+		err := rows.Scan(
+			&c.ID,
+			&c.Name,
+			&c.PhotoURL,
+			&c.Email,
+			&c.Status,
+			&c.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		candidates = append(candidates, c)
+	}
+
+	return candidates, nil
+}

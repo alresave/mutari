@@ -1,1 +1,152 @@
+# =========================
+
+# Go build artifacts
+
+# =========================
+
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.log
+*.cover
+coverage.out
+
+/bin/
+/build/
+/dist/
+
+# Go workspace
+
+go.work
+go.work.sum
+
+# Vendor (remove if you commit it)
+
+vendor/
+
+# =========================
+
+# Node.js (for Makefile / NodeActions)
+
+# =========================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Lockfiles (KEEP ONE depending on your tool)
+
+# package-lock.json
+
+# yarn.lock
+
+# pnpm-lock.yaml
+
+# Build outputs (Node)
+
+.next/
+.nuxt/
+dist/
+out/
+coverage/
+
+# Cache
+
+.cache/
+.parcel-cache/
+.eslintcache
+
+# =========================
+
+# Environment files
+
+# =========================
+
+.env
+.env.*
+!.env.example
+
+# =========================
+
+# IDE: VS Code
+
+# =========================
+
+.vscode/
+.history/
+
+# =========================
+
+# IDE: GoLand / JetBrains
+
+# =========================
+
+.idea/
+*.iml
+
+# =========================
+
+# macOS
+
+# =========================
+
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+
+# =========================
+
+# Logs & temp
+
+# =========================
+
+*.log
+tmp/
+temp/
+*.tmp
+
+# =========================
+
+# Docker / Containers
+
+# =========================
+
+docker-compose.override.yml
+*.pid
+.devcontainer/
+.docker/
+
+# =========================
+
+# Test & coverage
+
+# =========================
+
+coverage/
+*.coverprofile
+
+# =========================
+
+# Misc
+
+# =========================
+
+*.swp
+*.swo
+*~

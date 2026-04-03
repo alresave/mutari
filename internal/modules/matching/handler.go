@@ -687,3 +687,17 @@ func (h *Handler) SubmitAnswers(c *gin.Context) {
 		"status": "ok",
 	})
 }
+func (h *Handler) GetCandidates(c *gin.Context) {
+
+	companyID := c.GetInt64("company_id")
+
+	candidates, err := h.service.GetCandidates(c.Request.Context(), companyID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"candidates": candidates,
+	})
+}

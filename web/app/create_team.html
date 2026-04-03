@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Equipo — Mutari</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { 
+            darkMode: "class",
+            theme: { extend: { colors: { slate: { 950: '#020617' } }, fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #020617; 
+            background-image: radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .glass-card { 
+            background: rgba(15, 23, 42, 0.6); 
+            border: 1px solid rgba(51, 65, 85, 0.4); 
+            backdrop-filter: blur(20px); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .input-field {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            transition: all 0.3s;
+        }
+        .input-field:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+    </style>
+</head>
+<body class="text-slate-200 p-6">
+
+    <div class="w-full max-w-lg animate-fade-in">
+        <a href="company-hub.html" class="inline-flex items-center text-xs font-bold text-slate-500 hover:text-indigo-400 mb-8 transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            VOLVER AL DASHBOARD
+        </a>
+
+        <div class="glass-card p-10 rounded-[2.5rem] border-t-4 border-t-indigo-600">
+            <header class="mb-10">
+                <h1 class="text-3xl font-black text-white tracking-tight">Crear Equipo</h1>
+                <p class="text-slate-400 mt-2 text-sm">Define una nueva célula de trabajo para analizar su sinergia conductual.</p>
+            </header>
+
+            <form id="teamForm" class="space-y-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1

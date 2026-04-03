@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/alresave/mutari/internal/modules/matching"
 	"github.com/alresave/mutari/internal/security"
@@ -33,9 +34,7 @@ func newDB(connString string) (*pgxpool.Pool, error) {
 
 	return pgxpool.NewWithConfig(ctx, config)
 }
-
 func AuthMiddleware() gin.HandlerFunc {
-
 	return func(c *gin.Context) {
 
 		header := c.GetHeader("Authorization")
@@ -47,12 +46,15 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString := strings.Replace(header, "Bearer ", "", 1)
 
-		token, err := jwt.Parse(
-			tokenString,
-			func(token *jwt.Token) (interface{}, error) {
-				return jwtSecret, nil
-			},
-		)
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+
+			// 🔒 validar algoritmo
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method")
+			}
+
+			return jwtSecret, nil
+		})
 
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
@@ -65,18 +67,32 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// 🔒 expiration
+		if expVal, ok := claims["exp"]; ok {
+			if expFloat, ok := expVal.(float64); ok {
+				if time.Now().Unix() > int64(expFloat) {
+					c.AbortWithStatusJSON(401, gin.H{"error": "token expired"})
+					return
+				}
+			}
+		}
+
+		// ✅ user_id
 		userIDFloat, ok := claims["user_id"].(float64)
 		if !ok {
 			c.AbortWithStatusJSON(401, gin.H{"error": "invalid user_id"})
 			return
 		}
-
 		userID := int64(userIDFloat)
 
-		companyIDFloat, _ := claims["company_id"].(float64)
-		companyID := int64(companyIDFloat)
+		// ✅ company_id seguro
+		var companyID int64
+		if val, ok := claims["company_id"]; ok {
+			if f, ok := val.(float64); ok {
+				companyID = int64(f)
+			}
+		}
 
-		// 🔥 IMPORTANTE: usar keys correctas
 		c.Set("user_id", userID)
 		c.Set("company_id", companyID)
 
@@ -139,6 +155,7 @@ func main() {
 	auth.POST("/company-members", handler.CreateCompanyMember)
 	auth.POST("/candidates/:candidate_id/token", handler.GenerateToken)
 	auth.POST("/candidates", handler.CreateCandidate)
+	auth.GET("/candidates", handler.GetCandidates)
 	r.GET("/quiz", handler.GetQuiz)
 
 	auth.POST("/teams/:team_id/members", handler.AddTeamMember)
