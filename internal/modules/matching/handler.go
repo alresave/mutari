@@ -701,3 +701,27 @@ func (h *Handler) GetCandidates(c *gin.Context) {
 		"candidates": candidates,
 	})
 }
+
+func (h *Handler) GetCompanyMembers(c *gin.Context) {
+
+	companyID := c.GetInt64("company_id")
+
+	if companyID == 0 {
+		c.JSON(400, gin.H{"error": "missing company"})
+		return
+	}
+
+	members, err := h.service.GetCompanyMembers(
+		c.Request.Context(),
+		companyID,
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"members": members,
+	})
+}

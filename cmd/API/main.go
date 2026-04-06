@@ -152,6 +152,7 @@ func main() {
 	auth.GET("/teams", handler.GetTeams)
 	auth.GET("/teams/:team_id/hiring-profile", handler.GetTeamHiringProfile)
 	auth.POST("/companies", handler.CreateCompany)
+	auth.GET("/company-members", handler.GetCompanyMembers)
 	auth.POST("/company-members", handler.CreateCompanyMember)
 	auth.POST("/candidates/:candidate_id/token", handler.GenerateToken)
 	auth.POST("/candidates", handler.CreateCandidate)

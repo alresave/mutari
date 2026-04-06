@@ -645,3 +645,7 @@ func (s *Service) GetCandidates(ctx context.Context, companyID int64) ([]models.
 
 	return s.repo.users.GetCandidatesByCompany(ctx, companyID)
 }
+
+func (s *Service) GetCompanyMembers(ctx context.Context, companyID int64) ([]models.CompanyMember, error) {
+	return s.repo.users.GetCompanyMembers(ctx, companyID)
+}

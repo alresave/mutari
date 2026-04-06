@@ -503,3 +503,42 @@ func (r *Repository) GetCandidatesByCompany(ctx context.Context, companyID int64
 
 	return candidates, nil
 }
+
+func (r *Repository) GetCompanyMembers(ctx context.Context, companyID int64) ([]models.CompanyMember, error) {
+
+	query := `
+	SELECT id, name, email, role, created_at
+	FROM company_members
+	WHERE company_id = $1
+	ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, companyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var members []models.CompanyMember
+
+	for rows.Next() {
+
+		var m models.CompanyMember
+
+		err := rows.Scan(
+			&m.ID,
+			&m.Name,
+			&m.Email,
+			&m.Role,
+			&m.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		members = append(members, m)
+	}
+
+	return members, nil
+}
