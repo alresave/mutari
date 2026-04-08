@@ -3,100 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Empresa — Mutari</title>
+    <title>Configurar Organización — Mutari</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <script>
-        tailwind.config = { 
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: { slate: { 950: '#020617' } },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                }
-            }
-        }
-    </script>
-     <link rel="stylesheet" href="styles/output.css">
-     <link rel="stylesheet" href="styles/site.css">
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        
+        :root {
+            --primary: #10b981; /* Usamos Emerald para éxito/finalización */
+            --bg-dark: #020617;
+        }
+        body {
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.4);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .input-field {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            transition: all 0.3s;
+            color: white;
+        }
+        .input-field:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+        }
+        .btn-glow {
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);
+            transition: all 0.3s;
+        }
+        .btn-glow:hover:not(:disabled) {
+            box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-glow:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 
 <body class="text-slate-200 min-h-screen flex items-center justify-center p-6">
 
-<div class="w-full max-w-md">
+<div class="w-full max-w-md animate-fade-in">
     
     <div class="text-center mb-10">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mb-4 shadow-inner">
-            <span class="text-3xl font-bold text-indigo-400">M</span>
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 mb-4 shadow-inner">
+            <span class="text-3xl font-bold text-emerald-400">M</span>
         </div>
-        <h1 class="text-3xl font-bold text-white tracking-tight">Configura tu organización</h1>
-        <p class="text-slate-400 mt-2 text-sm">Cuéntanos sobre tu empresa para empezar.</p>
+        <h1 class="text-3xl font-black text-white tracking-tight">Configura tu organización</h1>
+        <p class="text-slate-400 mt-2 text-[10px] font-bold uppercase tracking-widest">Paso Final</p>
     </div>
 
-    <div class="glass-card p-10 rounded-3xl">
+    <div class="glass-card p-10 rounded-[2.5rem]">
         
         <div class="space-y-6">
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Nombre de la Empresa</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Nombre de la Empresa</label>
                 <input id="company_name" type="text" placeholder="Ej: Alresave Dev Labs" 
-                    class="w-full p-4 rounded-xl input-field text-white placeholder:text-slate-600" />
+                    class="w-full p-4 rounded-xl input-field placeholder:text-slate-600 font-medium" />
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Sitio Web (Opcional)</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Sitio Web (Opcional)</label>
                 <input id="company_website" type="url" placeholder="https://www.tuempresa.com" 
-                    class="w-full p-4 rounded-xl input-field text-white placeholder:text-slate-600 font-mono text-sm" />
+                    class="w-full p-4 rounded-xl input-field placeholder:text-slate-600 font-mono text-xs" />
             </div>
 
-            <div id="error" class="text-red-400 text-xs font-medium text-center min-h-[1rem]"></div>
+            <div id="error" class="text-red-400 text-xs font-bold text-center min-h-[1rem] bg-red-400/10 rounded-lg py-2 hidden"></div>
 
-            <button onclick="createCompany()" 
-                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-xl font-bold btn-glow transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
-                Finalizar Configuración →
+            <button id="finish-btn" onclick="createCompany()" 
+                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-xl font-black btn-glow transition-all">
+                FINALIZAR CONFIGURACIÓN →
             </button>
         </div>
 
-        <p class="text-slate-500 text-center text-xs mt-8 leading-relaxed">
-            Paso 2 de 2: Configuración de la cuenta.
+        <p class="text-slate-500 text-center text-[10px] font-bold mt-8 leading-relaxed uppercase tracking-tighter">
+            Mutari Team Intelligence Engine <br/> Configuración de cuenta empresarial
         </p>
     </div>
 </div>
 
 <script>
-// ✅ VERIFICACIÓN DE SEGURIDAD AL CARGAR
+const API_URL = "http://localhost:8080";
 const token = localStorage.getItem("token");
+
+// ✅ VERIFICACIÓN DE SEGURIDAD
 if (!token) {
-    // Si no hay token, el usuario no se ha registrado/logueado. Redirigir a login.
-    window.location.href = "login.html";
+    window.location.href = "/app/login.html";
 }
 
 async function createCompany() {
     const name = document.getElementById("company_name").value;
     const website = document.getElementById("company_website").value;
     const errorDiv = document.getElementById("error");
+    const btn = document.getElementById("finish-btn");
     
-    errorDiv.innerText = ""; // Reset error
+    errorDiv.classList.add('hidden');
 
-    // Validación básica frontend
     if (!name) {
-        errorDiv.innerText = "El nombre de la empresa es obligatorio.";
+        showError("El nombre de la empresa es obligatorio.");
         return;
     }
 
+    // UI Loading state
+    btn.disabled = true;
+    btn.innerText = "CONFIGURANDO...";
+
     try {
-        // ✅ PETICIÓN POST A LOCALHOST:8080/COMPANIES
-        const res = await fetch("http://localhost:8080/companies", {
+        const res = await fetch(`${API_URL}/companies`, {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",
-                // ✅ ENVIAR EL TOKEN COMO BEARER TOKEN
                 "Authorization": "Bearer " + token 
             },
             body: JSON.stringify({ name, website })
@@ -105,30 +130,28 @@ async function createCompany() {
         const data = await res.json();
 
         if (res.ok) {
-            // ✅ ÉXITO: Empresa creada. Redirigir al dashboard principal.
-            console.log("Empresa creada:", data);
-            
-            // Opcional: Actualizar el estado del perfil en localStorage si tu backend lo devuelve
-            if (data.profile_complete) {
-                localStorage.setItem("profile_complete", "true");
-            }
-            
-            window.location.href = "index.html"; 
+            // ✅ ÉXITO: Redirigir al Hub que gestiona todo
+            window.location.href = "/app/company-hub.html"; 
         } else {
-            // Error devuelto por el backend (ej: 400, 401, 500)
-            errorDiv.innerText = data.error || "Error al crear la empresa. Inténtalo de nuevo.";
+            showError(data.error || "Error al crear la empresa.");
             
-            // Si el error es de autenticación (401), el token expiró o es inválido.
             if (res.status === 401) {
                 localStorage.removeItem("token");
-                setTimeout(() => window.location.href = "login.html", 2000);
+                setTimeout(() => window.location.href = "/app/login.html", 2000);
             }
         }
-
     } catch (err) {
-        console.error("Error de red:", err);
-        errorDiv.innerText = "Error de conexión con el servidor.";
+        showError("Error de conexión con el servidor.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "FINALIZAR CONFIGURACIÓN →";
     }
+}
+
+function showError(msg) {
+    const errorDiv = document.getElementById('error');
+    errorDiv.innerText = msg;
+    errorDiv.classList.remove('hidden');
 }
 </script>
 

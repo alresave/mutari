@@ -1,88 +1,197 @@
-/* ----------- GLOBAL ----------- */
+/* ----------- VARIABLES DE COLOR & RESET ----------- */
+:root {
+    --bg-dark: #020617;
+    --card-bg: rgba(15, 23, 42, 0.6);
+    --border: rgba(51, 65, 85, 0.4);
+    --primary: #6366f1; /* Indigo */
+    --primary-hover: #4f46e5;
+    --accent-emerald: #10b981;
+    --accent-amber: #f59e0b;
+    --text-main: #f1f5f9;
+    --text-dim: #94a3b8;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #f6f7fb;
-    margin: 0;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-color: var(--bg-dark);
+    /* Gradiente sutil de fondo para dar profundidad */
+    background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+    color: var(--text-main);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* ----------- CONTENEDORES GLASSMORPHISM ----------- */
+
+.glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 1.5rem;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.glass-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* ----------- ESTILOS DE FORMULARIOS (Quiz & Create) ----------- */
+
+#testForm, .form-container {
+    max-width: 800px;
+    margin: 40px auto;
     padding: 40px;
-    color: #1a1a1a;
 }
 
 h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.05em;
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 10px;
+    background: linear-gradient(to right, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
-
-/* ----------- FORM CONTAINER ----------- */
-
-#testForm {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    max-width: 700px;
-    margin: auto;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-}
-
-/* ----------- BLOCK TITLE ----------- */
 
 .block-title {
-    margin-top: 35px;
-    font-size: 20px;
-    font-weight: 600;
-    color: #333;
+    margin-top: 40px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
 }
 
-/* ----------- QUESTION ----------- */
+/* ----------- PREGUNTAS DEL QUIZ ----------- */
 
 .question {
-    margin-top: 20px;
-    padding: 15px;
-    border-radius: 8px;
-    background: #fafafa;
-}
-
-/* ----------- QUESTION TEXT ----------- */
-
-.question p {
-    margin-bottom: 10px;
-    font-weight: 500;
-}
-
-/* ----------- SCALE ----------- */
-
-.question input[type="radio"] {
-    margin-left: 10px;
-}
-
-/* ----------- BUTTON ----------- */
-
-button {
-    display: block;
-    margin: 40px auto 0;
-    padding: 14px 32px;
-    border-radius: 8px;
-    border: none;
-    background: #4f46e5;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
+    margin-top: 24px;
+    padding: 24px;
+    border-radius: 1rem;
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid transparent;
     transition: all 0.2s ease;
 }
 
+.question:hover {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: var(--border);
+}
+
+.question p {
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* Escala Radio Buttons */
+.options-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding: 0 10px;
+}
+
+.radio-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+input[type="radio"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--text-dim);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+input[type="radio"]:checked {
+    border-color: var(--primary);
+    background-color: var(--primary);
+    box-shadow: 0 0 10px var(--primary);
+}
+
+/* ----------- INPUTS DE TEXTO ----------- */
+
+input[type="text"], input[type="email"], input[type="password"], textarea {
+    width: 100%;
+    padding: 14px 18px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* ----------- BOTONES MODERNOS ----------- */
+
+button, .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+}
+
 button:hover {
-    background: #4338ca;
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* ----------- ANIMACIONES ----------- */
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade {
+    animation: fadeIn 0.5s ease-out forwards;
 }
 
 /* ----------- RESPONSIVE ----------- */
 
-@media (max-width: 600px) {
-
-    body {
-        padding: 20px;
-    }
-
-    #testForm {
-        padding: 25px;
-    }
+@media (max-width: 640px) {
+    body { padding: 15px; }
+    #testForm, .form-container { padding: 25px; }
+    h1 { font-size: 1.8rem; }
+    .options-group { flex-wrap: wrap; gap: 10px; }
 }

@@ -1,70 +1,107 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Mutari</title>
-    
-    <link rel="stylesheet" href="styles/output.css">
-     <link rel="stylesheet" href="styles/site.css">
-
-    
-        
+    <title>Mutari — Acceso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg-dark: #020617;
+        }
+        body {
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.4);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .input-field {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            transition: all 0.3s;
+            color: white;
+        }
+        .input-field:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .hidden-field { display: none; }
+        .btn-glow {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+            transition: all 0.3s;
+        }
+        .btn-glow:hover:not(:disabled) {
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+            transform: translateY(-1px);
+        }
+        .btn-glow:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 
 <body class="text-slate-200 min-h-screen flex items-center justify-center p-6">
 
-<div class="w-full max-w-md">
+<div class="w-full max-w-md animate-fade-in">
     
     <div class="text-center mb-10">
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mb-4 shadow-inner">
             <span class="text-3xl font-bold text-indigo-400">M</span>
         </div>
-        <h1 class="text-4xl font-bold text-white tracking-tight">Mutari</h1>
-        <p class="text-slate-400 mt-2 font-medium tracking-wide uppercase text-[10px]">
+        <h1 class="text-4xl font-extrabold text-white tracking-tight">Mutari</h1>
+        <p class="text-slate-500 mt-2 font-bold tracking-widest uppercase text-[10px]">
             Team Intelligence Engine
         </p>
     </div>
 
-    <div class="glass-card p-10 rounded-3xl">
+    <div class="glass-card p-10 rounded-[2.5rem]">
         
         <div class="flex bg-slate-900/50 p-1 rounded-xl mb-8 border border-slate-800">
-            <button id="tab-login" onclick="toggleMode('login')" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white transition-all">
+            <button id="tab-login" onclick="toggleMode('login')" class="flex-1 py-2 text-sm font-bold rounded-lg bg-indigo-600 text-white transition-all">
                 Login
             </button>
-            <button id="tab-signup" onclick="toggleMode('signup')" class="flex-1 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
+            <button id="tab-signup" onclick="toggleMode('signup')" class="flex-1 py-2 text-sm font-bold rounded-lg text-slate-400 hover:text-white transition-all">
                 Sign Up
             </button>
         </div>
 
         <div class="space-y-5">
             <div id="name-container" class="hidden-field">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
                 <input id="name" type="text" placeholder="John Doe" 
-                    class="w-full p-4 rounded-xl input-field text-white placeholder:text-slate-600" />
+                    class="w-full p-4 rounded-xl input-field placeholder:text-slate-600" />
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Email Address</label>
                 <input id="email" type="email" placeholder="name@company.com" 
-                    class="w-full p-4 rounded-xl input-field text-white placeholder:text-slate-600" />
+                    class="w-full p-4 rounded-xl input-field placeholder:text-slate-600" />
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Password</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Password</label>
                 <input id="password" type="password" placeholder="••••••••" 
-                    class="w-full p-4 rounded-xl input-field text-white placeholder:text-slate-600" />
+                    class="w-full p-4 rounded-xl input-field placeholder:text-slate-600" />
             </div>
 
-            <div id="error" class="text-red-400 text-xs font-medium text-center min-h-[1rem]"></div>
+            <div id="error" class="text-red-400 text-xs font-bold text-center min-h-[1rem] bg-red-400/10 rounded-lg py-2 hidden"></div>
 
             <button id="main-btn" onclick="handleSubmit()" 
-                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-xl font-bold btn-glow transition-all mt-4">
-                Sign In
+                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-xl font-black btn-glow transition-all mt-4">
+                SIGN IN
             </button>
         </div>
 
-        <p class="text-slate-500 text-center text-xs mt-8 leading-relaxed">
+        <p class="text-slate-500 text-center text-[10px] font-medium mt-8 leading-relaxed uppercase tracking-tighter">
             Optimizing team synergy through <br/> advanced behavioral analytics.
         </p>
     </div>
@@ -72,6 +109,7 @@
 
 <script>
 let mode = 'login';
+const API_URL = "http://localhost:8080";
 
 function toggleMode(target) {
     mode = target;
@@ -81,18 +119,18 @@ function toggleMode(target) {
     const tabSignup = document.getElementById('tab-signup');
     const errorDiv = document.getElementById('error');
     
-    errorDiv.innerText = '';
+    errorDiv.classList.add('hidden');
 
     if (mode === 'signup') {
         nameField.classList.remove('hidden-field');
-        mainBtn.innerText = 'Create Account';
+        mainBtn.innerText = 'CREATE ACCOUNT';
         tabSignup.classList.add('bg-indigo-600', 'text-white');
         tabSignup.classList.remove('text-slate-400');
         tabLogin.classList.remove('bg-indigo-600', 'text-white');
         tabLogin.classList.add('text-slate-400');
     } else {
         nameField.classList.add('hidden-field');
-        mainBtn.innerText = 'Sign In';
+        mainBtn.innerText = 'SIGN IN';
         tabLogin.classList.add('bg-indigo-600', 'text-white');
         tabLogin.classList.remove('text-slate-400');
         tabSignup.classList.remove('bg-indigo-600', 'text-white');
@@ -101,22 +139,40 @@ function toggleMode(target) {
 }
 
 async function handleSubmit() {
-    if (mode === 'login') {
-        await login();
-    } else {
-        await signup();
+    const btn = document.getElementById('main-btn');
+    const errorDiv = document.getElementById('error');
+    
+    // UI Loading state
+    btn.disabled = true;
+    btn.innerText = "PROCESSING...";
+    errorDiv.classList.add('hidden');
+
+    try {
+        if (mode === 'login') {
+            await login();
+        } else {
+            await signup();
+        }
+    } catch (err) {
+        showError("Connection error. Is the server running?");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT';
     }
 }
 
-// --- DENTRO DE LOGIN.HTML ---
+function showError(msg) {
+    const errorDiv = document.getElementById('error');
+    errorDiv.innerText = msg;
+    errorDiv.classList.remove('hidden');
+}
 
 async function signup() {
-    // ... (tu lógica existente para obtener name, email, password) ...
     const name = document.getElementById("name").value;
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    const res = await fetch("/auth/signup", {
+    const res = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password })
@@ -124,43 +180,39 @@ async function signup() {
 
     const data = await res.json();
 
-    if (data.error) {
-        document.getElementById("error").innerText = data.error;
+    if (!res.ok) {
+        showError(data.error || "Signup failed");
         return;
     }
 
-    // ✅ GUARDAR DATOS EN LOCALSTORAGE (Importante para el siguiente paso)
     localStorage.setItem("token", data.token);
-    localStorage.setItem("user_id", data.user_id);
-
-    // ✅ REDIRECCIONAR A CREAR EMPRESA EN LUGAR DEL DASHBOARD
-    window.location.href = "create-company.html"; 
+    // Redirección a la carpeta /app
+    window.location.href = "/app/create-company.html"; 
 }
 
 async function login() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    const res = await fetch("/auth/login", {
+    const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
     });
 
     const data = await res.json();
-    if (data.error) {
-        document.getElementById("error").innerText = data.error;
+
+    if (!res.ok) {
+        showError(data.error || "Invalid credentials");
         return;
     }
 
     localStorage.setItem("token", data.token);
-    localStorage.setItem("user_id", data.user.id);
+    // Según tu backend, el ID suele venir en data.user.id o data.user_id
+    localStorage.setItem("user_id", data.user ? data.user.id : data.user_id);
 
-    if (data.profile_complete) {
-        window.location.href = "/app/matches.html";
-    } else {
-        window.location.href = "/app/index.html";
-    }
+    // Redirección al Hub principal en /app
+    window.location.href = "/app/company-hub.html";
 }
 </script>
 
