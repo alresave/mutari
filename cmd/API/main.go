@@ -154,9 +154,9 @@ func main() {
 	auth.POST("/companies", handler.CreateCompany)
 	auth.GET("/company-members", handler.GetCompanyMembers)
 	auth.POST("/company-members", handler.CreateCompanyMember)
-	auth.POST("/candidates/:candidate_id/token", handler.GenerateToken)
+	auth.POST("/tokens", handler.GenerateToken)
 	auth.POST("/candidates", handler.CreateCandidate)
-	auth.GET("/candidates", handler.GetCandidates)
+	auth.GET("/candidates", handler.GetCandidates2)
 	r.GET("/quiz", handler.GetQuiz)
 
 	auth.POST("/teams/:team_id/members", handler.AddTeamMember)

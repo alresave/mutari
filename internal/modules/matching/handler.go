@@ -571,29 +571,27 @@ func (h *Handler) AddTeamMember(c *gin.Context) {
 
 func (h *Handler) GenerateToken(c *gin.Context) {
 
-	candidateParam := c.Param("candidate_id")
+	var req models.GenerateTokenRequest
 
-	candidateID, err := strconv.ParseInt(candidateParam, 10, 64)
-	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid candidate id"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 
 	token, err := h.service.GenerateToken(
 		c.Request.Context(),
-		candidateID,
+		req.CandidateID,
+		req.CompanyMemberID,
 	)
 
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	link := fmt.Sprintf("http://localhost:8080/quiz?token=%s", token)
-
 	c.JSON(200, gin.H{
 		"token": token,
-		"link":  link,
+		"url":   fmt.Sprintf("http://localhost:8080/quiz.html?token=%s", token),
 	})
 }
 
@@ -602,7 +600,9 @@ func (h *Handler) CreateCandidate(c *gin.Context) {
 	var req models.CreateCandidateRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": "invalid request"})
+		c.JSON(400, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
@@ -723,5 +723,28 @@ func (h *Handler) GetCompanyMembers(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"members": members,
+	})
+}
+func (h *Handler) GetCandidates2(c *gin.Context) {
+
+	companyID := c.GetInt64("company_id")
+
+	if companyID == 0 {
+		c.JSON(400, gin.H{"error": "missing company"})
+		return
+	}
+
+	candidates, err := h.service.GetCandidates2(
+		c.Request.Context(),
+		companyID,
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"candidates": candidates,
 	})
 }

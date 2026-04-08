@@ -205,8 +205,9 @@ type AddTeamMemberRequest struct {
 }
 
 type CreateCandidateRequest struct {
-	Name  string `json:"name" binding:"required"`
-	Email string `json:"email" binding:"required,email"`
+	Name     string `json:"name" binding:"required,min=2"`
+	Email    string `json:"email" binding:"required,email"`
+	PhotoURL string `json:"photo_url"`
 }
 type MCPToken struct {
 	ID         int64
@@ -250,4 +251,8 @@ type Candidatescore struct {
 	Status    string    `json:"status"`
 	Score     float64   `json:"score,omitempty"` // 🔥 para matches
 	CreatedAt time.Time `json:"created_at"`
+}
+type GenerateTokenRequest struct {
+	CandidateID     *int64 `json:"candidate_id"`
+	CompanyMemberID *int64 `json:"company_member_id"`
 }

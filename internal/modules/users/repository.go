@@ -249,17 +249,42 @@ func (r *Repository) CompanyMemberExistsForCompany(
 }
 func (r *Repository) CreateToken(
 	ctx context.Context,
-	candidateID int64,
+	candidateID *int64,
+	companyMemberID *int64,
 	token string,
 	expiresAt time.Time,
 ) error {
+	var entityType string
+	var entityID int64
+
+	// Asumimos que el service ya validó correctamente
+	if candidateID != nil {
+		entityType = "candidate"
+		entityID = *candidateID
+	} else {
+		entityType = "member" // <-- markistente con DB
+		entityID = *companyMemberID
+	}
 
 	query := `
-	INSERT INTO mcp_tokens (candidate_id, token, expires_at)
-	VALUES ($1, $2, $3)
+	INSERT INTO mcp_tokens (
+		entity_type,
+		entity_id,
+		token,
+		expires_at
+	)
+	VALUES ($1, $2, $3, $4)
 	`
 
-	_, err := r.db.Exec(ctx, query, candidateID, token, expiresAt)
+	_, err := r.db.Exec(
+		ctx,
+		query,
+		entityType,
+		entityID,
+		token,
+		expiresAt.UTC(), // <-- importante
+	)
+
 	return err
 }
 func (r *Repository) CreateCandidate(
@@ -541,4 +566,74 @@ func (r *Repository) GetCompanyMembers(ctx context.Context, companyID int64) ([]
 	}
 
 	return members, nil
+}
+func (r *Repository) GetCandidates(ctx context.Context, companyID int64) ([]models.Candidate2, error) {
+
+	query := `
+	SELECT id, name, email, photo_url, status, created_at
+	FROM candidates
+	WHERE company_id = $1
+	ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, companyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []models.Candidate2
+
+	for rows.Next() {
+
+		var c models.Candidate2
+
+		err := rows.Scan(
+			&c.ID,
+			&c.Name,
+			&c.Email,
+			&c.PhotoURL,
+			&c.Status,
+			&c.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, c)
+	}
+
+	return result, nil
+}
+func (r *Repository) GetValidToken(
+	ctx context.Context,
+	token string,
+) (*models.MCPToken, error) {
+
+	query := `
+	SELECT id, entity_type, entity_id, token, expires_at, used
+	FROM mcp_tokens
+	WHERE token = $1
+	  AND used = FALSE
+	  AND expires_at > NOW()
+	LIMIT 1
+	`
+
+	var t models.MCPToken
+
+	err := r.db.QueryRow(ctx, query, token).Scan(
+		&t.ID,
+		&t.EntityType,
+		&t.EntityID,
+		&t.Token,
+		&t.ExpiresAt,
+		&t.Used,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &t, nil
 }

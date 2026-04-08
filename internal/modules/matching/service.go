@@ -10,6 +10,7 @@ import (
 
 	"github.com/alresave/mutari/internal/modules/models"
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -308,22 +309,6 @@ func (s *Service) AddTeamMember(
 	return nil
 }
 
-func (s *Service) GenerateToken(ctx context.Context, candidateID int64) (string, error) {
-
-	token, err := GenerateToken()
-	if err != nil {
-		return "", err
-	}
-
-	expiresAt := time.Now().Add(24 * time.Hour)
-
-	err = s.repo.users.CreateToken(ctx, candidateID, token, expiresAt)
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
-}
 func (s *Service) CreateCandidate(
 	ctx context.Context,
 	companyID int64,
@@ -334,22 +319,54 @@ func (s *Service) CreateCandidate(
 	return s.repo.users.CreateCandidate(ctx, companyID, name, email)
 }
 
-func (s *Service) ValidateToken(ctx context.Context, token string) (*models.MCPToken, error) {
+func (s *Service) ValidateToken(
+	ctx context.Context,
+	token string,
+) (*models.MCPToken, error) {
 
-	t, err := s.repo.users.GetToken(ctx, token)
+	if token == "" {
+		return nil, errors.New("token is required")
+	}
+
+	t, err := s.repo.users.GetValidToken(ctx, token)
 	if err != nil {
-		return nil, errors.New("invalid token")
-	}
-
-	if t.Used {
-		return nil, errors.New("token already used")
-	}
-
-	if time.Now().After(t.ExpiresAt) {
-		return nil, errors.New("token expired")
+		return nil, errors.New("invalid or expired token")
 	}
 
 	return t, nil
+}
+func (s *Service) GenerateToken(
+	ctx context.Context,
+	candidateID *int64,
+	companyMemberID *int64,
+) (string, error) {
+
+	// Validación clara
+	if (candidateID == nil && companyMemberID == nil) ||
+		(candidateID != nil && companyMemberID != nil) {
+		return "", errors.New("invalid target")
+	}
+
+	expiresAt := time.Now().UTC().Add(48 * time.Hour)
+
+	// Retry por colisión (muy raro, pero correcto)
+	for i := 0; i < 3; i++ {
+		token := uuid.NewString()
+
+		err := s.repo.users.CreateToken(
+			ctx,
+			candidateID,
+			companyMemberID,
+			token,
+			expiresAt,
+		)
+
+		if err == nil {
+			return token, nil
+		}
+	}
+
+	return "", errors.New("failed to generate token")
 }
 func BuildVector(answers []models.AnswerInput) []float32 {
 
@@ -406,7 +423,12 @@ func (s *Service) ProcessAnswers(
 	}
 
 	// 🔹 marcar token usado
-	return s.repo.users.MarkTokenUsed(ctx, token.Token)
+	_, err := s.repo.users.ConsumeToken(ctx, token.Token)
+	if err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
 
 func BuildBlockVector(
@@ -627,7 +649,7 @@ func (s *Service) SubmitAnswers(
 	// -----------------------------
 	// 8. MARCAR TOKEN USADO
 	// -----------------------------
-	_ = s.repo.users.MarkTokenUsed(ctx, token)
+	_, err = s.repo.users.ConsumeToken(ctx, token)
 
 	// -----------------------------
 	// 9. RETORNAR RESULTADO
@@ -648,4 +670,8 @@ func (s *Service) GetCandidates(ctx context.Context, companyID int64) ([]models.
 
 func (s *Service) GetCompanyMembers(ctx context.Context, companyID int64) ([]models.CompanyMember, error) {
 	return s.repo.users.GetCompanyMembers(ctx, companyID)
+}
+
+func (s *Service) GetCandidates2(ctx context.Context, companyID int64) ([]models.Candidate2, error) {
+	return s.repo.users.GetCandidates(ctx, companyID)
 }
