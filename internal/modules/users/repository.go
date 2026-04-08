@@ -426,16 +426,36 @@ func (r *Repository) UpsertCompanyMemberProfile(
 	return err
 }
 
-func (r *Repository) MarkTokenUsed(ctx context.Context, token string) error {
+func (r *Repository) ConsumeToken(
+	ctx context.Context,
+	token string,
+) (*models.MCPToken, error) {
 
 	query := `
 	UPDATE mcp_tokens
-	SET used = true
+	SET used = TRUE
 	WHERE token = $1
+	  AND used = FALSE
+	  AND expires_at > NOW()
+	RETURNING id, entity_type, entity_id, token, expires_at, used
 	`
 
-	_, err := r.db.Exec(ctx, query, token)
-	return err
+	var t models.MCPToken
+
+	err := r.db.QueryRow(ctx, query, token).Scan(
+		&t.ID,
+		&t.EntityType,
+		&t.EntityID,
+		&t.Token,
+		&t.ExpiresAt,
+		&t.Used,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &t, nil
 }
 func BuildBlockVector(
 	questions []models.MCPQuestion,
