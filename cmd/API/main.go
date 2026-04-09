@@ -144,7 +144,8 @@ func main() {
 	auth.POST("/mcp/answers", handler.SubmitAnswers)
 
 	auth.GET("/matches", handler.GetMatches)
-	auth.GET("/teams/:team_id/fit/:user_id", handler.GetTeamFit)
+	auth.GET("/teams/:team_id/fit/:user_id", handler.GetTeamMemberFit)
+	auth.GET("/teams/:team_id/fit/member/:member_id", handler.GetTeamMemberFit)
 	auth.GET("/teams/:team_id/simulate/:candidate_id", handler.SimulateTeamFit)
 	auth.GET("/teams/:team_id/culture", handler.GetTeamCulture)
 	auth.GET("/teams/:team_id/gaps", handler.GetTeamGaps)
@@ -159,7 +160,7 @@ func main() {
 	auth.GET("/candidates", handler.GetCandidates2)
 	r.GET("/quiz", handler.GetQuiz)
 
-	auth.POST("/teams/:team_id/members", handler.AddTeamMember)
+	auth.POST("/teams/:team_id/members", handler.AddMemberToTeam)
 	auth.POST("/teams", handler.CreateTeam)
 
 	// TEAM ENGINE

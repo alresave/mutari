@@ -146,17 +146,17 @@ func (h *Handler) GetMCPQuestions(c *gin.Context) {
 
 func (h *Handler) GetMatches(c *gin.Context) {
 
-	userID := c.GetInt64("user_id")
+	memberID := c.GetInt64("user_id")
 
-	matches, err := h.service.GetMatches(c.Request.Context(), userID)
+	matches, err := h.service.GetMatches(c.Request.Context(), memberID)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"user_id": userID,
-		"matches": matches,
+		"member_id": memberID,
+		"matches":   matches,
 	})
 }
 
@@ -229,15 +229,18 @@ func (h *Handler) GetTeamMatches(c *gin.Context) {
 	})
 }
 
-func (h *Handler) GetTeamFit(c *gin.Context) {
+func (h *Handler) GetTeamMemberFit(c *gin.Context) {
 
 	teamParam := c.Param("team_id")
-	userParam := c.Param("user_id")
+	memberParam := c.Param("member_id")
+	if memberParam == "" {
+		memberParam = c.Param("user_id")
+	}
 
 	teamID, _ := strconv.ParseInt(teamParam, 10, 64)
-	userID, _ := strconv.ParseInt(userParam, 10, 64)
+	memberID, _ := strconv.ParseInt(memberParam, 10, 64)
 
-	match, err := h.service.GetTeamFit(c.Request.Context(), teamID, userID)
+	match, err := h.service.GetTeamMemberFit(c.Request.Context(), teamID, memberID)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
@@ -354,7 +357,7 @@ func (h *Handler) RebuildTeamProfiles(c *gin.Context) {
 		"status": "team profiles rebuilt",
 	})
 }
-func (h *Handler) AddUserToTeam(c *gin.Context) {
+func (h *Handler) AddMemberToTeam(c *gin.Context) {
 
 	teamParam := c.Param("team_id")
 
@@ -365,7 +368,8 @@ func (h *Handler) AddUserToTeam(c *gin.Context) {
 	}
 
 	var body struct {
-		UserID int64 `json:"user_id"`
+		MemberID int64 `json:"member_id"`
+		UserID   int64 `json:"user_id"`
 	}
 
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -373,14 +377,23 @@ func (h *Handler) AddUserToTeam(c *gin.Context) {
 		return
 	}
 
-	err = h.service.AddUserToTeam(c.Request.Context(), teamID, body.UserID)
+	memberID := body.MemberID
+	if memberID == 0 {
+		memberID = body.UserID
+	}
+	if memberID == 0 {
+		c.JSON(400, gin.H{"error": "missing member_id"})
+		return
+	}
+
+	err = h.service.AddMemberToTeam(c.Request.Context(), teamID, memberID)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"status": "user added to team",
+		"status": "member added to team",
 	})
 }
 func (h *Handler) GetTeamProfile(c *gin.Context) {

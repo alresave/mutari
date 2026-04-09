@@ -22,18 +22,18 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GetMatches(ctx context.Context, userID int64) ([]models.Candidate, error) {
-	return s.repo.GetMCPMatches(ctx, userID)
+func (s *Service) GetMatches(ctx context.Context, memberID int64) ([]models.Candidate, error) {
+	return s.repo.GetMemberMatches(ctx, memberID)
 }
 
-func (s *Service) SubmitMCPAnswers(ctx context.Context, userID int64, answers []models.MCPAnswer) error {
+func (s *Service) SubmitMCPAnswers(ctx context.Context, memberID int64, answers []models.MCPAnswer) error {
 
-	err := s.repo.mcp.StoreCompanyMemberAnswers(ctx, userID, answers)
+	err := s.repo.mcp.StoreCompanyMemberAnswers(ctx, memberID, answers)
 	if err != nil {
 		return err
 	}
 
-	return s.repo.mcp.BuildCompanyMemberProfile(ctx, userID)
+	return s.repo.mcp.BuildCompanyMemberProfile(ctx, memberID)
 }
 
 func (s *Service) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion, error) {
@@ -124,8 +124,8 @@ func (s *Service) Me(
 func (s *Service) GetTeamMatches(ctx context.Context, teamID int64) ([]models.Candidate, error) {
 	return s.repo.GetTeamMatches(ctx, teamID)
 }
-func (s *Service) GetTeamFit(ctx context.Context, teamID int64, userID int64) (models.Candidate, error) {
-	return s.repo.GetTeamFit(ctx, teamID, userID)
+func (s *Service) GetTeamMemberFit(ctx context.Context, teamID int64, memberID int64) (models.Candidate, error) {
+	return s.repo.GetTeamMemberFit(ctx, teamID, memberID)
 }
 
 func (s *Service) SimulateTeamFit(
@@ -198,9 +198,9 @@ func (s *Service) RebuildAllTeamProfiles(ctx context.Context) error {
 
 	return nil
 }
-func (s *Service) AddUserToTeam(ctx context.Context, teamID int64, userID int64) error {
+func (s *Service) AddMemberToTeam(ctx context.Context, teamID int64, memberID int64) error {
 
-	err := s.repo.AddUserToTeam(ctx, teamID, userID)
+	err := s.repo.AddMemberToTeam(ctx, teamID, memberID)
 	if err != nil {
 		return err
 	}

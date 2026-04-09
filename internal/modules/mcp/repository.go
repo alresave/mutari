@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"math/rand/v2"
 	"strings"
 
 	"github.com/alresave/mutari/internal/modules/models"
@@ -160,10 +159,9 @@ func (r *Repository) BuildCompanyMemberProfile(ctx context.Context, memberID int
 		start := block * 8
 
 		for i := 0; i < 8; i++ {
-			noise := (rand.Float64() - 0.5) * 0.12
 			gradient := (float64(i) - 3.5) * 0.30
 
-			val := (base*0.6 + avg*0.4) + gradient + noise
+			val := (base * 0.6) + (avg * 0.4) + gradient
 
 			if val < 0 {
 				val = 0

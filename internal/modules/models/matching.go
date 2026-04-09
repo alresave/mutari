@@ -1,7 +1,7 @@
 package models
 
 type Candidate struct {
-	UserID int64 `json:"user_id"`
+	MemberID int64 `json:"member_id"`
 
 	Name  string `json:"name"`
 	Photo string `json:"photo"`

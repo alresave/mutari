@@ -48,6 +48,6 @@ type SubmitAnswersRequest struct {
 }
 
 type SubmitMCPRequest struct {
-	UserID  int64    `json:"user_id"`
-	Answers []Answer `json:"answers"`
+	MemberID int64    `json:"member_id"`
+	Answers  []Answer `json:"answers"`
 }

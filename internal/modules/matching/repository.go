@@ -129,7 +129,7 @@ func compatibilitySummary(primary, secondary, friction string) string {
 		"."
 }
 
-func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]models.Candidate, error) {
+func (r *Repository) GetMemberMatches(ctx context.Context, memberID int64) ([]models.Candidate, error) {
 
 	query := `
 	SELECT
@@ -167,16 +167,16 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]models.
 		photos[id] = photo
 	}
 
-	source, ok := vectors[userID]
+	source, ok := vectors[memberID]
 	if !ok {
-		return nil, errors.New("user vector not found")
+		return nil, errors.New("member vector not found")
 	}
 
 	var results []models.Candidate
 
 	for id, vec := range vectors {
 
-		if id == userID {
+		if id == memberID {
 			continue
 		}
 
@@ -220,9 +220,9 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]models.
 
 		c := models.Candidate{
 
-			UserID: id,
-			Name:   names[id],
-			Photo:  photos[id],
+			MemberID: id,
+			Name:     names[id],
+			Photo:    photos[id],
 
 			Score: int(score * 100),
 
@@ -510,9 +510,9 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]models
 
 		c := models.Candidate{
 
-			UserID: id,
-			Name:   name,
-			Photo:  photo,
+			MemberID: id,
+			Name:     name,
+			Photo:    photo,
 
 			Score: int(score * 100),
 
@@ -544,7 +544,7 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]models
 	return results, nil
 }
 
-func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64) (models.Candidate, error) {
+func (r *Repository) GetTeamMemberFit(ctx context.Context, teamID int64, memberID int64) (models.Candidate, error) {
 
 	query := `
 	SELECT
@@ -565,7 +565,7 @@ func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64)
 	var vec pgvector.Vector
 	var teamVec pgvector.Vector
 
-	err := r.db.QueryRow(ctx, query, teamID, userID).
+	err := r.db.QueryRow(ctx, query, teamID, memberID).
 		Scan(&id, &name, &photo, &vec, &teamVec)
 
 	if err != nil {
@@ -630,9 +630,9 @@ func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64)
 
 	result := models.Candidate{
 
-		UserID: id,
-		Name:   name,
-		Photo:  photo,
+		MemberID: id,
+		Name:     name,
+		Photo:    photo,
 
 		Score: int(score * 100),
 
@@ -844,7 +844,7 @@ ORDER BY id
 
 	return teams, nil
 }
-func (r *Repository) AddUserToTeam(ctx context.Context, teamID int64, userID int64) error {
+func (r *Repository) AddMemberToTeam(ctx context.Context, teamID int64, memberID int64) error {
 
 	query := `
     INSERT INTO team_members (team_id, company_member_id)
@@ -852,7 +852,7 @@ func (r *Repository) AddUserToTeam(ctx context.Context, teamID int64, userID int
     ON CONFLICT DO NOTHING
     `
 
-	_, err := r.db.Exec(ctx, query, teamID, userID)
+	_, err := r.db.Exec(ctx, query, teamID, memberID)
 
 	return err
 }
