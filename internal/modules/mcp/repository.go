@@ -66,20 +66,21 @@ func (r *Repository) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion,
 
 	return questions, nil
 }
-func (r *Repository) StoreMCPAnswers(ctx context.Context, userID int64, answers []models.MCPAnswer) error {
+func (r *Repository) StoreCompanyMemberAnswers(ctx context.Context, memberID int64, answers []models.MCPAnswer) error {
 
 	query := `
-	INSERT INTO user_mcp_answers
-	(user_id,question_id,block,value)
-	VALUES ($1,$2,$3,$4)
+	INSERT INTO company_member_mcp_answers
+	(company_member_id,question_id,value)
+	VALUES ($1,$2,$3)
+	ON CONFLICT (company_member_id, question_id)
+	DO UPDATE SET value = EXCLUDED.value
 	`
 
 	for _, a := range answers {
 
 		_, err := r.db.Exec(ctx, query,
-			userID,
+			memberID,
 			a.QuestionID,
-			a.Block,
 			a.Value,
 		)
 
@@ -90,15 +91,16 @@ func (r *Repository) StoreMCPAnswers(ctx context.Context, userID int64, answers 
 
 	return nil
 }
-func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) error {
+func (r *Repository) BuildCompanyMemberProfile(ctx context.Context, memberID int64) error {
 
 	query := `
-	SELECT block,value
-	FROM user_mcp_answers
-	WHERE user_id=$1
+	SELECT q.block, a.value
+	FROM company_member_mcp_answers a
+	JOIN mcp_questions q ON q.id = a.question_id
+	WHERE a.company_member_id=$1
 	`
 
-	rows, err := r.db.Query(ctx, query, userID)
+	rows, err := r.db.Query(ctx, query, memberID)
 	if err != nil {
 		return err
 	}
@@ -116,8 +118,11 @@ func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) erro
 			return err
 		}
 
-		blockSum[block] += value
-		blockCount[block]++
+		blockIndex := block - 1
+		if blockIndex >= 0 && blockIndex < 8 {
+			blockSum[blockIndex] += value
+			blockCount[blockIndex]++
+		}
 	}
 
 	// MCP archetype bases
@@ -149,7 +154,7 @@ func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) erro
 			avg = blockSum[block] / float64(blockCount[block])
 		}
 
-		archetype := archetypes[int(userID)%len(archetypes)]
+		archetype := archetypes[int(memberID)%len(archetypes)]
 		base := archetype[block]
 
 		start := block * 8
@@ -175,13 +180,13 @@ func (r *Repository) BuildIdentityVector(ctx context.Context, userID int64) erro
 	pgVector := pgvector.NewVector(vector)
 
 	queryInsert := `
-	INSERT INTO user_mcp_profiles(user_id,effective_vector)
+	INSERT INTO company_member_mcp_profiles(company_member_id,effective_vector)
 	VALUES($1,$2)
-	ON CONFLICT(user_id)
+	ON CONFLICT(company_member_id)
 	DO UPDATE SET effective_vector=EXCLUDED.effective_vector
 	`
 
-	_, err = r.db.Exec(ctx, queryInsert, userID, pgVector)
+	_, err = r.db.Exec(ctx, queryInsert, memberID, pgVector)
 
 	return err
 }
@@ -190,8 +195,11 @@ func (r *Repository) HasMCPProfile(ctx context.Context, userID int64) (bool, err
 
 	query := `
 	SELECT EXISTS(
-	SELECT 1 FROMcompany_member_mcp_profiles 
-	WHERE company_member_id=$1
+		SELECT 1
+		FROM company_member_mcp_profiles cmp
+		JOIN company_members cm ON cm.id = cmp.company_member_id
+		JOIN companies c ON c.id = cm.company_id
+		WHERE c.owner=$1
 	)
 	`
 
@@ -200,6 +208,27 @@ func (r *Repository) HasMCPProfile(ctx context.Context, userID int64) (bool, err
 	err := r.db.QueryRow(ctx, query, userID).Scan(&exists)
 
 	return exists, err
+}
+
+func (r *Repository) GetAllCompanyMemberIDs(ctx context.Context) ([]int64, error) {
+
+	rows, err := r.db.Query(ctx, `SELECT id FROM company_members`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int64
+
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	return ids, nil
 }
 
 func (r *Repository) GetTeamVectorRaw(
@@ -318,8 +347,8 @@ func (r *Repository) SaveAnswers(
 
 	// 🔥 construir query dinámica
 	query := `
-	INSERT INTO candidate_mcp_answers (candidate_id, question_id, block, value)
-	VALUES 
+		INSERT INTO candidate_mcp_answers (candidate_id, question_id, value)
+		VALUES 
 	`
 
 	args := []interface{}{}
@@ -327,24 +356,87 @@ func (r *Repository) SaveAnswers(
 
 	for i, a := range answers {
 
-		// ($1, $2, $3, $4), ($5, $6, $7, $8)...
-		idx := i * 4
+		// ($1, $2, $3), ($4, $5, $6)...
+		idx := i * 3
 
 		values = append(values,
-			fmt.Sprintf("($%d, $%d, $%d, $%d)",
-				idx+1, idx+2, idx+3, idx+4),
+			fmt.Sprintf("($%d, $%d, $%d)",
+				idx+1, idx+2, idx+3),
 		)
 
 		args = append(args,
 			candidateID,
 			a.QuestionID,
-			a.Block,
 			a.Value,
 		)
 	}
 
 	query += strings.Join(values, ",")
+	query += `
+		ON CONFLICT (candidate_id, question_id)
+		DO UPDATE SET value = EXCLUDED.value
+	`
 
 	_, err := r.db.Exec(ctx, query, args...)
+	return err
+}
+
+func (r *Repository) SaveMemberAnswers(
+	ctx context.Context,
+	memberID int64,
+	answers []models.AnswerInput,
+) error {
+
+	if len(answers) == 0 {
+		return nil
+	}
+
+	query := `
+		INSERT INTO company_member_mcp_answers (company_member_id, question_id, value)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (company_member_id, question_id)
+		DO UPDATE SET value = EXCLUDED.value
+	`
+
+	for _, a := range answers {
+		if _, err := r.db.Exec(ctx, query, memberID, a.QuestionID, a.Value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *Repository) UpsertCandidateProfile(
+	ctx context.Context,
+	candidateID int64,
+	vector []float32,
+) error {
+
+	query := `
+		INSERT INTO candidate_mcp_profiles (candidate_id, effective_vector)
+		VALUES ($1, $2)
+		ON CONFLICT (candidate_id)
+		DO UPDATE SET effective_vector = EXCLUDED.effective_vector
+	`
+
+	_, err := r.db.Exec(ctx, query, candidateID, vector)
+	return err
+}
+
+func (r *Repository) UpsertCompanyMemberProfile(
+	ctx context.Context,
+	memberID int64,
+	vector []float32,
+) error {
+
+	query := `
+		INSERT INTO company_member_mcp_profiles (company_member_id, effective_vector)
+		VALUES ($1, $2)
+		ON CONFLICT (company_member_id)
+		DO UPDATE SET effective_vector = EXCLUDED.effective_vector
+	`
+
+	_, err := r.db.Exec(ctx, query, memberID, vector)
 	return err
 }

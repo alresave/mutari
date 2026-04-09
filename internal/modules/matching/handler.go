@@ -146,7 +146,7 @@ func (h *Handler) GetMCPQuestions(c *gin.Context) {
 
 func (h *Handler) GetMatches(c *gin.Context) {
 
-	userID := c.GetInt64("userID")
+	userID := c.GetInt64("user_id")
 
 	matches, err := h.service.GetMatches(c.Request.Context(), userID)
 	if err != nil {
@@ -180,9 +180,9 @@ func (h *Handler) RebuildProfiles(c *gin.Context) {
 }
 func (h *Handler) Me(c *gin.Context) {
 
-	userID := c.GetInt64("userID")
+	userID := c.GetInt64("user_id")
 
-	id, name, photo, profileComplete, err :=
+	id, name, photo, company, profileComplete, err :=
 		h.service.Me(c.Request.Context(), userID)
 
 	if err != nil {
@@ -202,6 +202,7 @@ func (h *Handler) Me(c *gin.Context) {
 			"photo": photo,
 		},
 
+		"company":          company,
 		"profile_complete": profileComplete,
 	})
 }

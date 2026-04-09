@@ -2,11 +2,12 @@ package users
 
 import (
 	"context"
+	"errors"
 	"log"
-	"sort"
 	"time"
 
 	"github.com/alresave/mutari/internal/modules/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -54,7 +55,7 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (int64, s
 func (r *Repository) GetUserByID(ctx context.Context, userID int64) (int64, string, string, error) {
 
 	query := `
-	SELECT id, name, photo_url
+	SELECT id, name, COALESCE(photo_url, '')
 	FROM users
 	WHERE id=$1
 	`
@@ -344,86 +345,33 @@ func (r *Repository) GetCompanyByOwner(ctx context.Context, userID int64) (int64
 	err := r.db.QueryRow(ctx, query, userID).Scan(&companyID)
 	return companyID, err
 }
-func (r *Repository) InsertCandidateAnswers(
-	ctx context.Context,
-	candidateID int64,
-	answers []models.AnswerInput,
-) error {
+
+func (r *Repository) GetCompanyForOwner(ctx context.Context, userID int64) (*models.Company, error) {
 
 	query := `
-	INSERT INTO candidate_mcp_answers (candidate_id, question_id, value)
-	VALUES ($1, $2, $3)
+	SELECT id, name, website, owner, created_at
+	FROM companies
+	WHERE owner = $1
+	LIMIT 1
 	`
 
-	for _, a := range answers {
-		_, err := r.db.Exec(ctx, query,
-			candidateID,
-			a.QuestionID,
-			a.Value,
-		)
-		if err != nil {
-			return err
+	var company models.Company
+
+	err := r.db.QueryRow(ctx, query, userID).Scan(
+		&company.ID,
+		&company.Name,
+		&company.Website,
+		&company.Owner,
+		&company.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
 		}
+		return nil, err
 	}
 
-	return nil
-}
-func (r *Repository) InsertCompanyMemberAnswers(
-	ctx context.Context,
-	memberID int64,
-	answers []models.AnswerInput,
-) error {
-
-	query := `
-	INSERT INTO company_member_mcp_answers (company_member_id, question_id, value)
-	VALUES ($1, $2, $3)
-	`
-
-	for _, a := range answers {
-		_, err := r.db.Exec(ctx, query,
-			memberID,
-			a.QuestionID,
-			a.Value,
-		)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (r *Repository) UpsertCandidateProfile(
-	ctx context.Context,
-	candidateID int64,
-	vector []float32,
-) error {
-
-	query := `
-	INSERT INTO candidate_mcp_profiles (candidate_id, effective_vector)
-	VALUES ($1, $2)
-	ON CONFLICT (candidate_id)
-	DO UPDATE SET effective_vector = EXCLUDED.effective_vector
-	`
-
-	_, err := r.db.Exec(ctx, query, candidateID, vector)
-	return err
-}
-func (r *Repository) UpsertCompanyMemberProfile(
-	ctx context.Context,
-	memberID int64,
-	vector []float32,
-) error {
-
-	query := `
-	INSERT INTO company_member_profiles (company_member_id, effective_vector)
-	VALUES ($1, $2)
-	ON CONFLICT (company_member_id)
-	DO UPDATE SET effective_vector = EXCLUDED.effective_vector
-	`
-
-	_, err := r.db.Exec(ctx, query, memberID, vector)
-	return err
+	return &company, nil
 }
 
 func (r *Repository) ConsumeToken(
@@ -457,63 +405,10 @@ func (r *Repository) ConsumeToken(
 
 	return &t, nil
 }
-func BuildBlockVector(
-	questions []models.MCPQuestion,
-	answers []models.AnswerInput,
-) []float32 {
-
-	answerMap := make(map[int64]float32)
-	for _, a := range answers {
-		answerMap[a.QuestionID] = float32(a.Value)
-	}
-
-	blockSum := make(map[int64]float32)
-	blockCount := make(map[int64]int)
-
-	// 🔹 registrar TODOS los bloques
-	blockSet := make(map[int64]struct{})
-
-	for _, q := range questions {
-
-		blockSet[q.Block] = struct{}{}
-
-		if val, ok := answerMap[q.ID]; ok {
-			blockSum[q.Block] += val
-			blockCount[q.Block]++
-		}
-	}
-
-	// 🔹 ordenar bloques
-	var blocks []int64
-	for b := range blockSet {
-		blocks = append(blocks, b)
-	}
-
-	sort.Slice(blocks, func(i, j int) bool {
-		return blocks[i] < blocks[j]
-	})
-
-	vector := make([]float32, len(blocks))
-
-	for i, b := range blocks {
-
-		count := blockCount[b]
-
-		if count == 0 {
-			vector[i] = 0
-			continue
-		}
-
-		avg := blockSum[b] / float32(count)
-		vector[i] = avg / 5.0
-	}
-
-	return vector
-}
 func (r *Repository) GetCandidatesByCompany(ctx context.Context, companyID int64) ([]models.Candidate2, error) {
 
 	query := `
-	SELECT id, name, photo_url, email, status, created_at
+	SELECT id, name, COALESCE(photo_url, ''), email, status, created_at
 	FROM candidates
 	WHERE company_id = $1
 	ORDER BY created_at DESC
@@ -590,7 +485,7 @@ func (r *Repository) GetCompanyMembers(ctx context.Context, companyID int64) ([]
 func (r *Repository) GetCandidates(ctx context.Context, companyID int64) ([]models.Candidate2, error) {
 
 	query := `
-	SELECT id, name, email, photo_url, status, created_at
+	SELECT id, name, email, COALESCE(photo_url, ''), status, created_at
 	FROM candidates
 	WHERE company_id = $1
 	ORDER BY created_at DESC

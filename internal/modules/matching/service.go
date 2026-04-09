@@ -28,12 +28,12 @@ func (s *Service) GetMatches(ctx context.Context, userID int64) ([]models.Candid
 
 func (s *Service) SubmitMCPAnswers(ctx context.Context, userID int64, answers []models.MCPAnswer) error {
 
-	err := s.repo.mcp.StoreMCPAnswers(ctx, userID, answers)
+	err := s.repo.mcp.StoreCompanyMemberAnswers(ctx, userID, answers)
 	if err != nil {
 		return err
 	}
 
-	return s.repo.mcp.BuildIdentityVector(ctx, userID)
+	return s.repo.mcp.BuildCompanyMemberProfile(ctx, userID)
 }
 
 func (s *Service) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion, error) {
@@ -42,14 +42,14 @@ func (s *Service) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion, er
 
 func (s *Service) RebuildAllProfiles(ctx context.Context) error {
 
-	ids, err := s.repo.users.GetAllUserIDs(ctx)
+	ids, err := s.repo.mcp.GetAllCompanyMemberIDs(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, id := range ids {
 
-		err := s.repo.mcp.BuildIdentityVector(ctx, id)
+		err := s.repo.mcp.BuildCompanyMemberProfile(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -101,19 +101,24 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, in
 func (s *Service) Me(
 	ctx context.Context,
 	userID int64,
-) (int64, string, string, bool, error) {
+) (int64, string, string, *models.Company, bool, error) {
 
 	id, name, photo, err := s.repo.users.GetUserByID(ctx, userID)
 	if err != nil {
-		return 0, "", "", false, err
+		return 0, "", "", nil, false, err
+	}
+
+	company, err := s.repo.users.GetCompanyForOwner(ctx, userID)
+	if err != nil {
+		return 0, "", "", nil, false, err
 	}
 
 	profileComplete, err := s.repo.mcp.HasMCPProfile(ctx, userID)
 	if err != nil {
-		return 0, "", "", false, err
+		return 0, "", "", nil, false, err
 	}
 
-	return id, name, photo, profileComplete, nil
+	return id, name, photo, company, profileComplete, nil
 }
 
 func (s *Service) GetTeamMatches(ctx context.Context, teamID int64) ([]models.Candidate, error) {
@@ -387,14 +392,14 @@ func (s *Service) ProcessAnswers(
 	// 🔹 guardar respuestas según tipo
 	if token.EntityType == "candidate" {
 
-		err := s.repo.users.InsertCandidateAnswers(ctx, token.EntityID, answers)
+		err := s.repo.mcp.SaveAnswers(ctx, token.EntityID, toAnswers(answers))
 		if err != nil {
 			return err
 		}
 
 	} else if token.EntityType == "member" {
 
-		err := s.repo.users.InsertCompanyMemberAnswers(ctx, token.EntityID, answers)
+		err := s.repo.mcp.SaveMemberAnswers(ctx, token.EntityID, answers)
 		if err != nil {
 			return err
 		}
@@ -409,14 +414,14 @@ func (s *Service) ProcessAnswers(
 	// 🔹 guardar profile
 	if token.EntityType == "candidate" {
 
-		err := s.repo.users.UpsertCandidateProfile(ctx, token.EntityID, vector)
+		err := s.repo.mcp.UpsertCandidateProfile(ctx, token.EntityID, vector)
 		if err != nil {
 			return err
 		}
 
 	} else {
 
-		err := s.repo.users.UpsertCompanyMemberProfile(ctx, token.EntityID, vector)
+		err := s.repo.mcp.UpsertCompanyMemberProfile(ctx, token.EntityID, vector)
 		if err != nil {
 			return err
 		}
@@ -641,7 +646,7 @@ func (s *Service) SubmitAnswers(
 	// -----------------------------
 	// 7. GUARDAR PERFIL
 	// -----------------------------
-	err = s.repo.users.UpsertCandidateProfile(ctx, candidateID, vector)
+	err = s.repo.mcp.UpsertCandidateProfile(ctx, candidateID, vector)
 	if err != nil {
 		return nil, err
 	}
@@ -674,4 +679,17 @@ func (s *Service) GetCompanyMembers(ctx context.Context, companyID int64) ([]mod
 
 func (s *Service) GetCandidates2(ctx context.Context, companyID int64) ([]models.Candidate2, error) {
 	return s.repo.users.GetCandidates(ctx, companyID)
+}
+
+func toAnswers(inputs []models.AnswerInput) []models.Answer {
+	answers := make([]models.Answer, 0, len(inputs))
+
+	for _, input := range inputs {
+		answers = append(answers, models.Answer{
+			QuestionID: input.QuestionID,
+			Value:      input.Value,
+		})
+	}
+
+	return answers
 }

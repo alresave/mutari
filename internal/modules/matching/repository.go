@@ -133,12 +133,12 @@ func (r *Repository) GetMCPMatches(ctx context.Context, userID int64) ([]models.
 
 	query := `
 	SELECT
-	u.id,
-	u.name,
-	u.photo_url,
+	cm.id,
+	cm.name,
+	'' AS photo_url,
 	p.effective_vector
-	FROM user_mcp_profiles p
-	JOIN users u ON u.id = p.user_id
+	FROM company_member_mcp_profiles p
+	JOIN company_members cm ON cm.id = p.company_member_id
 	`
 
 	rows, err := r.db.Query(ctx, query)
@@ -337,7 +337,7 @@ func (r *Repository) BuildTeamVector(ctx context.Context, teamID int64) error {
 	query := `
  SELECT p.effective_vector
  FROM team_members tm
- JOIN user_mcp_profiles p ON p.user_id = tm.user_id
+ JOIN company_member_mcp_profiles p ON p.company_member_id = tm.company_member_id
  WHERE tm.team_id = $1
  `
 
@@ -420,18 +420,15 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]models
 
 	query := `
 	SELECT
-	u.id,
-	u.name,
-	u.photo_url,
+	c.id,
+	c.name,
+	COALESCE(c.photo_url, ''),
 	p.effective_vector,
 	t.effective_vector
 	FROM team_profiles t
-	JOIN user_mcp_profiles p ON TRUE
-	JOIN users u ON u.id = p.user_id
+	JOIN candidate_mcp_profiles p ON TRUE
+	JOIN candidates c ON c.id = p.candidate_id
 	WHERE t.team_id=$1
-	AND u.id NOT IN (
-		SELECT user_id FROM team_members WHERE team_id=$1
-	)
 	`
 
 	rows, err := r.db.Query(ctx, query, teamID)
@@ -551,15 +548,15 @@ func (r *Repository) GetTeamFit(ctx context.Context, teamID int64, userID int64)
 
 	query := `
 	SELECT
-		u.id,
-		u.name,
-		u.photo_url,
+		cm.id,
+		cm.name,
+		'' AS photo_url,
 		p.effective_vector,
 		t.effective_vector
-	FROM users u
-	JOIN user_mcp_profiles p ON u.id = p.user_id
+	FROM company_members cm
+	JOIN company_member_mcp_profiles p ON cm.id = p.company_member_id
 	JOIN team_profiles t ON t.team_id = $1
-	WHERE u.id = $2
+	WHERE cm.id = $2
 	`
 
 	var id int64
@@ -669,7 +666,7 @@ func (r *Repository) GetTeamCulture(ctx context.Context, teamID int64) (map[stri
 	query := `
 	SELECT p.effective_vector
 	FROM team_members tm
-	JOIN user_mcp_profiles p ON p.user_id = tm.user_id
+	JOIN company_member_mcp_profiles p ON p.company_member_id = tm.company_member_id
 	WHERE tm.team_id = $1
 	`
 
@@ -731,7 +728,7 @@ func (r *Repository) GetTeamGaps(ctx context.Context, teamID int64) ([]string, s
 	query := `
  SELECT p.effective_vector
  FROM team_members tm
- JOIN user_mcp_profiles p ON p.user_id = tm.user_id
+ JOIN company_member_mcp_profiles p ON p.company_member_id = tm.company_member_id
  WHERE tm.team_id = $1
  `
 
@@ -850,7 +847,7 @@ ORDER BY id
 func (r *Repository) AddUserToTeam(ctx context.Context, teamID int64, userID int64) error {
 
 	query := `
-    INSERT INTO team_members (team_id, user_id)
+    INSERT INTO team_members (team_id, company_member_id)
     VALUES ($1,$2)
     ON CONFLICT DO NOTHING
     `
@@ -862,7 +859,7 @@ func (r *Repository) AddUserToTeam(ctx context.Context, teamID int64, userID int
 func (r *Repository) GetCandidates(ctx context.Context, teamID int64) ([]models.User, error) {
 
 	query := `
-    SELECT id,name,photo_url
+    SELECT id,name,COALESCE(photo_url, '')
     FROM users
     WHERE id NOT IN (
         SELECT user_id
@@ -1043,8 +1040,8 @@ func (r *Repository) SimulateTeamFit(
 
 	err := r.db.QueryRow(ctx, `
 	SELECT effective_vector
-	FROM user_mcp_profiles
-	WHERE user_id=$1
+	FROM candidate_mcp_profiles
+	WHERE candidate_id=$1
 	`, candidateID).Scan(&candidateVec)
 
 	if err != nil {
@@ -1060,7 +1057,7 @@ func (r *Repository) SimulateTeamFit(
 	rows, err := r.db.Query(ctx, `
 	SELECT p.effective_vector
 	FROM team_members tm
-	JOIN user_mcp_profiles p ON p.user_id = tm.user_id
+	JOIN company_member_mcp_profiles p ON p.company_member_id = tm.company_member_id
 	WHERE tm.team_id=$1
 	`, teamID)
 
