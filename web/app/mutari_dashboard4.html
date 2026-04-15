@@ -6,27 +6,17 @@
 <title>Mutari HR Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="styles/output.css">
+<link rel="stylesheet" href="styles/site.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body {
-background: radial-gradient(circle at top,#0f172a,#020617);
-}
-.card {
-background: rgba(15,23,42,0.75);
-backdrop-filter: blur(8px);
-border:1px solid rgba(255,255,255,0.05);
-}
-</style>
 </head>
 
-<body class="text-white font-sans">
+<body class="page-legacy-dashboard text-white font-sans">
 
 <div class="max-w-7xl mx-auto p-6">
 
 <div class="flex items-center gap-6 mb-8">
-<img src="../images/logo.jpg" style="width:256px">
+<img src="../images/logo.jpg" class="legacy-logo">
 <div>
 <h1 class="text-3xl font-bold">Mutari Team Intelligence</h1>
 <p class="text-slate-400">AI-powered team composition analysis</p>
@@ -36,7 +26,7 @@ border:1px solid rgba(255,255,255,0.05);
 <div class="grid grid-cols-3 gap-6">
 
 <!-- TEAM INFO -->
-<div class="card rounded-xl p-6">
+<div class="legacy-card rounded-xl p-6">
 
 <h2 class="text-xl font-semibold mb-4">Team Info</h2>
 
@@ -55,7 +45,7 @@ Analyze Gaps
 </div>
 
 <!-- RADAR -->
-<div class="card rounded-xl p-6">
+<div class="legacy-card rounded-xl p-6">
 
 <h2 class="text-xl font-semibold mb-4">Team Genome</h2>
 
@@ -64,7 +54,7 @@ Analyze Gaps
 </div>
 
 <!-- CANDIDATES -->
-<div class="card rounded-xl p-6">
+<div class="legacy-card rounded-xl p-6">
 
 <h2 class="text-xl font-semibold mb-4">Candidates</h2>
 
@@ -75,7 +65,7 @@ Analyze Gaps
 </div>
 
 <!-- TEAM GAPS -->
-<div class="card rounded-xl p-6 mt-6">
+<div class="legacy-card rounded-xl p-6 mt-6">
 
 <h2 class="text-xl font-semibold mb-4">Team Gaps</h2>
 

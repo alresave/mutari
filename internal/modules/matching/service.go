@@ -66,11 +66,11 @@ func (s *Service) Signup(ctx context.Context, name, email, password string) (int
 
 	return s.repo.users.CreateUser(ctx, name, email, string(hash))
 }
-func (s *Service) Login(ctx context.Context, email, password string) (string, int64, string, error) {
+func (s *Service) Login(ctx context.Context, email, password string) (string, int64, string, error, int64) {
 
 	id, hash, companyID, name, err := s.repo.users.GetUserByEmail(ctx, email)
 	if err != nil {
-		return "", 0, "", err
+		return "", 0, "", err, 0
 	}
 
 	err = bcrypt.CompareHashAndPassword(
@@ -79,7 +79,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, in
 	)
 
 	if err != nil {
-		return "", 0, "", errors.New("invalid credentials")
+		return "", 0, "", errors.New("invalid credentials"), 0
 	}
 
 	claims := jwt.MapClaims{
@@ -92,10 +92,10 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, in
 
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
-		return "", 0, "", err
+		return "", 0, "", err, companyID
 	}
 
-	return tokenString, id, name, nil
+	return tokenString, id, name, nil, companyID
 }
 
 func (s *Service) Me(

@@ -8,11 +8,12 @@
 
 <title>Mutari Matches</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="styles/output.css">
+<link rel="stylesheet" href="styles/site.css">
 
 </head>
 
-<body class="bg-gray-900 text-white min-h-screen">
+<body class="page-matches text-white min-h-screen">
 
 <div class="max-w-2xl mx-auto p-6">
 
@@ -75,7 +76,7 @@ const photo = m.photo || "https://api.dicebear.com/7.x/initials/svg?seed="+m.nam
 
 const card = document.createElement("div")
 
-card.className="bg-gray-800 rounded-xl p-4 shadow-lg flex gap-4"
+card.className="glass-card rounded-xl p-4 shadow-lg flex gap-4"
 
 card.innerHTML = `
 

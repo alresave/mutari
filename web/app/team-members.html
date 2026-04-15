@@ -5,47 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Equipo — Mutari</title>
     
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:8080; img-src 'self' data: https://i.pravatar.cc;">
-
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <script>
-        tailwind.config = { 
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: { slate: { 950: '#020617' } },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                }
-            }
-        }
-    </script>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:8080; img-src 'self' data: https://i.pravatar.cc;">
     
+    <link rel="stylesheet" href="styles/output.css">
+    <link rel="stylesheet" href="styles/site.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-
-    <style>
-        body { background-color: #020617; background-image: radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%); background-attachment: fixed; }
-        .glass-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); backdrop-filter: blur(12px); border-radius: 1rem; }
-        .glow-indigo { box-shadow: 0 0 20px rgba(99, 102, 241, 0.1); }
-        
-        /* Interacción de lista mejorada */
-        .member-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; }
-        .member-item:hover { background: rgba(30, 41, 59, 0.5); border-color: rgba(71, 85, 105, 0.5); }
-        .member-item.team-member { background: rgba(79, 70, 229, 0.05); border-color: rgba(99, 102, 241, 0.2); }
-        .member-item.team-member:hover { background: rgba(79, 70, 229, 0.1); border-color: rgba(99, 102, 241, 0.5); }
-
-        /* Scrollbar personalizado y fino */
-        .member-list::-webkit-scrollbar { width: 5px; }
-        .member-list::-webkit-scrollbar-track { background: transparent; }
-        .member-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 5px; }
-        
-        /* Animación de entrada */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
-    </style>
 </head>
 
-<body class="text-slate-200 font-sans antialiased overflow-x-hidden">
+<body class="page-team-members text-slate-200 font-sans antialiased overflow-x-hidden">
 
 <div class="max-w-[90rem] mx-auto p-6 md:p-10 animate-fade-in">
 

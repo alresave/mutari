@@ -93,7 +93,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, userID, name, err := h.service.Login(
+	token, userID, name, err, companyID := h.service.Login(
 		c.Request.Context(),
 		body.Email,
 		body.Password,
@@ -107,8 +107,9 @@ func (h *Handler) Login(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"token": token,
 		"user": gin.H{
-			"id":   userID,
-			"name": name,
+			"id":         userID,
+			"name":       name,
+			"company_id": companyID,
 		},
 	})
 }

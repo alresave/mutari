@@ -5,58 +5,14 @@
 <meta charset="UTF-8">
 <title>Mutari — Team Intelligence</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="styles/output.css">
+<link rel="stylesheet" href="styles/site.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<script>
-tailwind.config = { darkMode: "class" }
-</script>
-
-<style>
-
-body{
-background:#020617;
-}
-
-.glow{
-box-shadow:0 0 30px rgba(99,102,241,0.25);
-}
-
-.candidate{
-transition:all .2s;
-border:1px solid transparent;
-}
-
-.candidate:hover{
-transform:scale(1.05);
-background:#1e293b;
-border-color:#6366f1;
-box-shadow:0 0 20px rgba(99,102,241,0.4);
-}
-
-.candidate.active{
-background:#312e81;
-border-color:#818cf8;
-box-shadow:0 0 25px rgba(129,140,248,0.6);
-transform:scale(1.05);
-}
-
-.bar{
-transition:width .6s ease;
-}
-
-.score{
-font-size:48px;
-font-weight:bold;
-color:#6366f1;
-}
-
-</style>
-
 </head>
 
-<body class="text-slate-200">
+<body class="page-dashboard text-slate-200">
 
 <div class="max-w-7xl mx-auto p-8">
 
@@ -64,7 +20,7 @@ color:#6366f1;
 
 <div class="flex items-center gap-6">
 
-<img src="images/logo.png" style="height:256px">
+<img src="images/logo.png" class="dashboard-logo">
 
 <div>
 <div class="text-4xl font-bold">Mutari</div>

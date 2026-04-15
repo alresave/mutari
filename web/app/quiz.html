@@ -4,68 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assessment — Mutari</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background-color: #020617;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%);
-            background-attachment: fixed;
-        }
-
-        .glass-card {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(51, 65, 85, 0.5);
-            backdrop-filter: blur(12px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glass-card:focus-within {
-            border-color: #6366f1;
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
-            transform: translateY(-2px);
-        }
-
-        /* Custom Slider Styling */
-        .slider {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 8px;
-            background: #1e293b;
-            border-radius: 999px;
-            outline: none;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #6366f1;
-            border: 3px solid #ffffff;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
-            transition: transform 0.1s ease;
-        }
-
-        .slider::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
-
-        .progress-container {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            background: rgba(2, 6, 23, 0.8);
-            backdrop-filter: blur(8px);
-        }
-    </style>
+    <link rel="stylesheet" href="styles/output.css">
+    <link rel="stylesheet" href="styles/site.css">
 </head>
 
-<body class="text-slate-200 font-sans antialiased">
+<body class="page-quiz text-slate-200 font-sans antialiased">
 
 <div class="progress-container border-b border-slate-800/50 mb-12">
     <div class="max-w-2xl mx-auto px-6 py-4">
@@ -74,7 +17,7 @@
             <span id="progressText" class="text-xs text-slate-500 font-mono">0% Complete</span>
         </div>
         <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-            <div id="progressFill" class="h-full bg-indigo-500 transition-all duration-500 ease-out" style="width: 0%"></div>
+            <div id="progressFill" class="progress-fill-zero h-full bg-indigo-500 transition-all duration-500 ease-out"></div>
         </div>
     </div>
 </div>

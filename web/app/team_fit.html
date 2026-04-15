@@ -4,15 +4,17 @@
 <head>
 
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Mutari — Team Fit</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="styles/output.css">
+<link rel="stylesheet" href="styles/site.css">
 
 </head>
 
 
-<body class="bg-gray-900 text-white min-h-screen">
+<body class="page-team-fit text-white min-h-screen">
 
 <div class="max-w-6xl mx-auto p-10">
 
@@ -21,7 +23,7 @@ Mutari Team Compatibility Engine
 </h1>
 
 
-<div class="bg-gray-800 rounded-xl p-6 flex gap-4 mb-10">
+<div class="glass-card rounded-xl p-6 flex gap-4 mb-10">
 
 <input
 id="teamID"
@@ -88,7 +90,7 @@ matches.forEach(c=>{
 
 const card=document.createElement("div")
 
-card.className="bg-gray-800 rounded-xl p-6 flex gap-6"
+card.className="glass-card rounded-xl p-6 flex gap-6"
 
 card.innerHTML=`
 
@@ -203,6 +205,12 @@ container.appendChild(card)
 
 })
 
+container.querySelectorAll(".fit-score-fill").forEach(fill=>{
+
+fill.style.width=`${fill.dataset.score}%`
+
+})
+
 }
 
 
@@ -225,8 +233,8 @@ ${key}
 <div class="bg-gray-700 rounded h-3 w-full">
 
 <div
-class="bg-green-500 h-3 rounded"
-style="width:${score}%"
+class="fit-score-fill"
+data-score="${score}"
 ></div>
 
 </div>
