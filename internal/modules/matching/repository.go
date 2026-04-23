@@ -919,66 +919,6 @@ func (r *Repository) GetTeamProfile(ctx context.Context, teamID int64) ([]float3
 	return vec.Slice(), nil
 }
 
-func detectRole(blockScores map[string]int) string {
-
-	core := blockScores["Core Values"]
-	emotional := blockScores["Emotional Stability"]
-	cognitive := blockScores["Cognitive Style"]
-	ambition := blockScores["Ambition"]
-	growth := blockScores["Growth"]
-	TrustCollaboration := blockScores["Trust & Collaboration "]
-	lifestyle := blockScores["Lifestyle Rhythm"]
-	relational := blockScores["Relational Architecture"]
-
-	switch {
-
-	case ambition > 90 && core > 85:
-		return "Leader"
-
-	case cognitive > 90 && growth > 85:
-		return "Strategist"
-
-	case growth > 90 && ambition > 80:
-		return "Builder"
-
-	case lifestyle > 90 && growth > 85:
-		return "Explorer"
-
-	case relational > 90 && TrustCollaboration > 85:
-		return "Connector"
-
-	case emotional > 90 && core > 85:
-		return "Stabilizer"
-
-	case cognitive > 85 && ambition > 85:
-		return "Visionary"
-
-	case TrustCollaboration > 90 && emotional > 85:
-		return "Caregiver"
-
-	default:
-		return "Balanced"
-	}
-}
-
-func cosineDistance(a, b []float32) float64 {
-
-	var dot float64
-	var normA float64
-	var normB float64
-
-	for i := 0; i < len(a); i++ {
-
-		av := float64(a[i])
-		bv := float64(b[i])
-
-		dot += av * bv
-		normA += av * av
-		normB += bv * bv
-	}
-
-	return 1 - (dot / (math.Sqrt(normA) * math.Sqrt(normB)))
-}
 func cosineSimilarity(a, b []float32) float64 {
 
 	var dot float64

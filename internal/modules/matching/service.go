@@ -66,11 +66,11 @@ func (s *Service) Signup(ctx context.Context, name, email, password string) (int
 
 	return s.repo.users.CreateUser(ctx, name, email, string(hash))
 }
-func (s *Service) Login(ctx context.Context, email, password string) (string, int64, string, error, int64) {
+func (s *Service) Login(ctx context.Context, email, password string) (string, int64, string, int64, error) {
 
 	id, hash, companyID, name, err := s.repo.users.GetUserByEmail(ctx, email)
 	if err != nil {
-		return "", 0, "", err, 0
+		return "", 0, "", 0, err
 	}
 
 	err = bcrypt.CompareHashAndPassword(
@@ -79,7 +79,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, in
 	)
 
 	if err != nil {
-		return "", 0, "", errors.New("invalid credentials"), 0
+		return "", 0, "", 0, errors.New("invalid credentials")
 	}
 
 	claims := jwt.MapClaims{
@@ -92,10 +92,10 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, in
 
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
-		return "", 0, "", err, companyID
+		return "", 0, "", 0, err
 	}
 
-	return tokenString, id, name, nil, companyID
+	return tokenString, id, name, companyID, nil
 }
 
 func (s *Service) Me(
@@ -406,21 +406,18 @@ func (s *Service) ProcessAnswers(
 ) error {
 
 	// 🔹 guardar respuestas según tipo
-	if token.EntityType == "candidate" {
-
+	switch token.EntityType {
+	case "candidate":
 		err := s.repo.mcp.SaveAnswers(ctx, token.EntityID, toAnswers(answers))
 		if err != nil {
 			return err
 		}
-
-	} else if token.EntityType == "member" {
-
+	case "member":
 		err := s.repo.mcp.SaveMemberAnswers(ctx, token.EntityID, answers)
 		if err != nil {
 			return err
 		}
-
-	} else {
+	default:
 		return fmt.Errorf("invalid entity type")
 	}
 
@@ -674,7 +671,9 @@ func (s *Service) SubmitAnswers(
 	// -----------------------------
 	// 8. MARCAR TOKEN USADO
 	// -----------------------------
-	_, err = s.repo.users.ConsumeToken(ctx, token)
+	if _, err = s.repo.users.ConsumeToken(ctx, token); err != nil {
+		return nil, err
+	}
 
 	// -----------------------------
 	// 9. RETORNAR RESULTADO

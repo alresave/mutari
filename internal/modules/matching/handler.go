@@ -93,7 +93,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, userID, name, err, companyID := h.service.Login(
+	token, userID, name, companyID, err := h.service.Login(
 		c.Request.Context(),
 		body.Email,
 		body.Password,

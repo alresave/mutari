@@ -29,7 +29,7 @@ node_modules/
 .nuxt/
 out/
 coverage/
-golangci-lint-cache/
+.golangci-lint-cache/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

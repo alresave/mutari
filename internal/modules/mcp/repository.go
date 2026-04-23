@@ -3,7 +3,6 @@ package mcp
 import (
 	"context"
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/alresave/mutari/internal/modules/models"
@@ -277,60 +276,6 @@ func (r *Repository) GetCandidateVector(
 	}
 
 	return vec.Slice(), nil
-}
-
-func cosineSimilarity(a, b []float32) float32 {
-
-	if len(a) != len(b) {
-		return 0
-	}
-
-	var dot, normA, normB float32
-
-	for i := range a {
-		dot += a[i] * b[i]
-		normA += a[i] * a[i]
-		normB += b[i] * b[i]
-	}
-
-	if normA == 0 || normB == 0 {
-		return 0
-	}
-
-	return dot / (float32(math.Sqrt(float64(normA))) *
-		float32(math.Sqrt(float64(normB))))
-}
-func cosineDistance(a, b []float32) float32 {
-
-	if len(a) != len(b) {
-		return 1 // distancia máxima
-	}
-
-	var dot float32
-	var normA float32
-	var normB float32
-
-	for i := 0; i < len(a); i++ {
-
-		av := a[i]
-		bv := b[i]
-
-		dot += av * bv
-		normA += av * av
-		normB += bv * bv
-	}
-
-	if normA == 0 || normB == 0 {
-		return 1
-	}
-
-	// 🔥 conversión correcta
-	denominator := float32(
-		math.Sqrt(float64(normA)) *
-			math.Sqrt(float64(normB)),
-	)
-
-	return 1 - (dot / denominator)
 }
 
 func (r *Repository) SaveAnswers(

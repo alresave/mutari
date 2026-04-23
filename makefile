@@ -7,6 +7,7 @@ GO=go
 DATABASE_URL=postgres://postgres:mutari123@localhost:5432/mutari?sslmode=disable
 GOCACHE_LOCAL=$(CURDIR)/.gocache
 GOMODCACHE_LOCAL=$(CURDIR)/.gomodcache
+GOLANGCI_LINT_CACHE_LOCAL=$(CURDIR)/.golangci-lint-cache
 
 DB_CONTAINER=mutari-db
 REDIS_CONTAINER=mutari-redis
@@ -160,7 +161,7 @@ tidy:
 	$(GO) mod tidy
 
 lint:
-	golangci-lint run
+	env GOCACHE=$(GOCACHE_LOCAL) GOMODCACHE=$(GOMODCACHE_LOCAL) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE_LOCAL) golangci-lint run ./...
 
 test:
 	$(GO) test ./...
