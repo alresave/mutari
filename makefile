@@ -4,6 +4,9 @@
 
 APP=mutari-api
 GO=go
+DATABASE_URL=postgres://postgres:mutari123@localhost:5432/mutari?sslmode=disable
+GOCACHE_LOCAL=$(CURDIR)/.gocache
+GOMODCACHE_LOCAL=$(CURDIR)/.gomodcache
 
 DB_CONTAINER=mutari-db
 REDIS_CONTAINER=mutari-redis
@@ -21,7 +24,7 @@ up down restart logs ps \
 db db-logs wait-db \
 schema seed reset-db reseed \
 swagger-init swagger-serve \
-fmt tidy lint test \
+fmt tidy lint test test-integration test-all \
 setup rebuild fresh prune
 
 # =========================
@@ -56,6 +59,8 @@ help:
 	@echo "make tidy           Clean go.mod"
 	@echo "make lint           Run linter"
 	@echo "make test           Run tests"
+	@echo "make test-integration Run integration tests with local Postgres"
+	@echo "make test-all       Run unit/package tests and integration tests"
 	@echo ""
 	@echo "Project Setup"
 	@echo "make setup          Full project setup"
@@ -67,13 +72,13 @@ help:
 # =========================
 
 dev:
-	$(GO) run cmd/api/main.go
+	$(GO) run cmd/API/main.go
 
 watch:
 	air
 
 build:
-	$(GO) build -o $(APP) cmd/api/main.go
+	$(GO) build -o $(APP) cmd/API/main.go
 
 run:
 	./$(APP)
@@ -139,7 +144,7 @@ reset-db:
 # =========================
 
 swagger-init:
-	swag init --generalInfo cmd/api/main.go --output docs
+	swag init --generalInfo cmd/API/main.go --output docs
 
 swagger-serve:
 	open http://localhost:8080/swagger/index.html
@@ -159,6 +164,11 @@ lint:
 
 test:
 	$(GO) test ./...
+
+test-integration:
+	env 'DATABASE_URL=$(DATABASE_URL)' GOCACHE=$(GOCACHE_LOCAL) GOMODCACHE=$(GOMODCACHE_LOCAL) $(GO) test ./internal/modules/matching -v
+
+test-all: test test-integration
 
 # =========================
 # Project Setup

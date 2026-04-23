@@ -696,7 +696,7 @@ func (h *Handler) GenerateToken(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"token": token,
-		"url":   fmt.Sprintf("http://localhost:8080/quiz.html?token=%s", token),
+		"url":   fmt.Sprintf("http://localhost:8080/app/quiz.html?token=%s", token),
 	})
 }
 

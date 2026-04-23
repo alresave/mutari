@@ -441,6 +441,10 @@ func (s *Service) ProcessAnswers(
 		if err != nil {
 			return err
 		}
+
+		if err := s.repo.RebuildAllTeams(ctx); err != nil {
+			return err
+		}
 	}
 
 	// 🔹 marcar token usado

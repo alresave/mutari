@@ -9,6 +9,7 @@ import (
 	"github.com/alresave/mutari/internal/modules/mcp"
 	"github.com/alresave/mutari/internal/modules/models"
 	"github.com/alresave/mutari/internal/modules/users"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pgvector/pgvector-go"
 )
@@ -298,6 +299,16 @@ WHERE team_id = $1
 	var vec pgvector.Vector
 
 	err := r.db.QueryRow(ctx, query, teamID).Scan(&vec)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			if buildErr := r.BuildTeamVector(ctx, teamID); buildErr != nil {
+				return nil, buildErr
+			}
+
+			err = r.db.QueryRow(ctx, query, teamID).Scan(&vec)
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}

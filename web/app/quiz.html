@@ -149,7 +149,7 @@
         btn.innerText = "Submitting...";
         btn.disabled = true;
 
-        const res = await fetch(`${API}/quiz/answers`, {
+        const res = await fetch(`${API}/mcp/answers`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token, answers })

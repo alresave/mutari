@@ -410,6 +410,7 @@ func (r *Repository) UpsertCandidateProfile(
 	candidateID int64,
 	vector []float32,
 ) error {
+	pgVector := pgvector.NewVector(vector)
 
 	query := `
 		INSERT INTO candidate_mcp_profiles (candidate_id, effective_vector)
@@ -418,7 +419,7 @@ func (r *Repository) UpsertCandidateProfile(
 		DO UPDATE SET effective_vector = EXCLUDED.effective_vector
 	`
 
-	_, err := r.db.Exec(ctx, query, candidateID, vector)
+	_, err := r.db.Exec(ctx, query, candidateID, pgVector)
 	return err
 }
 
@@ -427,6 +428,7 @@ func (r *Repository) UpsertCompanyMemberProfile(
 	memberID int64,
 	vector []float32,
 ) error {
+	pgVector := pgvector.NewVector(vector)
 
 	query := `
 		INSERT INTO company_member_mcp_profiles (company_member_id, effective_vector)
@@ -435,6 +437,6 @@ func (r *Repository) UpsertCompanyMemberProfile(
 		DO UPDATE SET effective_vector = EXCLUDED.effective_vector
 	`
 
-	_, err := r.db.Exec(ctx, query, memberID, vector)
+	_, err := r.db.Exec(ctx, query, memberID, pgVector)
 	return err
 }

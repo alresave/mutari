@@ -53,13 +53,19 @@ document.getElementById("createBtn").onclick = async () => {
 
 async function generateToken(id) {
 
-  const res = await fetch(`${API}/candidates/${id}/token`, {
-    method: "POST"
+  const res = await fetch(`${API}/tokens`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      candidate_id: id
+    })
   })
 
   const data = await res.json()
 
-  const url = `${window.location.origin}/quiz.html?token=${data.token}`
+  const url = `${window.location.origin}/app/quiz.html?token=${data.token}`
 
   navigator.clipboard.writeText(url)
 

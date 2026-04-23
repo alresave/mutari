@@ -111,7 +111,7 @@ document.getElementById("submitBtn").onclick = async () => {
     value: v
   }))
 
-  const res = await fetch(`${API}/quiz/answers`, {
+  const res = await fetch(`${API}/mcp/answers`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
