@@ -11,12 +11,18 @@ import (
 
 var jwtSecret = []byte("mutari-secret")
 
-// GenerateJWT creates a JWT token for a user
+// GenerateJWT creates a JWT token for a user.
 func GenerateJWT(userID int64) (string, error) {
+	return GenerateJWTWithCompany(userID, 0)
+}
+
+// GenerateJWTWithCompany creates a JWT token that includes the current company context.
+func GenerateJWTWithCompany(userID, companyID int64) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"user_id":    userID,
+		"company_id": companyID,
+		"exp":        time.Now().Add(time.Hour * 24).Unix(),
 	})
 
 	return token.SignedString(jwtSecret)

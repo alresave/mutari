@@ -1,79 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mutari Signup</title>
-
-<link rel="stylesheet" href="styles/output.css">
-<link rel="stylesheet" href="styles/site.css">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting - Mutari</title>
+    <meta http-equiv="refresh" content="0; url=/app/login.html?mode=signup">
 </head>
-
-<body class="page-signup flex items-center justify-center min-h-screen text-white p-6">
-
-<div class="bg-gray-800 p-8 rounded-xl w-96 shadow-lg">
-
-<h1 class="text-2xl font-bold mb-6 text-center">
-Create Account
-</h1>
-
-<input id="name"
-placeholder="Name"
-class="w-full p-2 mb-4 rounded bg-gray-700"
-/>
-
-<input id="email"
-placeholder="Email"
-class="w-full p-2 mb-4 rounded bg-gray-700"
-/>
-
-<input id="password"
-type="password"
-placeholder="Password"
-class="w-full p-2 mb-4 rounded bg-gray-700"
-/>
-
-<button
-onclick="signup()"
-class="w-full bg-indigo-600 hover:bg-indigo-700 p-2 rounded"
->
-Signup
-</button>
-
-<p class="text-sm text-center mt-4">
-Already have account?
-<a href="/app/login.html" class="text-indigo-400">Login</a>
-</p>
-
-</div>
-
+<body>
 <script>
-
-async function signup(){
-
-const name = document.getElementById("name").value
-const email = document.getElementById("email").value
-const password = document.getElementById("password").value
-
-await fetch("/auth/signup",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-name,
-email,
-password
-})
-})
-
-window.location="/app/login.html"
-
-}
-
+window.location.replace("/app/login.html?mode=signup");
 </script>
-
 </body>
 </html>

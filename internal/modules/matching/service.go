@@ -176,8 +176,8 @@ func (s *Service) GetTeamGaps(ctx context.Context, teamID int64) (*models.TeamGa
 		RecommendedProfile: profile,
 	}, nil
 }
-func (s *Service) GetTeams(ctx context.Context) ([]models.Team, error) {
-	return s.repo.GetTeams(ctx)
+func (s *Service) GetTeams(ctx context.Context, companyID int64) ([]models.Team, error) {
+	return s.repo.GetTeams(ctx, companyID)
 }
 
 func (s *Service) RebuildAllTeamProfiles(ctx context.Context) error {
@@ -274,6 +274,22 @@ func (s *Service) CreateTeam(
 ) (models.Team, error) {
 
 	return s.repo.users.CreateTeam(ctx, companyID, name, description)
+}
+func (s *Service) GetTeam(ctx context.Context, companyID, teamID int64) (models.Team, error) {
+	return s.repo.users.GetTeamByID(ctx, companyID, teamID)
+}
+
+func (s *Service) GetTeamMembers(ctx context.Context, companyID, teamID int64) ([]models.CompanyMember, error) {
+	return s.repo.users.GetTeamMembers(ctx, companyID, teamID)
+}
+
+func (s *Service) RemoveTeamMember(ctx context.Context, companyID, teamID, memberID int64) error {
+	err := s.repo.users.RemoveTeamMember(ctx, companyID, teamID, memberID)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.BuildTeamVector(ctx, teamID)
 }
 func (s *Service) AddTeamMember(
 	ctx context.Context,

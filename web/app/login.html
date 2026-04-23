@@ -71,6 +71,12 @@
 let mode = 'login';
 const API_URL = "http://localhost:8080";
 
+const params = new URLSearchParams(window.location.search);
+const initialMode = params.get("mode");
+if (initialMode === "signup") {
+    mode = "signup";
+}
+
 function toggleMode(target) {
     mode = target;
     const nameField = document.getElementById('name-container');
@@ -97,6 +103,10 @@ function toggleMode(target) {
         tabSignup.classList.add('text-slate-400');
     }
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+    toggleMode(mode);
+});
 
 async function handleSubmit() {
     const btn = document.getElementById('main-btn');
@@ -146,7 +156,7 @@ async function signup() {
     }
 
     localStorage.setItem("token", data.token);
-    // Redirección a la carpeta /app
+    localStorage.setItem("user_id", data.user_id);
     window.location.href = "/app/create-company.html"; 
 }
 
@@ -168,11 +178,15 @@ async function login() {
     }
 
     localStorage.setItem("token", data.token);
-    // Según tu backend, el ID suele venir en data.user.id o data.user_id
     localStorage.setItem("user_id", data.user ? data.user.id : data.user_id);
+    localStorage.setItem("company_id", data.user ? data.user.company_id : 0);
 
-    // Redirección al Hub principal en /app
-    window.location.href = "/app/company-hub.html";
+    if (data.user && data.user.company_id) {
+        window.location.href = "/app/company-hub.html";
+        return;
+    }
+
+    window.location.href = "/app/create-company.html";
 }
 </script>
 

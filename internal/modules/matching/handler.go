@@ -330,7 +330,13 @@ func (h *Handler) GetTeamGaps(c *gin.Context) {
 }
 func (h *Handler) GetTeams(c *gin.Context) {
 
-	teams, err := h.service.GetTeams(c.Request.Context())
+	companyID := c.GetInt64("company_id")
+	if companyID == 0 {
+		c.JSON(400, gin.H{"error": "missing company"})
+		return
+	}
+
+	teams, err := h.service.GetTeams(c.Request.Context(), companyID)
 	if err != nil {
 
 		c.JSON(500, gin.H{"error": err.Error()})
@@ -476,7 +482,16 @@ func (h *Handler) CreateCompany(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, company)
+	token, err := GenerateJWTWithCompany(userID, int64(company.ID))
+	if err != nil {
+		c.JSON(500, gin.H{"error": "token error"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"company": company,
+		"token":   token,
+	})
 }
 func (h *Handler) CreateCompanyMember(c *gin.Context) {
 
@@ -528,6 +543,81 @@ func (h *Handler) CreateTeam(c *gin.Context) {
 	}
 
 	c.JSON(200, team)
+}
+
+func (h *Handler) GetTeam(c *gin.Context) {
+
+	teamID, err := strconv.ParseInt(c.Param("team_id"), 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team id"})
+		return
+	}
+
+	companyID := c.GetInt64("company_id")
+	if companyID == 0 {
+		c.JSON(400, gin.H{"error": "missing company"})
+		return
+	}
+
+	team, err := h.service.GetTeam(c.Request.Context(), companyID, teamID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, team)
+}
+
+func (h *Handler) GetTeamMembers(c *gin.Context) {
+
+	teamID, err := strconv.ParseInt(c.Param("team_id"), 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team id"})
+		return
+	}
+
+	companyID := c.GetInt64("company_id")
+	if companyID == 0 {
+		c.JSON(400, gin.H{"error": "missing company"})
+		return
+	}
+
+	members, err := h.service.GetTeamMembers(c.Request.Context(), companyID, teamID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{"members": members})
+}
+
+func (h *Handler) RemoveTeamMember(c *gin.Context) {
+
+	teamID, err := strconv.ParseInt(c.Param("team_id"), 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid team id"})
+		return
+	}
+
+	memberID, err := strconv.ParseInt(c.Param("member_id"), 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid member id"})
+		return
+	}
+
+	companyID := c.GetInt64("company_id")
+	if companyID == 0 {
+		c.JSON(400, gin.H{"error": "missing company"})
+		return
+	}
+
+	err = h.service.RemoveTeamMember(c.Request.Context(), companyID, teamID, memberID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{"status": "member removed"})
 }
 
 func (h *Handler) AddTeamMember(c *gin.Context) {

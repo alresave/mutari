@@ -1,157 +1,569 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mutari — Intelligence Hub</title>
+    <title>Mutari - Company Hub</title>
     <link rel="stylesheet" href="styles/output.css">
     <link rel="stylesheet" href="styles/site.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="page-company-hub text-slate-200">
-
+<body class="page-company-hub text-slate-200 min-h-screen">
     <div class="flex min-h-screen">
-        
-        <aside class="w-72 bg-slate-950/50 border-r border-slate-800 flex flex-col p-6 sticky top-0 h-screen">
-            <div class="flex items-center gap-3 mb-10 px-2">
-                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/20">M</div>
-                <span class="text-2xl font-extrabold text-white tracking-tighter">MUTARI</span>
+        <aside class="w-72 bg-slate-950/60 border-r border-slate-800 p-6 hidden lg:flex flex-col">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black">M</div>
+                <div>
+                    <div class="text-xl font-black text-white">Mutari</div>
+                    <div class="text-[10px] uppercase tracking-[0.2em] text-slate-500">Company Hub</div>
+                </div>
             </div>
 
-            <nav class="flex-1 space-y-1">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 mb-4">Administración</p>
-                <button onclick="showTab('overview')" class="nav-item w-full flex items-center gap-3 px-4 py-4 text-slate-400 hover:text-white" id="nav-overview">
-                    <span class="text-lg">📊</span> <span class="font-semibold">Dashboard</span>
-                </button>
-                <button onclick="showTab('teams')" class="nav-item w-full flex items-center gap-3 px-4 py-4 text-slate-400 hover:text-white" id="nav-teams">
-                    <span class="text-lg">🛡️</span> <span class="font-semibold">Equipos</span>
-                </button>
-                <button onclick="showTab('members')" class="nav-item w-full flex items-center gap-3 px-4 py-4 text-slate-400 hover:text-white" id="nav-members">
-                    <span class="text-lg">👥</span> <span class="font-semibold">Plantilla</span>
-                </button>
-                <button onclick="showTab('candidates')" class="nav-item w-full flex items-center gap-3 px-4 py-4 text-slate-400 hover:text-white" id="nav-candidates">
-                    <span class="text-lg">🧠</span> <span class="font-semibold">Candidatos</span>
-                </button>
+            <nav class="space-y-2">
+                <button class="nav-item w-full text-left px-4 py-3 rounded-xl bg-slate-900 text-white" data-tab-button="overview">Overview</button>
+                <button class="nav-item w-full text-left px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/70" data-tab-button="members">Members</button>
+                <button class="nav-item w-full text-left px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/70" data-tab-button="teams">Teams</button>
+                <button class="nav-item w-full text-left px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/70" data-tab-button="candidates">Candidates</button>
             </nav>
 
-            <div class="mt-auto pt-6 border-t border-slate-800">
-                <div id="userCard" class="flex items-center gap-3 mb-6 p-2">
-                    <div class="w-8 h-8 rounded-full bg-slate-700"></div>
-                    <div class="overflow-hidden"><p class="text-xs font-bold text-white truncate" id="meName">Admin</p></div>
-                </div>
-                <button onclick="logout()" class="w-full py-2 text-xs font-bold text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">CERRAR SESIÓN</button>
+            <div class="mt-auto pt-8 border-t border-slate-800">
+                <div class="text-sm text-white font-bold" id="meName">Loading...</div>
+                <div class="text-xs text-slate-500 mt-1" id="meCompany">-</div>
+                <button onclick="logout()" class="mt-4 text-xs font-bold text-red-400 hover:text-red-300">Log out</button>
             </div>
         </aside>
 
-        <main class="flex-1 p-12 overflow-y-auto">
-            
-            <div id="tab-overview" class="content-section space-y-12">
-                <header class="flex justify-between items-end">
+        <main class="flex-1 p-6 lg:p-10 space-y-8">
+            <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <h1 class="text-3xl lg:text-4xl font-black text-white">Company Dashboard</h1>
+                    <p class="text-slate-400 mt-1">Create your company, add members, build teams, and manage them from one place.</p>
+                </div>
+                <div class="flex gap-3 flex-wrap">
+                    <button onclick="showTab('members')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-bold">+ Add member</button>
+                    <button onclick="showTab('teams')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-bold">+ Create team</button>
+                    <button onclick="openAnalyticsForSelectedTeam()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold border border-slate-700">Open analytics</button>
+                </div>
+            </header>
+
+            <section id="onboardingBanner" class="glass-card p-6 rounded-3xl border border-indigo-500/30 hidden">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                        <h1 class="text-4xl font-black text-white tracking-tight">Intelligence Hub</h1>
-                        <p class="text-slate-400 mt-1">Análisis de sinergia y compatibilidad conductual.</p>
+                        <div class="text-xs uppercase tracking-[0.2em] text-indigo-400 font-bold">Onboarding</div>
+                        <h2 class="text-2xl font-black text-white mt-2">Set up the company in 3 steps</h2>
+                        <p class="text-slate-400 mt-2">Add members, create at least one team, then assign members into that team.</p>
                     </div>
-                    <div class="text-right">
-                        <span class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full uppercase tracking-widest">Enterprise Mode</span>
+                    <div class="flex gap-3 flex-wrap">
+                        <button onclick="showTab('members')" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold">Step 1: Members</button>
+                        <button onclick="showTab('teams')" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold">Step 2: Teams</button>
                     </div>
-                </header>
-                
+                </div>
+            </section>
+
+            <section id="tab-overview" data-tab-content="overview" class="space-y-8">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="glass-card p-8 rounded-3xl relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="text-6xl">🛡️</span></div>
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Equipos</p>
-                        <h2 class="text-5xl font-black text-white mt-2" id="countTeams">0</h2>
-                        <button onclick="showTab('teams')" class="mt-4 text-xs font-bold text-indigo-400 hover:text-indigo-300">Gestionar →</button>
+                    <div class="glass-card p-6 rounded-3xl">
+                        <div class="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Company</div>
+                        <div class="text-3xl text-white font-black mt-3" id="statCompanyName">-</div>
+                        <div class="text-sm text-slate-400 mt-2" id="statCompanyWebsite">-</div>
                     </div>
-                    <div class="glass-card p-8 rounded-3xl relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="text-6xl">👥</span></div>
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Staff Total</p>
-                        <h2 class="text-5xl font-black text-white mt-2" id="countMembers">0</h2>
-                        <button onclick="showTab('members')" class="mt-4 text-xs font-bold text-emerald-400 hover:text-emerald-300">Ver plantilla →</button>
+                    <div class="glass-card p-6 rounded-3xl">
+                        <div class="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Members</div>
+                        <div class="text-5xl text-white font-black mt-3" id="statMembers">0</div>
+                        <div class="text-sm text-slate-400 mt-2">Company member records</div>
                     </div>
-                    <div class="glass-card p-8 rounded-3xl relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span class="text-6xl">🧠</span></div>
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Candidatos</p>
-                        <h2 class="text-5xl font-black text-white mt-2" id="countCandidates">0</h2>
-                        <button onclick="showTab('candidates')" class="mt-4 text-xs font-bold text-amber-400 hover:text-amber-300">Evaluar →</button>
+                    <div class="glass-card p-6 rounded-3xl">
+                        <div class="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Teams</div>
+                        <div class="text-5xl text-white font-black mt-3" id="statTeams">0</div>
+                        <div class="text-sm text-slate-400 mt-2">Active teams in this company</div>
                     </div>
                 </div>
 
-                <div class="space-y-6">
-                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        <span>📈</span> Análisis de Sinergia Reciente
-                    </h3>
-                    
-                    <div id="synergyContainer" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                        <div class="glass-card p-12 rounded-3xl border border-dashed border-slate-800 text-center col-span-full">
-                            <p class="text-slate-500 font-medium">No hay análisis disponibles. Crea un equipo y añade miembros para ver el fit cultural.</p>
-                            <button onclick="openModal('modalTeam')" class="mt-4 bg-indigo-600 px-6 py-2 rounded-xl font-bold text-sm">Crear mi primer equipo</button>
+                <div class="glass-card p-8 rounded-3xl">
+                    <h2 class="text-2xl font-black text-white">What happens next</h2>
+                    <div id="nextSteps" class="text-slate-400 mt-4 space-y-3"></div>
+                </div>
+            </section>
+
+            <section id="tab-members" data-tab-content="members" class="space-y-8 hidden">
+                <div class="grid grid-cols-1 xl:grid-cols-[420px,1fr] gap-6">
+                    <div class="glass-card p-8 rounded-3xl">
+                        <h2 class="text-2xl font-black text-white">Add company member</h2>
+                        <p class="text-sm text-slate-400 mt-2">Members become available to assign into teams.</p>
+                        <form id="memberForm" class="space-y-4 mt-6">
+                            <input id="memberName" type="text" placeholder="Full name" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-emerald-500">
+                            <input id="memberEmail" type="email" placeholder="name@company.com" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-emerald-500">
+                            <input id="memberRole" type="text" placeholder="Role" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-emerald-500">
+                            <div id="memberMessage" class="text-sm min-h-[1.25rem]"></div>
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-xl font-black">Create member</button>
+                        </form>
+                    </div>
+
+                    <div class="glass-card p-8 rounded-3xl">
+                        <div class="flex items-center justify-between gap-3 mb-6">
+                            <h2 class="text-2xl font-black text-white">Company members</h2>
+                            <div class="text-sm text-slate-500" id="memberCountLabel">0 total</div>
+                        </div>
+                        <div id="memberList" class="space-y-3"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-teams" data-tab-content="teams" class="space-y-8 hidden">
+                <div class="grid grid-cols-1 xl:grid-cols-[420px,1fr] gap-6">
+                    <div class="glass-card p-8 rounded-3xl">
+                        <h2 class="text-2xl font-black text-white">Create team</h2>
+                        <p class="text-sm text-slate-400 mt-2">After the team exists, assign members from the company list.</p>
+                        <form id="teamForm" class="space-y-4 mt-6">
+                            <input id="teamName" type="text" placeholder="Team name" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-indigo-500">
+                            <textarea id="teamDescription" placeholder="Short description" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-indigo-500 min-h-[140px]"></textarea>
+                            <div id="teamMessage" class="text-sm min-h-[1.25rem]"></div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-xl font-black">Create team</button>
+                        </form>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="glass-card p-8 rounded-3xl">
+                            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <h2 class="text-2xl font-black text-white">Team roster manager</h2>
+                                    <p class="text-sm text-slate-400 mt-2">Choose a team and assign or remove members.</p>
+                                </div>
+                                <select id="teamSelector" class="bg-slate-900 border border-slate-700 px-4 py-3 rounded-xl text-white min-w-[240px]"></select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="glass-card p-8 rounded-3xl">
+                                <h3 class="text-xl font-black text-white">Current roster</h3>
+                                <div class="text-sm text-slate-500 mt-2" id="rosterCountLabel">0 assigned</div>
+                                <div id="teamRoster" class="space-y-3 mt-6"></div>
+                            </div>
+
+                            <div class="glass-card p-8 rounded-3xl">
+                                <h3 class="text-xl font-black text-white">Available members</h3>
+                                <div class="text-sm text-slate-500 mt-2">Members not yet assigned to this team</div>
+                                <div id="teamAvailableMembers" class="space-y-3 mt-6"></div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card p-8 rounded-3xl">
+                            <h3 class="text-xl font-black text-white">Teams</h3>
+                            <div id="teamCards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6"></div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div id="tab-teams" class="content-section hidden space-y-8">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-3xl font-black text-white">Equipos</h2>
-                    <button onclick="openModal('modalTeam')" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/20">+ Crear Equipo</button>
+            <section id="tab-candidates" data-tab-content="candidates" class="space-y-8 hidden">
+                <div class="glass-card p-8 rounded-3xl">
+                    <h2 class="text-2xl font-black text-white">Candidates</h2>
+                    <p class="text-sm text-slate-400 mt-2">Read-only list from the current company context.</p>
+                    <div id="candidateList" class="space-y-3 mt-6"></div>
                 </div>
-                <div id="gridTeams" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            </div>
-
-            <div id="tab-members" class="content-section hidden space-y-8">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-3xl font-black text-white">Miembros Empresa</h2>
-                    <button onclick="openModal('modalMember')" class="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-xl font-bold text-sm">+ Añadir Staff</button>
-                </div>
-                <div class="glass-card rounded-3xl overflow-hidden shadow-2xl">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-900/80 text-[10px] uppercase text-slate-500 font-bold tracking-widest">
-                            <tr><th class="p-6">Nombre</th><th class="p-6">Email</th><th class="p-6">Rol</th><th class="p-6 text-right">Status</th></tr>
-                        </thead>
-                        <tbody id="listCompanyMembers" class="divide-y divide-slate-800/50"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="tab-candidates" class="content-section hidden space-y-8">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-3xl font-black text-white">Candidatos</h2>
-                    <button onclick="openModal('modalCandidate')" class="bg-amber-600 hover:bg-amber-500 px-6 py-3 rounded-xl font-bold text-sm">+ Nuevo Candidato</button>
-                </div>
-                <div id="gridCandidates" class="grid grid-cols-1 gap-4"></div>
-            </div>
-
+            </section>
         </main>
     </div>
 
-    <div id="modalTeam" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-6 z-50">
-        <div class="glass-card w-full max-w-md p-10 rounded-[2.5rem] space-y-6 shadow-2xl border-indigo-500/30">
-            <h3 class="text-2xl font-black text-white">Nuevo Equipo</h3>
-            <div class="space-y-4">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nombre</label>
-                <input type="text" id="t_name" placeholder="Ej: Alpha Squad" class="w-full p-4 rounded-2xl bg-slate-900 border border-slate-700 focus:border-indigo-500 outline-none transition-all">
-            </div>
-            <div class="flex gap-4 pt-4">
-                <button onclick="closeModal('modalTeam')" class="flex-1 py-4 text-slate-500 font-bold hover:text-white transition-colors">Cancelar</button>
-                <button onclick="createTeam()" class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl font-bold shadow-lg shadow-indigo-500/20 transition-all">Crear</button>
-            </div>
-        </div>
-    </div>
-
 <script>
-    const API = "http://localhost:8080";
-    const token = localStorage.getItem("token");
-    const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
+const API_URL = "http://localhost:8080";
+const token = localStorage.getItem("token");
 
-    if (!token) window.location.href = "login.html";
+if (!token) {
+    window.location.href = "/app/login.html";
+}
 
-    function showTab(id) {
-        document.querySelectorAll('.content-section').forEach(s => s.classList.add('hidden'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('tab-active'));
-        document.getElementById(`tab-${id}`).classList.remove('hidden');
-        document.getElementById(`nav-${id}`).classList.add('tab-active');
+const headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + token
+};
+
+const state = {
+    me: null,
+    company: null,
+    members: [],
+    teams: [],
+    candidates: [],
+    selectedTeamId: null,
+    selectedTeamMembers: []
+};
+
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+    }[char]));
+}
+
+async function fetchApi(endpoint, options = {}) {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        headers,
+        ...options
+    });
+
+    if (response.status === 401) {
+        logout();
+        return null;
     }
 
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+    }
+
+    return data;
+}
+
+function showTab(tab) {
+    document.querySelectorAll("[data-tab-content]").forEach(section => {
+        section.classList.toggle("hidden", section.dataset.tabContent !== tab);
+    });
+
+    document.querySelectorAll("[data-tab-button]").forEach(button => {
+        const active = button.dataset.tabButton === tab;
+        button.classList.toggle("bg-slate-900", active);
+        button.classList.toggle("text-white", active);
+        button.classList.toggle("text-slate-400", !active);
+    });
+}
+
+function setMessage(id, message, tone = "normal") {
+    const element = document.getElementById(id);
+    element.className = "text-sm min-h-[1.25rem] " + (tone === "error" ? "text-red-400" : "text-emerald-400");
+    element.textContent = message;
+}
+
+function renderOverview() {
+    document.getElementById("statCompanyName").textContent = state.company?.name || "-";
+    document.getElementById("statCompanyWebsite").textContent = state.company?.website || "No website";
+    document.getElementById("statMembers").textContent = String(state.members.length);
+    document.getElementById("statTeams").textContent = String(state.teams.length);
+
+    const steps = [];
+    if (state.members.length === 0) {
+        steps.push("1. Add your first company member so the organization has people available for teams.");
+    } else {
+        steps.push(`1. ${state.members.length} member records are ready to use.`);
+    }
+
+    if (state.teams.length === 0) {
+        steps.push("2. Create the first team for the company.");
+    } else {
+        steps.push(`2. ${state.teams.length} team records are active.`);
+    }
+
+    if (state.teams.length > 0 && state.members.length > 0) {
+        const assigned = state.selectedTeamMembers.length;
+        steps.push(`3. Assign members into teams. Current selected team has ${assigned} assigned.`);
+    } else {
+        steps.push("3. Once members and teams exist, assign members to each team from the Teams tab.");
+    }
+
+    document.getElementById("nextSteps").innerHTML = steps.map(step => `<p>${escapeHTML(step)}</p>`).join("");
+
+    const onboardingVisible = new URLSearchParams(window.location.search).get("onboarding") === "1" || state.members.length === 0 || state.teams.length === 0;
+    document.getElementById("onboardingBanner").classList.toggle("hidden", !onboardingVisible);
+}
+
+function renderMembers() {
+    document.getElementById("memberCountLabel").textContent = `${state.members.length} total`;
+    const list = document.getElementById("memberList");
+
+    if (state.members.length === 0) {
+        list.innerHTML = `<div class="text-slate-500">No members yet.</div>`;
+        return;
+    }
+
+    list.innerHTML = state.members.map(member => `
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4">
+            <div>
+                <div class="font-bold text-white">${escapeHTML(member.name)}</div>
+                <div class="text-sm text-slate-400">${escapeHTML(member.email)}</div>
+            </div>
+            <div class="text-xs uppercase tracking-[0.2em] text-slate-500">${escapeHTML(member.role || "member")}</div>
+        </div>
+    `).join("");
+}
+
+function renderTeams() {
+    const selector = document.getElementById("teamSelector");
+    const cards = document.getElementById("teamCards");
+
+    if (state.teams.length === 0) {
+        selector.innerHTML = `<option value="">No teams yet</option>`;
+        cards.innerHTML = `<div class="text-slate-500 col-span-full">No teams created yet.</div>`;
+        state.selectedTeamId = null;
+        renderTeamRoster();
+        return;
+    }
+
+    if (!state.selectedTeamId || !state.teams.some(team => String(team.id) === String(state.selectedTeamId))) {
+        state.selectedTeamId = localStorage.getItem("current_team_id") || String(state.teams[0].id);
+    }
+
+    if (!state.teams.some(team => String(team.id) === String(state.selectedTeamId))) {
+        state.selectedTeamId = String(state.teams[0].id);
+    }
+
+    selector.innerHTML = state.teams.map(team => `
+        <option value="${team.id}" ${String(team.id) === String(state.selectedTeamId) ? "selected" : ""}>
+            ${escapeHTML(team.name)}
+        </option>
+    `).join("");
+
+    cards.innerHTML = state.teams.map(team => `
+        <div class="text-left bg-slate-900/80 border ${String(team.id) === String(state.selectedTeamId) ? "border-indigo-500" : "border-slate-800"} rounded-2xl p-5 hover:border-indigo-400 transition-colors">
+            <div class="text-lg font-bold text-white">${escapeHTML(team.name)}</div>
+            <div class="text-sm text-slate-400 mt-2">${escapeHTML(team.description || "No description")}</div>
+            <div class="flex gap-3 mt-5 flex-wrap">
+                <button onclick="selectTeam('${team.id}')" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold">Manage roster</button>
+                <button onclick="openAnalyticsForTeam('${team.id}')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold">Open analytics</button>
+            </div>
+        </div>
+    `).join("");
+}
+
+function renderTeamRoster() {
+    const roster = document.getElementById("teamRoster");
+    const available = document.getElementById("teamAvailableMembers");
+    const assignedIds = new Set(state.selectedTeamMembers.map(member => Number(member.id)));
+    const selectableMembers = state.members.filter(member => !assignedIds.has(Number(member.id)));
+
+    document.getElementById("rosterCountLabel").textContent = `${state.selectedTeamMembers.length} assigned`;
+
+    if (!state.selectedTeamId) {
+        roster.innerHTML = `<div class="text-slate-500">Create a team first.</div>`;
+        available.innerHTML = `<div class="text-slate-500">No team selected.</div>`;
+        return;
+    }
+
+    if (state.selectedTeamMembers.length === 0) {
+        roster.innerHTML = `<div class="text-slate-500">No members assigned to this team yet.</div>`;
+    } else {
+        roster.innerHTML = state.selectedTeamMembers.map(member => `
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4">
+                <div>
+                    <div class="font-bold text-white">${escapeHTML(member.name)}</div>
+                    <div class="text-sm text-slate-400">${escapeHTML(member.email)}</div>
+                </div>
+                <button onclick="removeMemberFromSelectedTeam('${member.id}')" class="text-xs font-bold text-red-400 hover:text-red-300">Remove</button>
+            </div>
+        `).join("");
+    }
+
+    if (selectableMembers.length === 0) {
+        available.innerHTML = `<div class="text-slate-500">All company members are already in this team.</div>`;
+        return;
+    }
+
+    available.innerHTML = selectableMembers.map(member => `
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4">
+            <div>
+                <div class="font-bold text-white">${escapeHTML(member.name)}</div>
+                <div class="text-sm text-slate-400">${escapeHTML(member.email)}</div>
+            </div>
+            <button onclick="addMemberToSelectedTeam('${member.id}')" class="text-xs font-bold text-indigo-400 hover:text-indigo-300">Add to team</button>
+        </div>
+    `).join("");
+}
+
+function renderCandidates() {
+    const list = document.getElementById("candidateList");
+    if (!state.candidates.length) {
+        list.innerHTML = `<div class="text-slate-500">No candidates yet.</div>`;
+        return;
+    }
+
+    list.innerHTML = state.candidates.map(candidate => `
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4">
+            <div>
+                <div class="font-bold text-white">${escapeHTML(candidate.name)}</div>
+                <div class="text-sm text-slate-400">${escapeHTML(candidate.email)}</div>
+            </div>
+            <div class="text-xs uppercase tracking-[0.2em] text-slate-500">${escapeHTML(candidate.status || "active")}</div>
+        </div>
+    `).join("");
+}
+
+async function loadTeamMembers() {
+    if (!state.selectedTeamId) {
+        state.selectedTeamMembers = [];
+        renderOverview();
+        renderTeamRoster();
+        return;
+    }
+
+    const data = await fetchApi(`/teams/${state.selectedTeamId}/members`);
+    state.selectedTeamMembers = Array.isArray(data?.members) ? data.members : [];
+    renderOverview();
+    renderTeamRoster();
+}
+
+async function loadDashboard() {
+    const me = await fetchApi("/me");
+    state.me = me?.user || null;
+    state.company = me?.company || null;
+
+    if (!state.company) {
+        window.location.href = "/app/create-company.html";
+        return;
+    }
+
+    localStorage.setItem("company_id", state.company.id);
+    document.getElementById("meName").textContent = state.me?.name || "User";
+    document.getElementById("meCompany").textContent = state.company.name || "-";
+
+    const [teamsData, membersData, candidatesData] = await Promise.all([
+        fetchApi("/teams"),
+        fetchApi("/company-members"),
+        fetchApi("/candidates")
+    ]);
+
+    state.teams = Array.isArray(teamsData?.teams) ? teamsData.teams : [];
+    state.members = Array.isArray(membersData?.members) ? membersData.members : [];
+    state.candidates = Array.isArray(candidatesData?.candidates) ? candidatesData.candidates : [];
+
+    renderOverview();
+    renderMembers();
+    renderTeams();
+    renderCandidates();
+    await loadTeamMembers();
+}
+
+async function refreshAll() {
+    await loadDashboard();
+}
+
+async function selectTeam(teamId) {
+    state.selectedTeamId = String(teamId);
+    localStorage.setItem("current_team_id", state.selectedTeamId);
+    renderTeams();
+    await loadTeamMembers();
+}
+
+function openAnalyticsForTeam(teamId) {
+    localStorage.setItem("current_team_id", String(teamId));
+    window.location.href = `/app/dashboard.html?team=${encodeURIComponent(teamId)}`;
+}
+
+function openAnalyticsForSelectedTeam() {
+    if (!state.selectedTeamId) {
+        showTab("teams");
+        return;
+    }
+
+    openAnalyticsForTeam(state.selectedTeamId);
+}
+
+async function addMemberToSelectedTeam(memberId) {
+    if (!state.selectedTeamId) {
+        return;
+    }
+
+    await fetchApi(`/teams/${state.selectedTeamId}/members`, {
+        method: "POST",
+        body: JSON.stringify({ member_id: Number(memberId) })
+    });
+
+    await refreshAll();
+    showTab("teams");
+}
+
+async function removeMemberFromSelectedTeam(memberId) {
+    if (!state.selectedTeamId) {
+        return;
+    }
+
+    await fetchApi(`/teams/${state.selectedTeamId}/members/${memberId}`, {
+        method: "DELETE"
+    });
+
+    await refreshAll();
+    showTab("teams");
+}
+
+document.getElementById("memberForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    setMessage("memberMessage", "");
+
+    try {
+        await fetchApi("/company-members", {
+            method: "POST",
+            body: JSON.stringify({
+                name: document.getElementById("memberName").value.trim(),
+                email: document.getElementById("memberEmail").value.trim(),
+                role: document.getElementById("memberRole").value.trim()
+            })
+        });
+
+        event.target.reset();
+        setMessage("memberMessage", "Member created.");
+        await refreshAll();
+        showTab("members");
+    } catch (error) {
+        setMessage("memberMessage", error.message, "error");
+    }
+});
+
+document.getElementById("teamForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    setMessage("teamMessage", "");
+
+    try {
+        const team = await fetchApi("/teams", {
+            method: "POST",
+            body: JSON.stringify({
+                name: document.getElementById("teamName").value.trim(),
+                description: document.getElementById("teamDescription").value.trim()
+            })
+        });
+
+        event.target.reset();
+        state.selectedTeamId = String(team.id);
+        setMessage("teamMessage", "Team created.");
+        await refreshAll();
+        showTab("teams");
+    } catch (error) {
+        setMessage("teamMessage", error.message, "error");
+    }
+});
+
+document.getElementById("teamSelector").addEventListener("change", async event => {
+    await selectTeam(event.target.value);
+});
+
+document.querySelectorAll("[data-tab-button]").forEach(button => {
+    button.addEventListener("click", () => showTab(button.dataset.tabButton));
+});
+
+function logout() {
+    localStorage.clear();
+    window.location.href = "/app/login.html";
+}
+
+function getInitialTab() {
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get("tab");
+
+    if (requestedTab && ["overview", "members", "teams", "candidates"].includes(requestedTab)) {
+        return requestedTab;
+    }
+
+    if (window.location.hash.startsWith("#team-")) {
+        return "teams";
+    }
+
+    return "overview";
+}
+
+showTab(getInitialTab());
+loadDashboard().catch(error => {
+    console.error(error);
+    document.getElementById("nextSteps").innerHTML = `<p class="text-red-400">${escapeHTML(error.message)}</p>`;
+});
+</script>
+</body>
+</html>

@@ -90,8 +90,13 @@ async function createCompany() {
         const data = await res.json();
 
         if (res.ok) {
-            // ✅ ÉXITO: Redirigir al Hub que gestiona todo
-            window.location.href = "/app/company-hub.html"; 
+            if (data.token) {
+                localStorage.setItem("token", data.token);
+            }
+            if (data.company && data.company.id) {
+                localStorage.setItem("company_id", data.company.id);
+            }
+            window.location.href = "/app/company-hub.html?onboarding=1"; 
         } else {
             showError(data.error || "Error al crear la empresa.");
             

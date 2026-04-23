@@ -151,6 +151,8 @@ func main() {
 	auth.GET("/teams/:team_id/gaps", handler.GetTeamGaps)
 	auth.GET("/teams/:team_id/vector", handler.GetTeamVector)
 	auth.GET("/teams", handler.GetTeams)
+	auth.GET("/teams/:team_id", handler.GetTeam)
+	auth.GET("/teams/:team_id/members", handler.GetTeamMembers)
 	auth.GET("/teams/:team_id/hiring-profile", handler.GetTeamHiringProfile)
 	auth.POST("/companies", handler.CreateCompany)
 	auth.GET("/company-members", handler.GetCompanyMembers)
@@ -161,6 +163,7 @@ func main() {
 	r.GET("/quiz", handler.GetQuiz)
 
 	auth.POST("/teams/:team_id/members", handler.AddMemberToTeam)
+	auth.DELETE("/teams/:team_id/members/:member_id", handler.RemoveTeamMember)
 	auth.POST("/teams", handler.CreateTeam)
 
 	// TEAM ENGINE

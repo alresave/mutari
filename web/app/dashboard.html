@@ -34,6 +34,10 @@ class="bg-slate-900 border border-slate-700 px-4 py-2 rounded-lg">
 </select>
 
 </div>
+<div class="flex items-center gap-3 mb-4">
+  <a href="/app/company-hub.html" class="text-sm text-slate-400 hover:text-white">← Back to company hub</a>
+  <button onclick="openCurrentTeamInHub()" class="text-sm text-indigo-400 hover:text-indigo-300">Manage this team</button>
+</div>
 <div class="mb-6">
   <div id="selectedTeamLabel" class="text-sm text-slate-400">
     Selected Team →
@@ -486,6 +490,16 @@ let currentTeam = null
 const params = new URLSearchParams(window.location.search)
 
 const shareId = params.get("share")
+const teamParam = params.get("team")
+
+if(teamParam){
+  currentTeam = teamParam
+}
+
+if(!currentTeam){
+  const storedTeam = localStorage.getItem("current_team_id")
+  if(storedTeam) currentTeam = storedTeam
+}
 
 
 
@@ -606,6 +620,11 @@ async function loadTeams(){
 
     })
 
+    if(teams.length === 0){
+      renderEmptyDashboard("No teams yet. Create a team from the company hub before using analytics.")
+      return
+    }
+
     // cambio de team
     select.onchange = () => loadTeam(select.value)
 
@@ -634,6 +653,8 @@ async function loadTeams(){
 async function loadTeam(teamId){
 
   currentTeam = teamId
+  localStorage.setItem("current_team_id", String(teamId))
+  document.getElementById("teamSelect").value = String(teamId)
 
   // 🔥 actualizar breadcrumb
   const teamName = teamMap[teamId] || teamId
@@ -673,7 +694,13 @@ async function loadTeamInfo(teamId){
     else if(data.matches) matches = data.matches
     else if(data.data) matches = data.data
 
-    if(matches.length === 0) return
+    if(matches.length === 0){
+      teamVector = null
+      document.getElementById("teamScore").innerText = "—"
+      document.getElementById("teamArchetype").innerText = "No profile yet"
+      resetCandidateState("This team has no candidate matches yet.")
+      return
+    }
 
     // 🔥 usar mejor candidato REAL
     const best = [...matches].sort((a,b)=>(b.score||0)-(a.score||0))[0]
@@ -695,6 +722,7 @@ async function loadTeamInfo(teamId){
   }catch(err){
 
     console.error("Error loading team info:",err)
+    resetCandidateState("Could not load team analytics.")
 
   }
 
@@ -753,6 +781,7 @@ async function loadGaps(teamId){
   }catch(err){
 
     console.error("Error loading gaps:", err)
+    document.getElementById("gaps").innerHTML = `<div class="text-slate-500 text-sm">Gap analysis will appear once this team has enough data.</div>`
 
   }
 }
@@ -929,7 +958,7 @@ function buildSmartReasoning(data, candidateName){
 /* HIRING */
 
 async function loadHiring(teamId){
-
+try{
 const res = await fetch(`/teams/${teamId}/hiring-profile`,{headers})
 const data = await res.json()
 
@@ -941,6 +970,13 @@ traits.innerHTML=""
 
 const list = data.recommended_traits || []
 
+if(list.length === 0){
+const li=document.createElement("li")
+li.innerText="No hiring profile available yet."
+traits.appendChild(li)
+return
+}
+
 list.forEach(t=>{
 
 const li=document.createElement("li")
@@ -949,6 +985,11 @@ li.innerText="• "+t
 traits.appendChild(li)
 
 })
+}catch(err){
+console.error("Error loading hiring profile:",err)
+document.getElementById("role").innerText = ""
+document.getElementById("traits").innerHTML = `<li>No hiring profile available yet.</li>`
+}
 
 }
 
@@ -974,6 +1015,11 @@ async function loadCandidates(teamId){
     container.innerHTML = ""
 
     demoCandidates = matches
+
+    if(matches.length === 0){
+      resetCandidateState("No candidates available for this team yet.")
+      return
+    }
 
     // 🔥 STEP 1: calcular tipo UNA sola vez
     matches = matches.map(c => {
@@ -1213,6 +1259,43 @@ ${buildTopComparison(bestCandidate, secondCandidate)}
     console.error("Error loading candidates:", err)
   }
 
+}
+
+function resetCandidateState(message){
+  bestCandidate = null
+  secondCandidateGlobal = null
+  bestRow = null
+  teamScoreGlobal = 0
+  demoCandidates = []
+  document.getElementById("candidates").innerHTML = `
+    <div class="text-slate-500 text-sm">${message}</div>
+  `
+  document.getElementById("decisionSummary").innerHTML = `
+    <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 text-slate-400 text-sm">${message}</div>
+  `
+  document.getElementById("reasoning").innerHTML = "Select a candidate to see reasoning."
+  document.getElementById("candidateScore").innerText = "—"
+  document.getElementById("impact").innerText = "—"
+}
+
+function renderEmptyDashboard(message){
+  document.getElementById("selectedTeamLabel").innerHTML = `
+    Selected Team →
+    <span class="text-indigo-400 font-semibold">—</span>
+  `
+  document.getElementById("teamArchetype").innerText = "—"
+  document.getElementById("teamScore").innerText = "—"
+  document.getElementById("role").innerText = ""
+  document.getElementById("traits").innerHTML = `<li>${message}</li>`
+  document.getElementById("gaps").innerHTML = `<div class="text-slate-500 text-sm">${message}</div>`
+  resetCandidateState(message)
+}
+
+function openCurrentTeamInHub(){
+  if(currentTeam){
+    localStorage.setItem("current_team_id", String(currentTeam))
+  }
+  window.location.href = "/app/company-hub.html";
 }
 
 /* FIT */

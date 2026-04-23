@@ -167,6 +167,71 @@ func (r *Repository) CreateTeam(
 
 	return t, err
 }
+
+func (r *Repository) GetTeamByID(
+	ctx context.Context,
+	companyID int64,
+	teamID int64,
+) (models.Team, error) {
+
+	query := `
+	SELECT id, company_id, name, description
+	FROM teams
+	WHERE id = $1 AND company_id = $2
+	`
+
+	var t models.Team
+
+	err := r.db.QueryRow(ctx, query, teamID, companyID).
+		Scan(&t.ID, &t.CompanyID, &t.Name, &t.Description)
+
+	return t, err
+}
+
+func (r *Repository) GetTeamMembers(
+	ctx context.Context,
+	companyID int64,
+	teamID int64,
+) ([]models.CompanyMember, error) {
+
+	query := `
+	SELECT cm.id, cm.company_id, cm.name, cm.email, cm.role, cm.created_at
+	FROM team_members tm
+	JOIN company_members cm ON cm.id = tm.company_member_id
+	JOIN teams t ON t.id = tm.team_id
+	WHERE tm.team_id = $1 AND t.company_id = $2
+	ORDER BY cm.created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, teamID, companyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var members []models.CompanyMember
+
+	for rows.Next() {
+		var m models.CompanyMember
+
+		err := rows.Scan(
+			&m.ID,
+			&m.CompanyID,
+			&m.Name,
+			&m.Email,
+			&m.Role,
+			&m.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		members = append(members, m)
+	}
+
+	return members, nil
+}
+
 func (r *Repository) AddTeamMember(
 	ctx context.Context,
 	teamID int64,
@@ -179,6 +244,29 @@ func (r *Repository) AddTeamMember(
 	`
 
 	_, err := r.db.Exec(ctx, query, teamID, memberID)
+
+	return err
+}
+
+func (r *Repository) RemoveTeamMember(
+	ctx context.Context,
+	companyID int64,
+	teamID int64,
+	memberID int64,
+) error {
+
+	query := `
+	DELETE FROM team_members tm
+	USING teams t, company_members cm
+	WHERE tm.team_id = t.id
+	  AND tm.company_member_id = cm.id
+	  AND tm.team_id = $1
+	  AND tm.company_member_id = $2
+	  AND t.company_id = $3
+	  AND cm.company_id = $3
+	`
+
+	_, err := r.db.Exec(ctx, query, teamID, memberID, companyID)
 
 	return err
 }

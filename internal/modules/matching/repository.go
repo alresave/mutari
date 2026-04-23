@@ -806,15 +806,16 @@ func (r *Repository) GetTeamGaps(ctx context.Context, teamID int64) ([]string, s
 	return weak, profile, nil
 }
 
-func (r *Repository) GetTeams(ctx context.Context) ([]models.Team, error) {
+func (r *Repository) GetTeams(ctx context.Context, companyID int64) ([]models.Team, error) {
 
 	query := `
 SELECT id, name,description, company_id
 FROM teams
+WHERE company_id = $1
 ORDER BY id
 `
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.db.Query(ctx, query, companyID)
 	if err != nil {
 		return nil, err
 	}
