@@ -140,6 +140,8 @@ func main() {
 	auth := r.Group("/")
 	auth.Use(AuthMiddleware())
 	auth.GET("/me", handler.Me)
+	auth.GET("/companies", handler.ListCompanies)
+	auth.POST("/companies/switch", handler.SwitchCompany)
 
 	auth.POST("/mcp/answers", handler.SubmitAnswers)
 

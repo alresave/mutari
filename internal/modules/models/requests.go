@@ -16,6 +16,10 @@ type CreateCompanyRequest struct {
 	Website string `json:"website" binding:"omitempty,url"`
 }
 
+type SwitchCompanyRequest struct {
+	CompanyID int64 `json:"company_id" binding:"required"`
+}
+
 type CreateCompanyMemberRequest struct {
 	Name  string `json:"name" binding:"required"`
 	Email string `json:"email" binding:"required,email"`

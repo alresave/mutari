@@ -27,6 +27,11 @@
             </nav>
 
             <div class="mt-auto pt-8 border-t border-slate-800">
+                <div class="mb-4">
+                    <label for="companySwitcher" class="block text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-2">Active company</label>
+                    <select id="companySwitcher" class="w-full bg-slate-900 border border-slate-700 px-4 py-3 rounded-xl text-sm text-white"></select>
+                    <div id="companySwitcherMessage" class="text-[11px] text-slate-500 mt-2 min-h-[1rem]"></div>
+                </div>
                 <div class="text-sm text-white font-bold" id="meName">Loading...</div>
                 <div class="text-xs text-slate-500 mt-1" id="meCompany">-</div>
                 <button onclick="logout()" class="mt-4 text-xs font-bold text-red-400 hover:text-red-300">Log out</button>
@@ -38,6 +43,11 @@
                 <div>
                     <h1 class="text-3xl lg:text-4xl font-black text-white">Company Dashboard</h1>
                     <p class="text-slate-400 mt-1">Create your company, add members, build teams, and manage them from one place.</p>
+                </div>
+                <div class="glass-card rounded-2xl px-4 py-3 min-w-[260px]">
+                    <div class="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Tenant context</div>
+                    <div class="text-sm text-white font-bold mt-2" id="activeCompanyHeadline">Loading company...</div>
+                    <div class="text-xs text-slate-400 mt-1">All members, teams, and candidates below use the selected company.</div>
                 </div>
                 <div class="flex gap-3 flex-wrap">
                     <button onclick="showTab('members')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-bold">+ Add member</button>
@@ -167,20 +177,16 @@
 
 <script>
 const API_URL = "http://localhost:8080";
-const token = localStorage.getItem("token");
+let authToken = localStorage.getItem("token");
 
-if (!token) {
+if (!authToken) {
     window.location.href = "/app/login.html";
 }
-
-const headers = {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer " + token
-};
 
 const state = {
     me: null,
     company: null,
+    companies: [],
     members: [],
     teams: [],
     candidates: [],
@@ -199,9 +205,15 @@ function escapeHTML(value) {
 }
 
 async function fetchApi(endpoint, options = {}) {
+    const requestHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + authToken,
+        ...(options.headers || {})
+    };
+
     const response = await fetch(`${API_URL}${endpoint}`, {
-        headers,
-        ...options
+        ...options,
+        headers: requestHeaders
     });
 
     if (response.status === 401) {
@@ -239,6 +251,7 @@ function setMessage(id, message, tone = "normal") {
 function renderOverview() {
     document.getElementById("statCompanyName").textContent = state.company?.name || "-";
     document.getElementById("statCompanyWebsite").textContent = state.company?.website || "No website";
+    document.getElementById("activeCompanyHeadline").textContent = state.company?.name || "No company selected";
     document.getElementById("statMembers").textContent = String(state.members.length);
     document.getElementById("statTeams").textContent = String(state.teams.length);
 
@@ -266,6 +279,23 @@ function renderOverview() {
 
     const onboardingVisible = new URLSearchParams(window.location.search).get("onboarding") === "1" || state.members.length === 0 || state.teams.length === 0;
     document.getElementById("onboardingBanner").classList.toggle("hidden", !onboardingVisible);
+}
+
+function renderCompanySwitcher() {
+    const selector = document.getElementById("companySwitcher");
+
+    if (!state.companies.length) {
+        selector.innerHTML = `<option value="">No companies yet</option>`;
+        selector.disabled = true;
+        return;
+    }
+
+    selector.disabled = false;
+    selector.innerHTML = state.companies.map(company => `
+        <option value="${company.id}" ${company.is_default ? "selected" : ""}>
+            ${escapeHTML(company.name)}${company.role ? ` · ${escapeHTML(company.role)}` : ""}
+        </option>
+    `).join("");
 }
 
 function renderMembers() {
@@ -416,6 +446,10 @@ async function loadDashboard() {
     document.getElementById("meName").textContent = state.me?.name || "User";
     document.getElementById("meCompany").textContent = state.company.name || "-";
 
+    const companiesData = await fetchApi("/companies");
+    state.companies = Array.isArray(companiesData?.companies) ? companiesData.companies : [];
+    renderCompanySwitcher();
+
     const [teamsData, membersData, candidatesData] = await Promise.all([
         fetchApi("/teams"),
         fetchApi("/company-members"),
@@ -435,6 +469,41 @@ async function loadDashboard() {
 
 async function refreshAll() {
     await loadDashboard();
+}
+
+async function switchCompany(companyID) {
+    const selector = document.getElementById("companySwitcher");
+    const message = document.getElementById("companySwitcherMessage");
+    message.className = "text-[11px] text-slate-500 mt-2 min-h-[1rem]";
+    message.textContent = "Switching company...";
+    selector.disabled = true;
+
+    try {
+        const data = await fetchApi("/companies/switch", {
+            method: "POST",
+            body: JSON.stringify({ company_id: Number(companyID) })
+        });
+
+        if (data?.token) {
+            authToken = data.token;
+            localStorage.setItem("token", data.token);
+        }
+
+        localStorage.setItem("company_id", String(companyID));
+        localStorage.removeItem("current_team_id");
+        state.selectedTeamId = null;
+        state.selectedTeamMembers = [];
+
+        await refreshAll();
+        message.className = "text-[11px] text-emerald-400 mt-2 min-h-[1rem]";
+        message.textContent = `Active company: ${data?.company?.name || "updated"}`;
+    } catch (error) {
+        message.className = "text-[11px] text-red-400 mt-2 min-h-[1rem]";
+        message.textContent = error.message;
+        renderCompanySwitcher();
+    } finally {
+        selector.disabled = false;
+    }
 }
 
 async function selectTeam(teamId) {
@@ -533,6 +602,15 @@ document.getElementById("teamForm").addEventListener("submit", async event => {
 
 document.getElementById("teamSelector").addEventListener("change", async event => {
     await selectTeam(event.target.value);
+});
+
+document.getElementById("companySwitcher").addEventListener("change", async event => {
+    const nextCompanyID = String(event.target.value);
+    if (!nextCompanyID || String(state.company?.id || "") === nextCompanyID) {
+        return;
+    }
+
+    await switchCompany(nextCompanyID);
 });
 
 document.querySelectorAll("[data-tab-button]").forEach(button => {

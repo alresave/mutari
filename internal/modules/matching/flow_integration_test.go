@@ -67,6 +67,7 @@ func resetIntegrationDB(t *testing.T, db *pgxpool.Pool) {
 		team_members,
 		team_profiles,
 		candidates,
+		company_users,
 		company_members,
 		teams,
 		companies,
@@ -181,6 +182,8 @@ func newTestRouter(t *testing.T, db *pgxpool.Pool) *gin.Engine {
 
 	auth := router.Group("/")
 	auth.Use(testAuthMiddleware())
+	auth.GET("/companies", handler.ListCompanies)
+	auth.POST("/companies/switch", handler.SwitchCompany)
 	auth.POST("/companies", handler.CreateCompany)
 	auth.GET("/me", handler.Me)
 	auth.GET("/company-members", handler.GetCompanyMembers)
@@ -241,6 +244,27 @@ func performJSONRequest(t *testing.T, router http.Handler, method, path string, 
 
 func floatID(value any) int64 {
 	return int64(value.(float64))
+}
+
+func parseJWTClaims(t *testing.T, tokenString string) jwt.MapClaims {
+	t.Helper()
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+		return jwtSecret, nil
+	})
+	if err != nil {
+		t.Fatalf("parse jwt: %v", err)
+	}
+	if !token.Valid {
+		t.Fatal("expected token to be valid")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		t.Fatalf("unexpected claims type: %T", token.Claims)
+	}
+
+	return claims
 }
 
 func createAnsweredTeamFixture(t *testing.T, router http.Handler) (string, int64, int64) {
@@ -392,6 +416,154 @@ func TestAuthAndCompanyFlow(t *testing.T) {
 
 	if len(membersResp["members"].([]any)) != 1 {
 		t.Fatalf("expected 1 company member, got %d", len(membersResp["members"].([]any)))
+	}
+}
+
+func TestLoginWithoutCompanyKeepsZeroCompanyID(t *testing.T) {
+	db := newTestDB(t)
+	resetIntegrationDB(t, db)
+
+	router := newTestRouter(t, db)
+
+	signup := performJSONRequest(t, router, http.MethodPost, "/auth/signup", map[string]any{
+		"name":     "Solo User",
+		"email":    "solo.user@test.local",
+		"password": "Secret123!",
+	}, "")
+
+	login := performJSONRequest(t, router, http.MethodPost, "/auth/login", map[string]any{
+		"email":    "solo.user@test.local",
+		"password": "Secret123!",
+	}, "")
+
+	claims := parseJWTClaims(t, login["token"].(string))
+
+	if floatID(login["user"].(map[string]any)["id"]) != floatID(signup["user_id"]) {
+		t.Fatalf("login user id does not match signup user id")
+	}
+
+	if got := floatID(login["user"].(map[string]any)["company_id"]); got != 0 {
+		t.Fatalf("expected login company_id 0, got %d", got)
+	}
+
+	if got := int64(claims["company_id"].(float64)); got != 0 {
+		t.Fatalf("expected jwt company_id 0, got %d", got)
+	}
+}
+
+func TestMembershipCompanyContextPersistsAcrossLoginAndMe(t *testing.T) {
+	db := newTestDB(t)
+	resetIntegrationDB(t, db)
+
+	router := newTestRouter(t, db)
+
+	signup := performJSONRequest(t, router, http.MethodPost, "/auth/signup", map[string]any{
+		"name":     "Tenant Owner",
+		"email":    "tenant.owner@test.local",
+		"password": "Secret123!",
+	}, "")
+
+	company := performJSONRequest(t, router, http.MethodPost, "/companies", map[string]any{
+		"name":    "Tenant Co",
+		"website": "https://tenant.example.com",
+	}, signup["token"].(string))
+
+	companyID := floatID(company["company"].(map[string]any)["id"])
+
+	login := performJSONRequest(t, router, http.MethodPost, "/auth/login", map[string]any{
+		"email":    "tenant.owner@test.local",
+		"password": "Secret123!",
+	}, "")
+
+	claims := parseJWTClaims(t, login["token"].(string))
+	me := performJSONRequest(t, router, http.MethodGet, "/me", nil, login["token"].(string))
+
+	if got := floatID(login["user"].(map[string]any)["company_id"]); got != companyID {
+		t.Fatalf("expected login company_id %d, got %d", companyID, got)
+	}
+
+	if got := int64(claims["company_id"].(float64)); got != companyID {
+		t.Fatalf("expected jwt company_id %d, got %d", companyID, got)
+	}
+
+	meCompany := me["company"].(map[string]any)
+	if got := floatID(meCompany["id"]); got != companyID {
+		t.Fatalf("expected /me company id %d, got %d", companyID, got)
+	}
+
+	if got := meCompany["name"].(string); got != "Tenant Co" {
+		t.Fatalf("expected /me company name %q, got %q", "Tenant Co", got)
+	}
+}
+
+func TestUserCanListAndSwitchCompanies(t *testing.T) {
+	db := newTestDB(t)
+	resetIntegrationDB(t, db)
+
+	router := newTestRouter(t, db)
+
+	signup := performJSONRequest(t, router, http.MethodPost, "/auth/signup", map[string]any{
+		"name":     "Multi Tenant",
+		"email":    "multi.tenant@test.local",
+		"password": "Secret123!",
+	}, "")
+
+	firstCompany := performJSONRequest(t, router, http.MethodPost, "/companies", map[string]any{
+		"name":    "First Co",
+		"website": "https://first.example.com",
+	}, signup["token"].(string))
+	firstCompanyID := floatID(firstCompany["company"].(map[string]any)["id"])
+
+	secondCompany := performJSONRequest(t, router, http.MethodPost, "/companies", map[string]any{
+		"name":    "Second Co",
+		"website": "https://second.example.com",
+	}, firstCompany["token"].(string))
+	secondCompanyID := floatID(secondCompany["company"].(map[string]any)["id"])
+
+	companiesResp := performJSONRequest(t, router, http.MethodGet, "/companies", nil, secondCompany["token"].(string))
+	companies := companiesResp["companies"].([]any)
+
+	if len(companies) != 2 {
+		t.Fatalf("expected 2 company memberships, got %d", len(companies))
+	}
+
+	firstListed := companies[0].(map[string]any)
+	secondListed := companies[1].(map[string]any)
+
+	if got := floatID(firstListed["id"]); got != secondCompanyID {
+		t.Fatalf("expected default company %d first, got %d", secondCompanyID, got)
+	}
+
+	if !firstListed["is_default"].(bool) {
+		t.Fatal("expected latest company to be default")
+	}
+
+	if got := secondListed["id"].(float64); int64(got) != firstCompanyID {
+		t.Fatalf("expected non-default company %d second, got %.0f", firstCompanyID, got)
+	}
+
+	switchResp := performJSONRequest(t, router, http.MethodPost, "/companies/switch", map[string]any{
+		"company_id": firstCompanyID,
+	}, secondCompany["token"].(string))
+
+	switchClaims := parseJWTClaims(t, switchResp["token"].(string))
+	if got := int64(switchClaims["company_id"].(float64)); got != firstCompanyID {
+		t.Fatalf("expected switched jwt company_id %d, got %d", firstCompanyID, got)
+	}
+
+	switchedCompany := switchResp["company"].(map[string]any)
+	if !switchedCompany["is_default"].(bool) {
+		t.Fatal("expected switched company to be default")
+	}
+
+	if got := floatID(switchedCompany["id"]); got != firstCompanyID {
+		t.Fatalf("expected switched company id %d, got %d", firstCompanyID, got)
+	}
+
+	me := performJSONRequest(t, router, http.MethodGet, "/me", nil, switchResp["token"].(string))
+	meCompany := me["company"].(map[string]any)
+	if got := floatID(meCompany["id"]); got != firstCompanyID {
+		t.Fatalf("expected /me company id %d after switch, got %d", firstCompanyID, got)
 	}
 }
 

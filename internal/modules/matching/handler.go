@@ -10,6 +10,7 @@ import (
 	"github.com/alresave/mutari/internal/modules/models"
 	"github.com/alresave/mutari/internal/security"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 type Handler struct {
@@ -182,9 +183,10 @@ func (h *Handler) RebuildProfiles(c *gin.Context) {
 func (h *Handler) Me(c *gin.Context) {
 
 	userID := c.GetInt64("user_id")
+	companyID := c.GetInt64("company_id")
 
 	id, name, photo, company, profileComplete, err :=
-		h.service.Me(c.Request.Context(), userID)
+		h.service.Me(c.Request.Context(), userID, companyID)
 
 	if err != nil {
 
@@ -493,6 +495,53 @@ func (h *Handler) CreateCompany(c *gin.Context) {
 		"token":   token,
 	})
 }
+
+func (h *Handler) ListCompanies(c *gin.Context) {
+
+	userID := c.GetInt64("user_id")
+
+	companies, err := h.service.ListCompaniesForUser(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"companies": companies,
+	})
+}
+
+func (h *Handler) SwitchCompany(c *gin.Context) {
+
+	var req models.SwitchCompanyRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	userID := c.GetInt64("user_id")
+
+	membership, token, err := h.service.SwitchCompany(
+		c.Request.Context(),
+		userID,
+		req.CompanyID,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(404, gin.H{"error": "company not found"})
+			return
+		}
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"company": membership,
+		"token":   token,
+	})
+}
+
 func (h *Handler) CreateCompanyMember(c *gin.Context) {
 
 	var req models.CreateCompanyMemberRequest

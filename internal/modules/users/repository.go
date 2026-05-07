@@ -25,11 +25,12 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (int64, s
 	SELECT 
 		u.id,
 		u.password_hash,
-		COALESCE(c.id, 0) AS company_id,
+		COALESCE(cu.company_id, 0) AS company_id,
 		u.name
 	FROM users u
-	LEFT JOIN companies c ON c.owner = u.id
+	LEFT JOIN company_users cu ON cu.user_id = u.id
 	WHERE u.email = $1
+	ORDER BY cu.is_default DESC, cu.created_at ASC
 	LIMIT 1
 	`
 
@@ -88,6 +89,11 @@ func (r *Repository) CreateUser(ctx context.Context, name, email, passwordHash s
 }
 
 func (r *Repository) CreateCompany(ctx context.Context, name, website string, owner int64) (models.Company, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return models.Company{}, err
+	}
+	defer tx.Rollback(ctx)
 
 	query := `
 	INSERT INTO companies (name, website, owner)
@@ -97,10 +103,34 @@ func (r *Repository) CreateCompany(ctx context.Context, name, website string, ow
 
 	var c models.Company
 
-	err := r.db.QueryRow(ctx, query, name, website, owner).
+	err = tx.QueryRow(ctx, query, name, website, owner).
 		Scan(&c.ID, &c.Name, &c.Website, &c.Owner, &c.CreatedAt)
+	if err != nil {
+		return models.Company{}, err
+	}
 
-	return c, err
+	_, err = tx.Exec(ctx, `
+		UPDATE company_users
+		SET is_default = FALSE
+		WHERE user_id = $1
+	`, owner)
+	if err != nil {
+		return models.Company{}, err
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO company_users (company_id, user_id, role, is_default)
+		VALUES ($1, $2, 'owner', TRUE)
+	`, c.ID, owner)
+	if err != nil {
+		return models.Company{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return models.Company{}, err
+	}
+
+	return c, nil
 }
 
 func (r *Repository) CreateCompanyMember(
@@ -420,11 +450,12 @@ func (r *Repository) GetToken(ctx context.Context, token string) (*models.MCPTok
 
 	return &t, nil
 }
-func (r *Repository) GetCompanyByOwner(ctx context.Context, userID int64) (int64, error) {
+func (r *Repository) GetDefaultCompanyIDForUser(ctx context.Context, userID int64) (int64, error) {
 
 	query := `
-	SELECT id FROM companies
-	WHERE owner = $1
+	SELECT company_id
+	FROM company_users
+	WHERE user_id = $1 AND is_default = TRUE
 	LIMIT 1
 	`
 
@@ -434,12 +465,13 @@ func (r *Repository) GetCompanyByOwner(ctx context.Context, userID int64) (int64
 	return companyID, err
 }
 
-func (r *Repository) GetCompanyForOwner(ctx context.Context, userID int64) (*models.Company, error) {
+func (r *Repository) GetDefaultCompanyForUser(ctx context.Context, userID int64) (*models.Company, error) {
 
 	query := `
-	SELECT id, name, website, owner, created_at
-	FROM companies
-	WHERE owner = $1
+	SELECT c.id, c.name, c.website, c.owner, c.created_at
+	FROM companies c
+	JOIN company_users cu ON cu.company_id = c.id
+	WHERE cu.user_id = $1 AND cu.is_default = TRUE
 	LIMIT 1
 	`
 
@@ -460,6 +492,158 @@ func (r *Repository) GetCompanyForOwner(ctx context.Context, userID int64) (*mod
 	}
 
 	return &company, nil
+}
+
+func (r *Repository) GetCompanyForUser(
+	ctx context.Context,
+	userID int64,
+	companyID int64,
+) (*models.Company, error) {
+
+	query := `
+	SELECT c.id, c.name, c.website, c.owner, c.created_at
+	FROM companies c
+	JOIN company_users cu ON cu.company_id = c.id
+	WHERE cu.user_id = $1 AND c.id = $2
+	LIMIT 1
+	`
+
+	var company models.Company
+
+	err := r.db.QueryRow(ctx, query, userID, companyID).Scan(
+		&company.ID,
+		&company.Name,
+		&company.Website,
+		&company.Owner,
+		&company.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &company, nil
+}
+
+func (r *Repository) ListCompaniesForUser(
+	ctx context.Context,
+	userID int64,
+) ([]models.CompanyMembership, error) {
+
+	query := `
+	SELECT
+		c.id,
+		c.name,
+		c.website,
+		c.owner,
+		c.created_at,
+		cu.role,
+		cu.is_default
+	FROM companies c
+	JOIN company_users cu ON cu.company_id = c.id
+	WHERE cu.user_id = $1
+	ORDER BY cu.is_default DESC, c.created_at ASC
+	`
+
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var memberships []models.CompanyMembership
+
+	for rows.Next() {
+		var membership models.CompanyMembership
+
+		err := rows.Scan(
+			&membership.ID,
+			&membership.Name,
+			&membership.Website,
+			&membership.Owner,
+			&membership.CreatedAt,
+			&membership.Role,
+			&membership.IsDefault,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		memberships = append(memberships, membership)
+	}
+
+	return memberships, rows.Err()
+}
+
+func (r *Repository) SetDefaultCompanyForUser(
+	ctx context.Context,
+	userID int64,
+	companyID int64,
+) (*models.CompanyMembership, error) {
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	query := `
+	SELECT
+		c.id,
+		c.name,
+		c.website,
+		c.owner,
+		c.created_at,
+		cu.role,
+		cu.is_default
+	FROM companies c
+	JOIN company_users cu ON cu.company_id = c.id
+	WHERE cu.user_id = $1 AND c.id = $2
+	LIMIT 1
+	`
+
+	var membership models.CompanyMembership
+
+	err = tx.QueryRow(ctx, query, userID, companyID).Scan(
+		&membership.ID,
+		&membership.Name,
+		&membership.Website,
+		&membership.Owner,
+		&membership.CreatedAt,
+		&membership.Role,
+		&membership.IsDefault,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE company_users
+		SET is_default = FALSE
+		WHERE user_id = $1
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE company_users
+		SET is_default = TRUE
+		WHERE user_id = $1 AND company_id = $2
+	`, userID, companyID)
+	if err != nil {
+		return nil, err
+	}
+
+	membership.IsDefault = true
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return &membership, nil
 }
 
 func (r *Repository) ConsumeToken(

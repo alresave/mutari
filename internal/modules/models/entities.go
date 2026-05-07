@@ -19,6 +19,12 @@ type Company struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type CompanyMembership struct {
+	Company
+	Role      string `json:"role"`
+	IsDefault bool   `json:"is_default"`
+}
+
 type CompanyMember struct {
 	ID        int64     `json:"id"`
 	CompanyID int64     `json:"company_id"`

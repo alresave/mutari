@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/alresave/mutari/internal/modules/models"
-	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -82,15 +81,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, in
 		return "", 0, "", 0, errors.New("invalid credentials")
 	}
 
-	claims := jwt.MapClaims{
-		"user_id":    id,
-		"company_id": companyID,
-		"exp":        time.Now().Add(24 * time.Hour).Unix(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	tokenString, err := token.SignedString(jwtSecret)
+	tokenString, err := GenerateJWTWithCompany(id, companyID)
 	if err != nil {
 		return "", 0, "", 0, err
 	}
@@ -101,6 +92,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, in
 func (s *Service) Me(
 	ctx context.Context,
 	userID int64,
+	companyID int64,
 ) (int64, string, string, *models.Company, bool, error) {
 
 	id, name, photo, err := s.repo.users.GetUserByID(ctx, userID)
@@ -108,9 +100,18 @@ func (s *Service) Me(
 		return 0, "", "", nil, false, err
 	}
 
-	company, err := s.repo.users.GetCompanyForOwner(ctx, userID)
-	if err != nil {
-		return 0, "", "", nil, false, err
+	var company *models.Company
+
+	if companyID != 0 {
+		company, err = s.repo.users.GetCompanyForUser(ctx, userID, companyID)
+		if err != nil {
+			return 0, "", "", nil, false, err
+		}
+	} else {
+		company, err = s.repo.users.GetDefaultCompanyForUser(ctx, userID)
+		if err != nil {
+			return 0, "", "", nil, false, err
+		}
 	}
 
 	profileComplete, err := s.repo.mcp.HasMCPProfile(ctx, userID)
@@ -259,6 +260,25 @@ func (s *Service) GetTeamVector(ctx context.Context, teamID int64) (*models.Team
 func (s *Service) CreateCompany(ctx context.Context, name, website string, owner int64) (models.Company, error) {
 	return s.repo.users.CreateCompany(ctx, name, website, owner)
 }
+
+func (s *Service) ListCompaniesForUser(ctx context.Context, userID int64) ([]models.CompanyMembership, error) {
+	return s.repo.users.ListCompaniesForUser(ctx, userID)
+}
+
+func (s *Service) SwitchCompany(ctx context.Context, userID int64, companyID int64) (*models.CompanyMembership, string, error) {
+	membership, err := s.repo.users.SetDefaultCompanyForUser(ctx, userID, companyID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	token, err := GenerateJWTWithCompany(userID, companyID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return membership, token, nil
+}
+
 func (s *Service) CreateCompanyMember(
 	ctx context.Context,
 	companyID int64,

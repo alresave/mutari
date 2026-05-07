@@ -31,6 +31,17 @@ CREATE TABLE companies (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE company_users (
+    company_id INT REFERENCES companies(id) ON DELETE CASCADE,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'member' CHECK (
+        role IN ('owner', 'admin', 'member')
+    ),
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (company_id, user_id)
+);
+
 CREATE TABLE company_members (
     id BIGSERIAL PRIMARY KEY,
     company_id INT REFERENCES companies(id) ON DELETE CASCADE,
@@ -220,6 +231,13 @@ ON candidates(company_id);
 
 CREATE INDEX idx_companies_owner
 ON companies(owner);
+CREATE INDEX idx_company_users_company
+ON company_users(company_id);
+CREATE INDEX idx_company_users_user
+ON company_users(user_id);
+CREATE UNIQUE INDEX idx_company_users_default_user
+ON company_users(user_id)
+WHERE is_default = TRUE;
 CREATE INDEX idx_teams_company
 ON teams(company_id);
 

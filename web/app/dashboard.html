@@ -29,14 +29,32 @@
 
 </div>
 
-<select id="teamSelect"
-class="bg-slate-900 border border-slate-700 px-4 py-2 rounded-lg">
+<div class="flex items-center gap-3">
+<div class="min-w-[240px]">
+<div class="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-2">Active company</div>
+<select id="companySelect"
+class="w-full bg-slate-900 border border-slate-700 px-4 py-2 rounded-lg">
 </select>
+</div>
+<div>
+<div class="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-2">Team</div>
+<select id="teamSelect"
+class="bg-slate-900 border border-slate-700 px-4 py-2 rounded-lg min-w-[220px]">
+</select>
+</div>
+</div>
 
 </div>
 <div class="flex items-center gap-3 mb-4">
   <a href="/app/company-hub.html" class="text-sm text-slate-400 hover:text-white">← Back to company hub</a>
   <button onclick="openCurrentTeamInHub()" class="text-sm text-indigo-400 hover:text-indigo-300">Manage this team</button>
+</div>
+<div class="mb-4">
+  <div id="activeCompanyLabel" class="text-sm text-slate-400">
+    Active Company →
+    <span class="text-emerald-400 font-semibold">—</span>
+  </div>
+  <div id="companySwitchMessage" class="text-xs text-slate-500 mt-1 min-h-[1rem]"></div>
 </div>
 <div class="mb-6">
   <div id="selectedTeamLabel" class="text-sm text-slate-400">
@@ -129,15 +147,51 @@ Behavioral structure derived from team vectors
 
 /* AUTH */
 
-const token = localStorage.getItem("token")
+let authToken = localStorage.getItem("token")
+if(!authToken){
+  window.location.href = "/app/login.html"
+}
 let bestCandidate = null
 let teamScoreGlobal = 0
 let bestRow = null
 let secondCandidateGlobal = null
 const groupOrder = ["best", "strategic", "good", "neutral", "risky"]
+let companies = []
 
-const headers = {
-"Authorization":"Bearer "+token
+function escapeHTML(value){
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;")
+}
+
+function getAuthHeaders(extra = {}){
+return {
+"Authorization":"Bearer "+authToken,
+...extra
+}
+}
+
+async function fetchJSON(url, options = {}){
+  const response = await fetch(url, {
+    ...options,
+    headers: getAuthHeaders(options.headers || {})
+  })
+
+  if(response.status === 401){
+    localStorage.clear()
+    window.location.href = "/app/login.html"
+    throw new Error("Unauthorized")
+  }
+
+  const data = await response.json()
+  if(!response.ok){
+    throw new Error(data.error || `HTTP ${response.status}`)
+  }
+
+  return data
 }
   function buildTopComparison(best, second){
 
@@ -596,8 +650,7 @@ async function loadTeams(){
 
   try{
 
-    const res = await fetch("/teams",{headers})
-    const data = await res.json()
+    const data = await fetchJSON("/teams")
 
     const teams = Array.isArray(data) ? data : data.teams
 
@@ -679,14 +732,7 @@ async function loadTeamInfo(teamId){
 
   try{
 
-    const res = await fetch(`/teams/${teamId}/matches`,{headers})
-
-    if(!res.ok){
-      console.error("Matches request failed:",res.status)
-      return
-    }
-
-    const data = await res.json()
+    const data = await fetchJSON(`/teams/${teamId}/matches`)
 
     let matches = []
 
@@ -734,8 +780,7 @@ async function loadGaps(teamId){
 
   try{
 
-    const res = await fetch(`/teams/${teamId}/gaps`, { headers })
-    const data = await res.json()
+    const data = await fetchJSON(`/teams/${teamId}/gaps`)
 
     // 🔥 guardar global para AI reasoning
     window.teamGaps = data
@@ -959,8 +1004,7 @@ function buildSmartReasoning(data, candidateName){
 
 async function loadHiring(teamId){
 try{
-const res = await fetch(`/teams/${teamId}/hiring-profile`,{headers})
-const data = await res.json()
+const data = await fetchJSON(`/teams/${teamId}/hiring-profile`)
 
 document.getElementById("role").innerText =
 data.suggested_role || ""
@@ -1002,8 +1046,7 @@ async function loadCandidates(teamId){
 
   try{
 
-    const res = await fetch(`/teams/${teamId}/matches`, { headers })
-    const data = await res.json()
+    const data = await fetchJSON(`/teams/${teamId}/matches`)
 
     let matches = []
 
@@ -1278,6 +1321,77 @@ function resetCandidateState(message){
   document.getElementById("impact").innerText = "—"
 }
 
+function renderCompanySelector(){
+  const select = document.getElementById("companySelect")
+
+  if(companies.length === 0){
+    select.innerHTML = `<option value="">No companies yet</option>`
+    select.disabled = true
+    document.getElementById("activeCompanyLabel").innerHTML = `
+      Active Company →
+      <span class="text-emerald-400 font-semibold">—</span>
+    `
+    return
+  }
+
+  select.disabled = false
+  select.innerHTML = companies.map(company => `
+    <option value="${company.id}" ${company.is_default ? "selected" : ""}>
+      ${escapeHTML(company.name)}${company.role ? ` · ${escapeHTML(company.role)}` : ""}
+    </option>
+  `).join("")
+
+  const active = companies.find(company => company.is_default) || companies[0]
+  document.getElementById("activeCompanyLabel").innerHTML = `
+    Active Company →
+    <span class="text-emerald-400 font-semibold">${escapeHTML(active.name)}</span>
+  `
+}
+
+async function loadCompanies(){
+  const data = await fetchJSON("/companies")
+  companies = Array.isArray(data?.companies) ? data.companies : []
+  renderCompanySelector()
+}
+
+async function switchCompany(companyId){
+  const select = document.getElementById("companySelect")
+  const message = document.getElementById("companySwitchMessage")
+
+  message.className = "text-xs text-slate-500 mt-1 min-h-[1rem]"
+  message.textContent = "Switching company..."
+  select.disabled = true
+
+  try{
+    const data = await fetchJSON("/companies/switch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ company_id: Number(companyId) })
+    })
+
+    if(data?.token){
+      authToken = data.token
+      localStorage.setItem("token", data.token)
+    }
+
+    localStorage.setItem("company_id", String(companyId))
+    localStorage.removeItem("current_team_id")
+    currentTeam = null
+
+    await loadCompanies()
+    await loadTeams()
+
+    message.className = "text-xs text-emerald-400 mt-1 min-h-[1rem]"
+    message.textContent = `Active company: ${data?.company?.name || "updated"}`
+  }catch(err){
+    message.className = "text-xs text-red-400 mt-1 min-h-[1rem]"
+    message.textContent = err.message
+    renderCompanySelector()
+  }finally{
+    select.disabled = false
+  }
+}
+
 function renderEmptyDashboard(message){
   document.getElementById("selectedTeamLabel").innerHTML = `
     Selected Team →
@@ -1304,8 +1418,7 @@ async function loadCandidateFit(candidateId, candidateName = "Candidate"){
 
   try{
 
-    const res = await fetch(`/teams/${currentTeam}/fit/${candidateId}`,{headers})
-    const data = await res.json()
+    const data = await fetchJSON(`/teams/${currentTeam}/fit/${candidateId}`)
 
     const candidateVector =
       Object.values(data.block_scores || {}).map(v=>v/100)
@@ -1426,7 +1539,18 @@ setTimeout(cycleCandidates,3500)
 
 /* INIT */
 
-loadTeams()
+document.getElementById("companySelect").addEventListener("change", event => {
+  const nextCompany = event.target.value
+  const activeCompany = companies.find(company => company.is_default)
+
+  if(!nextCompany || String(activeCompany?.id || "") === String(nextCompany)){
+    return
+  }
+
+  switchCompany(nextCompany)
+})
+
+loadCompanies().then(loadTeams)
 
 setTimeout(()=>{
 startDemo()

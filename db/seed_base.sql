@@ -17,6 +17,14 @@ VALUES (
   (SELECT id FROM users WHERE email = 'alberto@mutari.dev')
 );
 
+INSERT INTO company_users (company_id, user_id, role, is_default)
+VALUES (
+  (SELECT id FROM companies WHERE name = 'Mutari'),
+  (SELECT id FROM users WHERE email = 'alberto@mutari.dev'),
+  'owner',
+  TRUE
+);
+
 -- ============================================
 -- COMPANY MEMBERS
 -- ============================================

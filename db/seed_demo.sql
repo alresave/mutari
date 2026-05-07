@@ -113,60 +113,79 @@ INSERT INTO mcp_questions (block, question_text, scale) VALUES
 -- USERS
 -- ============================================
 
-INSERT INTO users (name,email,password_hash,photo_url, company_id) VALUES
-('Alberto Gonzalez','alberto@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/11.jpg',1),
-('Mateo Torres','mateo@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/12.jpg',1),
-('Santiago Ruiz','santiago@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/13.jpg',1),
-('Sebastian Vega','sebastian@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/14.jpg',1),
-('Daniel Herrera','daniel@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/15.jpg',1),
-('Alejandro Cruz','alejandro@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/16.jpg',1),
-('Gabriel Medina','gabriel@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/17.jpg',1),
-('Nicolas Rojas','nicolas@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/18.jpg',1),
-('David Navarro','david@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/19.jpg',1),
-('Adrian Campos','adrian@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/20.jpg',1),
+INSERT INTO users (name,email,password_hash,photo_url) VALUES
+('Alberto Gonzalez','alberto@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/11.jpg'),
+('Mateo Torres','mateo@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/12.jpg'),
+('Santiago Ruiz','santiago@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/13.jpg'),
+('Sebastian Vega','sebastian@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/14.jpg'),
+('Daniel Herrera','daniel@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/15.jpg'),
+('Alejandro Cruz','alejandro@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/16.jpg'),
+('Gabriel Medina','gabriel@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/17.jpg'),
+('Nicolas Rojas','nicolas@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/18.jpg'),
+('David Navarro','david@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/19.jpg'),
+('Adrian Campos','adrian@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/20.jpg'),
 
-('Emma Collins','emma@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/11.jpg',1),
-('Sophia Turner','sophia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/12.jpg',1),
-('Olivia Carter','olivia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/13.jpg',1),
-('Isabella Hughes','isabella@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/14.jpg',1),
-('Mia Bennett','mia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/15.jpg',1),
-('Charlotte Reed','charlotte@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/16.jpg',1),
-('Amelia Foster','amelia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/17.jpg',1),
-('Harper Brooks','harper@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/18.jpg',1),
-('Evelyn Hayes','evelyn@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/19.jpg',1),
-('Abigail Stone','abigail@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/20.jpg',1),
+('Emma Collins','emma@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/11.jpg'),
+('Sophia Turner','sophia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/12.jpg'),
+('Olivia Carter','olivia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/13.jpg'),
+('Isabella Hughes','isabella@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/14.jpg'),
+('Mia Bennett','mia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/15.jpg'),
+('Charlotte Reed','charlotte@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/16.jpg'),
+('Amelia Foster','amelia@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/17.jpg'),
+('Harper Brooks','harper@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/18.jpg'),
+('Evelyn Hayes','evelyn@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/19.jpg'),
+('Abigail Stone','abigail@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/20.jpg'),
 
-('Lucas Mendoza','lucas@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/21.jpg',1),
-('Diego Castillo','diego@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/22.jpg',1),
-('Juan Morales','juan@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/23.jpg',1),
-('Andres Silva','andres@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/24.jpg',1),
-('Carlos Ortega','carlos@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/25.jpg',1),
-('Miguel Vargas','miguel@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/26.jpg',1),
-('Fernando Soto','fernando@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/27.jpg',1),
-('Ricardo Paredes','ricardo@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/28.jpg',1),
-('Pablo Guerrero','pablo@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/29.jpg',1),
-('Esteban Fuentes','esteban@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/30.jpg',1),
-('Hector Aguilar','hector@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/31.jpg',1),
-('Jorge Ibarra','jorge@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/32.jpg',1),
-('Ivan Salazar','ivan@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/33.jpg',1),
-('Oscar Valdez','oscar@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/34.jpg',1),
-('Rafael Lozano','rafael@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/35.jpg',1),
+('Lucas Mendoza','lucas@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/21.jpg'),
+('Diego Castillo','diego@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/22.jpg'),
+('Juan Morales','juan@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/23.jpg'),
+('Andres Silva','andres@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/24.jpg'),
+('Carlos Ortega','carlos@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/25.jpg'),
+('Miguel Vargas','miguel@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/26.jpg'),
+('Fernando Soto','fernando@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/27.jpg'),
+('Ricardo Paredes','ricardo@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/28.jpg'),
+('Pablo Guerrero','pablo@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/29.jpg'),
+('Esteban Fuentes','esteban@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/30.jpg'),
+('Hector Aguilar','hector@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/31.jpg'),
+('Jorge Ibarra','jorge@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/32.jpg'),
+('Ivan Salazar','ivan@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/33.jpg'),
+('Oscar Valdez','oscar@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/34.jpg'),
+('Rafael Lozano','rafael@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/men/35.jpg'),
 
-('Emily Parker','emily@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/21.jpg',1),
-('Lily Watson','lily@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/22.jpg',1),
-('Chloe Bennett','chloe@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/23.jpg',1),
-('Ella Richardson','ella@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/24.jpg',1),
-('Grace Coleman','grace@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/25.jpg',1),
-('Scarlett Simmons','scarlett@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/26.jpg',1),
-('Victoria Sanders','victoria@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/27.jpg',1),
-('Aria Matthews','aria@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/28.jpg',1),
-('Hannah Powell','hannah@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/29.jpg',1),
-('Zoe Long','zoe@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/30.jpg',1),
-('Layla Patterson','layla@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/31.jpg',1),
-('Nora Hughes','nora@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/32.jpg',1),
-('Lucy Flores','lucy@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/33.jpg',1),
-('Stella Kim','stella@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/34.jpg',1),
-('Aurora Diaz','aurora@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/35.jpg',1);
+('Emily Parker','emily@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/21.jpg'),
+('Lily Watson','lily@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/22.jpg'),
+('Chloe Bennett','chloe@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/23.jpg'),
+('Ella Richardson','ella@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/24.jpg'),
+('Grace Coleman','grace@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/25.jpg'),
+('Scarlett Simmons','scarlett@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/26.jpg'),
+('Victoria Sanders','victoria@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/27.jpg'),
+('Aria Matthews','aria@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/28.jpg'),
+('Hannah Powell','hannah@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/29.jpg'),
+('Zoe Long','zoe@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/30.jpg'),
+('Layla Patterson','layla@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/31.jpg'),
+('Nora Hughes','nora@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/32.jpg'),
+('Lucy Flores','lucy@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/33.jpg'),
+('Stella Kim','stella@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/34.jpg'),
+('Aurora Diaz','aurora@mutari.dev', crypt('123456', gen_salt('bf')), 'https://randomuser.me/api/portraits/women/35.jpg');
+
+INSERT INTO company_users (company_id, user_id, role, is_default)
+SELECT
+  1,
+  id,
+  CASE WHEN email = 'alberto@mutari.dev' THEN 'owner' ELSE 'member' END,
+  TRUE
+FROM users
+WHERE email LIKE '%@mutari.dev';
+
+INSERT INTO company_members (company_id, name, email, role)
+SELECT
+  1,
+  name,
+  email,
+  'Member'
+FROM users
+WHERE email LIKE '%@mutari.dev'
+ORDER BY id;
 
 
 -- MCP Profile Vector Seed
@@ -333,7 +352,7 @@ VALUES (50, '[0.194,0.236,0.111,0.172,0.162,0.225,0.951,0.216,0.104,0.087,0.236,
 -- ============================================
 
 UPDATE companies
-SET user_id = 1
+SET owner = 1
 WHERE id = 1;
 
 
@@ -356,45 +375,45 @@ ON CONFLICT DO NOTHING;
 -- TEAM MEMBERS
 -- ============================================
 
-INSERT INTO team_members (team_id, user_id, role) VALUES
-(1,1,'Leader'),
-(1,2,'Specialist'),
-(1,3,'Specialist'),
-(1,4,'Operator'),
-(1,5,'Coordinator'),
+INSERT INTO team_members (team_id, company_member_id) VALUES
+(1,1),
+(1,2),
+(1,3),
+(1,4),
+(1,5),
 
-(2,6,'Leader'),
-(2,7,'Visionary'),
-(2,8,'Specialist'),
-(2,9,'Operator'),
-(2,10,'Coordinator'),
+(2,6),
+(2,7),
+(2,8),
+(2,9),
+(2,10),
 
-(3,11,'Leader'),
-(3,12,'Specialist'),
-(3,13,'Operator'),
-(3,14,'Coordinator'),
-(3,15,'Executor'),
+(3,11),
+(3,12),
+(3,13),
+(3,14),
+(3,15),
 
-(4,16,'Leader'),
-(4,17,'Operator'),
-(4,18,'Specialist'),
-(4,19,'Coordinator'),
-(4,20,'Executor'),
+(4,16),
+(4,17),
+(4,18),
+(4,19),
+(4,20),
 
-(5,21,'Leader'),
-(5,22,'Visionary'),
-(5,23,'Specialist'),
-(5,24,'Operator'),
-(5,25,'Coordinator'),
+(5,21),
+(5,22),
+(5,23),
+(5,24),
+(5,25),
 
-(6,26,'Leader'),
-(6,27,'Creative'),
-(6,28,'Specialist'),
-(6,29,'Operator'),
-(6,30,'Coordinator'),
+(6,26),
+(6,27),
+(6,28),
+(6,29),
+(6,30),
 
-(7,31,'Leader'),
-(7,32,'Strategist'),
-(7,33,'Specialist'),
-(7,34,'Operator'),
-(7,35,'Coordinator');
+(7,31),
+(7,32),
+(7,33),
+(7,34),
+(7,35);
