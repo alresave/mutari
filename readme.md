@@ -13,7 +13,7 @@ Psychological compatibility engine for teams and relationships.
 
 ## Run locally
 
-make bootstrap
+make setup
 make dev
 
 ## API Docs

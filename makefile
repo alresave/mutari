@@ -8,6 +8,7 @@ DATABASE_URL=postgres://postgres:mutari123@localhost:5432/mutari?sslmode=disable
 GOCACHE_LOCAL=$(CURDIR)/.gocache
 GOMODCACHE_LOCAL=$(CURDIR)/.gomodcache
 GOLANGCI_LINT_CACHE_LOCAL=$(CURDIR)/.golangci-lint-cache
+GO_ENV=GOCACHE=$(GOCACHE_LOCAL) GOMODCACHE=$(GOMODCACHE_LOCAL)
 
 DB_CONTAINER=mutari-db
 REDIS_CONTAINER=mutari-redis
@@ -73,13 +74,13 @@ help:
 # =========================
 
 dev:
-	$(GO) run cmd/API/main.go
+	env $(GO_ENV) $(GO) run cmd/API/main.go
 
 watch:
 	air
 
 build:
-	$(GO) build -o $(APP) cmd/API/main.go
+	env $(GO_ENV) $(GO) build -o $(APP) cmd/API/main.go
 
 run:
 	./$(APP)
@@ -161,13 +162,13 @@ tidy:
 	$(GO) mod tidy
 
 lint:
-	env GOCACHE=$(GOCACHE_LOCAL) GOMODCACHE=$(GOMODCACHE_LOCAL) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE_LOCAL) golangci-lint run ./...
+	env $(GO_ENV) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE_LOCAL) golangci-lint run ./...
 
 test:
-	$(GO) test ./...
+	env $(GO_ENV) $(GO) test ./...
 
 test-integration:
-	env 'DATABASE_URL=$(DATABASE_URL)' GOCACHE=$(GOCACHE_LOCAL) GOMODCACHE=$(GOMODCACHE_LOCAL) $(GO) test ./internal/modules/matching -v
+	env 'DATABASE_URL=$(DATABASE_URL)' $(GO_ENV) $(GO) test ./internal/modules/matching -v
 
 test-all: test test-integration
 
