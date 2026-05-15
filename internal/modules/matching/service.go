@@ -411,10 +411,14 @@ func (s *Service) GenerateToken(
 }
 func BuildVector(answers []models.AnswerInput) []float32 {
 
-	vector := make([]float32, len(answers))
+	vector := make([]float32, 64)
 
-	for i, a := range answers {
-		vector[i] = float32(a.Value)
+	for _, a := range answers {
+		if a.QuestionID < 1 || a.QuestionID > int64(len(vector)) {
+			continue
+		}
+
+		vector[a.QuestionID-1] = float32(a.Value)
 	}
 
 	return vector

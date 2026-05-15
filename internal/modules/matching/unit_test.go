@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/alresave/mutari/internal/modules/models"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -74,6 +75,23 @@ func TestBuildIdentityVectorNormalizesAndComputesConfidence(t *testing.T) {
 	}
 }
 
+func TestBuildVectorMapsAnswersByQuestionID(t *testing.T) {
+	vector := BuildVector([]models.AnswerInput{
+		{QuestionID: 3, Value: 5},
+		{QuestionID: 1, Value: 2},
+		{QuestionID: 65, Value: 4},
+		{QuestionID: 2, Value: 1},
+	})
+
+	if len(vector) != 64 {
+		t.Fatalf("expected 64 dimensions, got %d", len(vector))
+	}
+
+	if vector[0] != 2 || vector[1] != 1 || vector[2] != 5 {
+		t.Fatalf("answers were not mapped by question ID: first values %#v", vector[:3])
+	}
+}
+
 func TestPredictRole(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -123,6 +141,31 @@ func TestPredictRole(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := PredictRole(tt.blocks); got != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestSuggestRoleUsesBlockAverages(t *testing.T) {
+	tests := []struct {
+		name  string
+		block int
+		want  string
+	}{
+		{name: "cognitive strategist", block: 1, want: "Strategist"},
+		{name: "execution leader", block: 0, want: "Leader"},
+		{name: "emotional connector", block: 3, want: "Connector"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vector := make([]float32, 64)
+			for i := tt.block * 8; i < tt.block*8+8; i++ {
+				vector[i] = 0.9
+			}
+
+			if got := suggestRole(vector); got != tt.want {
 				t.Fatalf("expected %q, got %q", tt.want, got)
 			}
 		})

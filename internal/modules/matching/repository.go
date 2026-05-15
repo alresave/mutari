@@ -943,15 +943,30 @@ func cosineSimilarity(a, b []float32) float64 {
 }
 func suggestRole(vec []float32) string {
 
-	cognitive := vec[56]
-	ambition := vec[32]
-	emotional := vec[16]
+	blockAverage := func(block int) float32 {
+		start := block * 8
+		end := start + 8
+		if len(vec) < end {
+			return 0
+		}
+
+		var sum float32
+		for i := start; i < end; i++ {
+			sum += vec[i]
+		}
+
+		return sum / 8
+	}
+
+	execution := blockAverage(0)
+	cognitive := blockAverage(1)
+	emotional := blockAverage(3)
 
 	if cognitive > 0.75 {
 		return "Strategist"
 	}
 
-	if ambition > 0.75 {
+	if execution > 0.75 {
 		return "Leader"
 	}
 
