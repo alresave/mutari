@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// User represents an authenticated platform user.
 type User struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`
@@ -11,6 +12,7 @@ type User struct {
 	CompanyID int64  `json:"company_id"`
 }
 
+// Company represents an organization owned by a user.
 type Company struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
@@ -19,12 +21,14 @@ type Company struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// CompanyMembership combines company data with the current user's membership role.
 type CompanyMembership struct {
 	Company
 	Role      string `json:"role"`
 	IsDefault bool   `json:"is_default"`
 }
 
+// CompanyMember represents a person in a company who can be added to teams.
 type CompanyMember struct {
 	ID        int64     `json:"id"`
 	CompanyID int64     `json:"company_id"`
@@ -34,6 +38,7 @@ type CompanyMember struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// Team represents a company team used for culture and matching calculations.
 type Team struct {
 	ID          int64   `json:"id"`
 	Name        string  `json:"name"`
@@ -41,6 +46,7 @@ type Team struct {
 	CompanyID   int64   `json:"company_id"`
 }
 
+// MCPToken is a one-time token for candidate or member quiz submissions.
 type MCPToken struct {
 	ID         int64
 	EntityType string

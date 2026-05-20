@@ -2,14 +2,24 @@ package matching
 
 import (
 	"crypto/rand"
+	"os"
 	"time"
 
 	"encoding/hex"
 
+	"github.com/alresave/mutari/internal/modules/models"
 	"github.com/golang-jwt/jwt"
 )
 
-var jwtSecret = []byte("mutari-secret")
+const defaultJWTSecret = "mutari-secret"
+
+func jwtSigningSecret() []byte {
+	if secret := os.Getenv("MUTARI_JWT_SECRET"); secret != "" {
+		return []byte(secret)
+	}
+
+	return []byte(defaultJWTSecret)
+}
 
 // GenerateJWT creates a JWT token for a user.
 func GenerateJWT(userID int64) (string, error) {
@@ -25,17 +35,17 @@ func GenerateJWTWithCompany(userID, companyID int64) (string, error) {
 		"exp":        time.Now().Add(time.Hour * 24).Unix(),
 	})
 
-	return token.SignedString(jwtSecret)
+	return token.SignedString(jwtSigningSecret())
 }
 
 // PredictRole infers the most suitable role for a candidate
 func PredictRole(blocks map[string]float64) string {
 
-	ambition := blocks["Ambition"]
-	cognitive := blocks["Cognitive Style"]
-	emotional := blocks["Emotional Stability"]
-	relational := blocks["Relational Architecture"]
-	growth := blocks["Growth"]
+	ambition := scoreForBlock(blocks, "Learning Velocity", "Ambition")
+	cognitive := scoreForBlock(blocks, "Cognitive Processing", "Cognitive Style")
+	emotional := scoreForBlock(blocks, "Emotional Resilience", "Emotional Stability")
+	relational := scoreForBlock(blocks, "Collaboration Depth", "Relational Architecture")
+	growth := scoreForBlock(blocks, "Team Positioning", "Growth")
 
 	if ambition > 0.85 && emotional > 0.80 {
 		return "Execution Leader"
@@ -61,27 +71,27 @@ func GenerateTraits(blocks map[string]float64) []string {
 
 	traits := []string{}
 
-	if blocks["Cognitive Style"] > 0.85 {
+	if scoreForBlock(blocks, "Cognitive Processing", "Cognitive Style") > 0.85 {
 		traits = append(traits, "Strategic thinker")
 	}
 
-	if blocks["Emotional Stability"] > 0.80 {
+	if scoreForBlock(blocks, "Emotional Resilience", "Emotional Stability") > 0.80 {
 		traits = append(traits, "High emotional regulation")
 	}
 
-	if blocks["Ambition"] > 0.85 {
+	if scoreForBlock(blocks, "Learning Velocity", "Ambition") > 0.85 {
 		traits = append(traits, "Strong execution drive")
 	}
 
-	if blocks["Relational Architecture"] > 0.80 {
+	if scoreForBlock(blocks, "Collaboration Depth", "Relational Architecture") > 0.80 {
 		traits = append(traits, "Collaborative mindset")
 	}
 
-	if blocks["Growth"] > 0.80 {
+	if scoreForBlock(blocks, "Team Positioning", "Growth") > 0.80 {
 		traits = append(traits, "Continuous improvement oriented")
 	}
 
-	if blocks["Core Values"] > 0.80 {
+	if scoreForBlock(blocks, "Professional Values", "Core Values") > 0.80 {
 		traits = append(traits, "Values aligned with team culture")
 	}
 
@@ -91,7 +101,21 @@ func GenerateTraits(blocks map[string]float64) []string {
 
 	return traits
 }
+
+func scoreForBlock(blocks map[string]float64, names ...string) float64 {
+	for _, name := range names {
+		if score, ok := blocks[name]; ok {
+			return score
+		}
+	}
+
+	return 0
+}
+
 func predictRole(blocks []float64) string {
+	if len(blocks) < models.MCPBlockCount {
+		return "Specialist"
+	}
 
 	if blocks[1] > 0.85 && blocks[4] > 0.8 {
 		return "Visionary"

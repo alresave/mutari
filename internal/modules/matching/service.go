@@ -8,17 +8,26 @@ import (
 	"strings"
 	"time"
 
+	mcprepo "github.com/alresave/mutari/internal/modules/mcp"
 	"github.com/alresave/mutari/internal/modules/models"
+	userrepo "github.com/alresave/mutari/internal/modules/users"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Service struct {
-	repo *Repository
+	repo  RepositoryStore
+	users userrepo.RepositoryStore
+	mcp   mcprepo.RepositoryStore
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+// NewService wires the matching service to its repository dependencies.
+func NewService(repo RepositoryStore) *Service {
+	return &Service{
+		repo:  repo,
+		users: repo.Users(),
+		mcp:   repo.MCP(),
+	}
 }
 
 func (s *Service) GetMatches(ctx context.Context, memberID int64) ([]models.Candidate, error) {
@@ -27,28 +36,28 @@ func (s *Service) GetMatches(ctx context.Context, memberID int64) ([]models.Cand
 
 func (s *Service) SubmitMCPAnswers(ctx context.Context, memberID int64, answers []models.MCPAnswer) error {
 
-	err := s.repo.mcp.StoreCompanyMemberAnswers(ctx, memberID, answers)
+	err := s.mcp.StoreCompanyMemberAnswers(ctx, memberID, answers)
 	if err != nil {
 		return err
 	}
 
-	return s.repo.mcp.BuildCompanyMemberProfile(ctx, memberID)
+	return s.mcp.BuildCompanyMemberProfile(ctx, memberID)
 }
 
 func (s *Service) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion, error) {
-	return s.repo.mcp.GetMCPQuestions(ctx)
+	return s.mcp.GetMCPQuestions(ctx)
 }
 
 func (s *Service) RebuildAllProfiles(ctx context.Context) error {
 
-	ids, err := s.repo.mcp.GetAllCompanyMemberIDs(ctx)
+	ids, err := s.mcp.GetAllCompanyMemberIDs(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, id := range ids {
 
-		err := s.repo.mcp.BuildCompanyMemberProfile(ctx, id)
+		err := s.mcp.BuildCompanyMemberProfile(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -63,11 +72,11 @@ func (s *Service) Signup(ctx context.Context, name, email, password string) (int
 		return 0, err
 	}
 
-	return s.repo.users.CreateUser(ctx, name, email, string(hash))
+	return s.users.CreateUser(ctx, name, email, string(hash))
 }
 func (s *Service) Login(ctx context.Context, email, password string) (string, int64, string, int64, error) {
 
-	id, hash, companyID, name, err := s.repo.users.GetUserByEmail(ctx, email)
+	id, hash, companyID, name, err := s.users.GetUserByEmail(ctx, email)
 	if err != nil {
 		return "", 0, "", 0, err
 	}
@@ -95,7 +104,7 @@ func (s *Service) Me(
 	companyID int64,
 ) (int64, string, string, *models.Company, bool, error) {
 
-	id, name, photo, err := s.repo.users.GetUserByID(ctx, userID)
+	id, name, photo, err := s.users.GetUserByID(ctx, userID)
 	if err != nil {
 		return 0, "", "", nil, false, err
 	}
@@ -103,18 +112,18 @@ func (s *Service) Me(
 	var company *models.Company
 
 	if companyID != 0 {
-		company, err = s.repo.users.GetCompanyForUser(ctx, userID, companyID)
+		company, err = s.users.GetCompanyForUser(ctx, userID, companyID)
 		if err != nil {
 			return 0, "", "", nil, false, err
 		}
 	} else {
-		company, err = s.repo.users.GetDefaultCompanyForUser(ctx, userID)
+		company, err = s.users.GetDefaultCompanyForUser(ctx, userID)
 		if err != nil {
 			return 0, "", "", nil, false, err
 		}
 	}
 
-	profileComplete, err := s.repo.mcp.HasMCPProfile(ctx, userID)
+	profileComplete, err := s.mcp.HasMCPProfile(ctx, userID)
 	if err != nil {
 		return 0, "", "", nil, false, err
 	}
@@ -220,10 +229,14 @@ func (s *Service) GetTeamHiringProfile(ctx context.Context, teamID int64) (*mode
 
 	blocks := make(map[string]float64)
 
-	for i := 0; i < 8; i++ {
+	if len(vector) < models.MCPVectorSize {
+		return nil, fmt.Errorf("team hiring profile has %d dimensions, expected %d", len(vector), models.MCPVectorSize)
+	}
 
-		start := i * 8
-		end := start + 8
+	for i := 0; i < models.MCPBlockCount; i++ {
+
+		start := i * models.MCPDimensionsPerBlock
+		end := start + models.MCPDimensionsPerBlock
 
 		sum := 0.0
 
@@ -231,7 +244,7 @@ func (s *Service) GetTeamHiringProfile(ctx context.Context, teamID int64) (*mode
 			sum += float64(vector[j])
 		}
 
-		avg := sum / 8.0
+		avg := sum / float64(models.MCPDimensionsPerBlock)
 
 		blocks[models.BlockNames[i]] = avg
 	}
@@ -246,27 +259,21 @@ func (s *Service) GetTeamHiringProfile(ctx context.Context, teamID int64) (*mode
 	return profile, nil
 }
 
-// PredictRole infers the most suitable role for a candidate
-// based on the averaged block scores of a team profile.
-
-// GenerateTraits converts the psychological block profile
-// into readable HR traits for the hiring profile response.
-
 func (s *Service) GetTeamVector(ctx context.Context, teamID int64) (*models.TeamVector, error) {
 
 	return s.repo.GetTeamVector(ctx, teamID)
 
 }
 func (s *Service) CreateCompany(ctx context.Context, name, website string, owner int64) (models.Company, error) {
-	return s.repo.users.CreateCompany(ctx, name, website, owner)
+	return s.users.CreateCompany(ctx, name, website, owner)
 }
 
 func (s *Service) ListCompaniesForUser(ctx context.Context, userID int64) ([]models.CompanyMembership, error) {
-	return s.repo.users.ListCompaniesForUser(ctx, userID)
+	return s.users.ListCompaniesForUser(ctx, userID)
 }
 
 func (s *Service) SwitchCompany(ctx context.Context, userID int64, companyID int64) (*models.CompanyMembership, string, error) {
-	membership, err := s.repo.users.SetDefaultCompanyForUser(ctx, userID, companyID)
+	membership, err := s.users.SetDefaultCompanyForUser(ctx, userID, companyID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -285,7 +292,7 @@ func (s *Service) CreateCompanyMember(
 	name, email, role string,
 ) (models.CompanyMember, error) {
 
-	return s.repo.users.CreateCompanyMember(ctx, companyID, name, email, role)
+	return s.users.CreateCompanyMember(ctx, companyID, name, email, role)
 }
 func (s *Service) CreateTeam(
 	ctx context.Context,
@@ -293,18 +300,18 @@ func (s *Service) CreateTeam(
 	name, description string,
 ) (models.Team, error) {
 
-	return s.repo.users.CreateTeam(ctx, companyID, name, description)
+	return s.users.CreateTeam(ctx, companyID, name, description)
 }
 func (s *Service) GetTeam(ctx context.Context, companyID, teamID int64) (models.Team, error) {
-	return s.repo.users.GetTeamByID(ctx, companyID, teamID)
+	return s.users.GetTeamByID(ctx, companyID, teamID)
 }
 
 func (s *Service) GetTeamMembers(ctx context.Context, companyID, teamID int64) ([]models.CompanyMember, error) {
-	return s.repo.users.GetTeamMembers(ctx, companyID, teamID)
+	return s.users.GetTeamMembers(ctx, companyID, teamID)
 }
 
 func (s *Service) RemoveTeamMember(ctx context.Context, companyID, teamID, memberID int64) error {
-	err := s.repo.users.RemoveTeamMember(ctx, companyID, teamID, memberID)
+	err := s.users.RemoveTeamMember(ctx, companyID, teamID, memberID)
 	if err != nil {
 		return err
 	}
@@ -318,8 +325,9 @@ func (s *Service) AddTeamMember(
 	memberID int64,
 ) error {
 
-	// 🔒 validar team pertenece a la empresa
-	exists, err := s.repo.users.TeamExistsForCompany(ctx, teamID, companyID)
+	// Guard against cross-company membership changes by checking both sides
+	// against the company claim from the current JWT.
+	exists, err := s.users.TeamExistsForCompany(ctx, teamID, companyID)
 	if err != nil {
 		return err
 	}
@@ -327,8 +335,7 @@ func (s *Service) AddTeamMember(
 		return errors.New("team not found")
 	}
 
-	// 🔒 validar member pertenece a la empresa (también importante)
-	memberExists, err := s.repo.users.CompanyMemberExistsForCompany(ctx, memberID, companyID)
+	memberExists, err := s.users.CompanyMemberExistsForCompany(ctx, memberID, companyID)
 	if err != nil {
 		return err
 	}
@@ -336,8 +343,7 @@ func (s *Service) AddTeamMember(
 		return errors.New("member not found")
 	}
 
-	// 🔥 insertar
-	err = s.repo.users.AddTeamMember(ctx, teamID, memberID)
+	err = s.users.AddTeamMember(ctx, teamID, memberID)
 	if err != nil {
 
 		if strings.Contains(err.Error(), "duplicate") {
@@ -357,7 +363,7 @@ func (s *Service) CreateCandidate(
 	email string,
 ) (int64, error) {
 
-	return s.repo.users.CreateCandidate(ctx, companyID, name, email)
+	return s.users.CreateCandidate(ctx, companyID, name, email)
 }
 
 func (s *Service) ValidateToken(
@@ -369,7 +375,7 @@ func (s *Service) ValidateToken(
 		return nil, errors.New("token is required")
 	}
 
-	t, err := s.repo.users.GetValidToken(ctx, token)
+	t, err := s.users.GetValidToken(ctx, token)
 	if err != nil {
 		return nil, errors.New("invalid or expired token")
 	}
@@ -382,7 +388,7 @@ func (s *Service) GenerateToken(
 	companyMemberID *int64,
 ) (string, error) {
 
-	// Validación clara
+	// A quiz token must target exactly one entity type.
 	if (candidateID == nil && companyMemberID == nil) ||
 		(candidateID != nil && companyMemberID != nil) {
 		return "", errors.New("invalid target")
@@ -390,11 +396,12 @@ func (s *Service) GenerateToken(
 
 	expiresAt := time.Now().UTC().Add(48 * time.Hour)
 
-	// Retry por colisión (muy raro, pero correcto)
+	// UUID collisions are unlikely, but retrying keeps token creation resilient
+	// when the database unique constraint rejects a generated value.
 	for i := 0; i < 3; i++ {
 		token := uuid.NewString()
 
-		err := s.repo.users.CreateToken(
+		err := s.users.CreateToken(
 			ctx,
 			candidateID,
 			companyMemberID,
@@ -411,7 +418,8 @@ func (s *Service) GenerateToken(
 }
 func BuildVector(answers []models.AnswerInput) []float32 {
 
-	vector := make([]float32, 64)
+	// The MCP model currently stores one question per vector dimension.
+	vector := make([]float32, models.MCPVectorSize)
 
 	for _, a := range answers {
 		if a.QuestionID < 1 || a.QuestionID > int64(len(vector)) {
@@ -429,15 +437,15 @@ func (s *Service) ProcessAnswers(
 	answers []models.AnswerInput,
 ) error {
 
-	// 🔹 guardar respuestas según tipo
+	// Persist answers in the table that matches the token target.
 	switch token.EntityType {
 	case "candidate":
-		err := s.repo.mcp.SaveAnswers(ctx, token.EntityID, toAnswers(answers))
+		err := s.mcp.SaveAnswers(ctx, token.EntityID, toAnswers(answers))
 		if err != nil {
 			return err
 		}
 	case "member":
-		err := s.repo.mcp.SaveMemberAnswers(ctx, token.EntityID, answers)
+		err := s.mcp.SaveMemberAnswers(ctx, token.EntityID, answers)
 		if err != nil {
 			return err
 		}
@@ -445,20 +453,21 @@ func (s *Service) ProcessAnswers(
 		return fmt.Errorf("invalid entity type")
 	}
 
-	// 🔹 construir vector
+	// Build a 64-dimensional pgvector-compatible profile from question values.
 	vector := BuildVector(answers)
 
-	// 🔹 guardar profile
+	// Candidates update only their own profile; member updates also refresh team
+	// vectors because team profiles are averages of member profiles.
 	if token.EntityType == "candidate" {
 
-		err := s.repo.mcp.UpsertCandidateProfile(ctx, token.EntityID, vector)
+		err := s.mcp.UpsertCandidateProfile(ctx, token.EntityID, vector)
 		if err != nil {
 			return err
 		}
 
 	} else {
 
-		err := s.repo.mcp.UpsertCompanyMemberProfile(ctx, token.EntityID, vector)
+		err := s.mcp.UpsertCompanyMemberProfile(ctx, token.EntityID, vector)
 		if err != nil {
 			return err
 		}
@@ -468,8 +477,8 @@ func (s *Service) ProcessAnswers(
 		}
 	}
 
-	// 🔹 marcar token usado
-	_, err := s.repo.users.ConsumeToken(ctx, token.Token)
+	// Mark the one-time quiz token as consumed after profile persistence succeeds.
+	_, err := s.users.ConsumeToken(ctx, token.Token)
 	if err != nil {
 		return err
 	} else {
@@ -490,7 +499,8 @@ func BuildBlockVector(
 	blockSum := make(map[int64]float32)
 	blockCount := make(map[int64]int)
 
-	// 🔹 registrar TODOS los bloques
+	// Register every block from the question bank so unanswered blocks still
+	// occupy a stable position in the returned vector.
 	blockSet := make(map[int64]struct{})
 
 	for _, q := range questions {
@@ -503,7 +513,7 @@ func BuildBlockVector(
 		}
 	}
 
-	// 🔹 ordenar bloques
+	// Sort block IDs to keep vector positions deterministic across map iteration.
 	var blocks []int64
 	for b := range blockSet {
 		blocks = append(blocks, b)
@@ -566,18 +576,21 @@ func BuildBlockScores(answers []models.Answer) map[string]float64 {
 }
 func BuildCandidateVector(answers []models.Answer) []float32 {
 
-	// vector final (64 dims para pgvector)
-	vec := make([]float32, 64)
+	// Store eight MCP blocks with eight dimensions per block.
+	vec := make([]float32, models.MCPVectorSize)
 
-	// agrupar por bloque
+	// Group answers by block before averaging them into block-level scores.
 	blockMap := map[int][]float64{}
 
 	for _, a := range answers {
 		blockMap[a.Block] = append(blockMap[a.Block], a.Value)
 	}
 
-	// orden de bloques (IMPORTANTE: consistente siempre)
-	blockOrder := []int{1, 2, 3, 4, 5, 6, 7, 8}
+	// Keep block ordering stable so saved vectors remain comparable over time.
+	blockOrder := make([]int, 0, models.MCPBlockCount)
+	for block := 1; block <= models.MCPBlockCount; block++ {
+		blockOrder = append(blockOrder, block)
+	}
 
 	index := 0
 
@@ -589,19 +602,18 @@ func BuildCandidateVector(answers []models.Answer) []float32 {
 			continue
 		}
 
-		// promedio del bloque
 		var sum float64
 		for _, v := range values {
 			sum += v
 		}
 
-		avg := sum / float64(len(values)) // escala 1–5
+		avg := sum / float64(len(values))
 
-		// normalizar 0–1
 		normalized := avg / 5.0
 
-		// 🔥 expandir en múltiples dimensiones (más robusto)
-		for i := 0; i < 8; i++ {
+		// Expand each block average across its eight dimensions. This preserves
+		// the 64-dimensional shape expected by team and candidate matching.
+		for i := 0; i < models.MCPDimensionsPerBlock; i++ {
 
 			if index >= len(vec) {
 				break
@@ -621,10 +633,8 @@ func (s *Service) SubmitAnswers(
 	answers []models.Answer,
 ) (*models.QuizResult, error) {
 
-	// -----------------------------
-	// 1. VALIDAR TOKEN
-	// -----------------------------
-	t, err := s.repo.users.GetToken(ctx, token)
+	// Validate the one-time token before accepting quiz answers.
+	t, err := s.users.GetToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -639,10 +649,9 @@ func (s *Service) SubmitAnswers(
 
 	candidateID := t.EntityID
 
-	// -----------------------------
-	// 2. MAPEAR QUESTIONS → BLOCK
-	// -----------------------------
-	questions, err := s.repo.mcp.GetMCPQuestions(ctx)
+	// Load the question-to-block mapping so submitted answers can be enriched
+	// before they are saved and scored.
+	questions, err := s.mcp.GetMCPQuestions(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -653,9 +662,6 @@ func (s *Service) SubmitAnswers(
 		blockMap[q.ID] = int(q.Block)
 	}
 
-	// -----------------------------
-	// 3. ENRIQUECER ANSWERS
-	// -----------------------------
 	for i := range answers {
 
 		block, ok := blockMap[answers[i].QuestionID]
@@ -666,42 +672,26 @@ func (s *Service) SubmitAnswers(
 		answers[i].Block = block
 	}
 
-	// -----------------------------
-	// 4. GUARDAR RESPUESTAS
-	// -----------------------------
-	err = s.repo.mcp.SaveAnswers(ctx, candidateID, answers)
+	err = s.mcp.SaveAnswers(ctx, candidateID, answers)
 	if err != nil {
 		return nil, err
 	}
 
-	// -----------------------------
-	// 5. BUILD VECTOR
-	// -----------------------------
 	vector := BuildCandidateVector(answers)
 
-	// -----------------------------
-	// 6. BLOCK SCORES
-	// -----------------------------
 	blockScores := BuildBlockScores(answers)
 
-	// -----------------------------
-	// 7. GUARDAR PERFIL
-	// -----------------------------
-	err = s.repo.mcp.UpsertCandidateProfile(ctx, candidateID, vector)
+	// Save both the profile vector used for matching and the consumed-token state
+	// so the same quiz link cannot overwrite the profile later.
+	err = s.mcp.UpsertCandidateProfile(ctx, candidateID, vector)
 	if err != nil {
 		return nil, err
 	}
 
-	// -----------------------------
-	// 8. MARCAR TOKEN USADO
-	// -----------------------------
-	if _, err = s.repo.users.ConsumeToken(ctx, token); err != nil {
+	if _, err = s.users.ConsumeToken(ctx, token); err != nil {
 		return nil, err
 	}
 
-	// -----------------------------
-	// 9. RETORNAR RESULTADO
-	// -----------------------------
 	return &models.QuizResult{
 		CandidateID: candidateID,
 		BlockScores: blockScores,
@@ -713,15 +703,15 @@ func (s *Service) GetCandidates(ctx context.Context, companyID int64) ([]models.
 		return nil, fmt.Errorf("invalid company")
 	}
 
-	return s.repo.users.GetCandidatesByCompany(ctx, companyID)
+	return s.users.GetCandidatesByCompany(ctx, companyID)
 }
 
 func (s *Service) GetCompanyMembers(ctx context.Context, companyID int64) ([]models.CompanyMember, error) {
-	return s.repo.users.GetCompanyMembers(ctx, companyID)
+	return s.users.GetCompanyMembers(ctx, companyID)
 }
 
 func (s *Service) GetCandidates2(ctx context.Context, companyID int64) ([]models.Candidate2, error) {
-	return s.repo.users.GetCandidates(ctx, companyID)
+	return s.users.GetCandidates(ctx, companyID)
 }
 
 func toAnswers(inputs []models.AnswerInput) []models.Answer {

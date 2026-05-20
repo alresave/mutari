@@ -10,17 +10,20 @@ type attempt struct {
 	reset time.Time
 }
 
+// RateLimiter tracks login attempts per IP address within a short rolling window.
 type RateLimiter struct {
 	mu       sync.Mutex
 	attempts map[string]*attempt
 }
 
+// NewRateLimiter creates an in-memory limiter for authentication endpoints.
 func NewRateLimiter() *RateLimiter {
 	return &RateLimiter{
 		attempts: make(map[string]*attempt),
 	}
 }
 
+// Allow records one attempt for the IP and reports whether it is still under the limit.
 func (r *RateLimiter) Allow(ip string) bool {
 
 	r.mu.Lock()
@@ -28,11 +31,13 @@ func (r *RateLimiter) Allow(ip string) bool {
 
 	a, exists := r.attempts[ip]
 
-	if !exists || time.Now().After(a.reset) {
+	now := time.Now()
+
+	if !exists || now.After(a.reset) {
 
 		r.attempts[ip] = &attempt{
 			count: 1,
-			reset: time.Now().Add(time.Minute),
+			reset: now.Add(time.Minute),
 		}
 
 		return true

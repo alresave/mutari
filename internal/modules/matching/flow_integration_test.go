@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/alresave/mutari/internal/modules/models"
 	"github.com/alresave/mutari/internal/security"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
@@ -29,6 +30,8 @@ func testDatabaseURL() string {
 func newTestDB(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 
+	requireDB := os.Getenv("DATABASE_URL") != ""
+
 	config, err := pgxpool.ParseConfig(testDatabaseURL())
 	if err != nil {
 		t.Fatalf("parse database config: %v", err)
@@ -40,10 +43,16 @@ func newTestDB(t *testing.T) *pgxpool.Pool {
 
 	db, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
+		if requireDB {
+			t.Fatalf("integration database unavailable: %v", err)
+		}
 		t.Skipf("skip integration test, database unavailable: %v", err)
 	}
 
 	if err := db.Ping(context.Background()); err != nil {
+		if requireDB {
+			t.Fatalf("integration database unavailable: %v", err)
+		}
 		t.Skipf("skip integration test, database unavailable: %v", err)
 	}
 
@@ -77,6 +86,11 @@ func resetIntegrationDB(t *testing.T, db *pgxpool.Pool) {
 
 	if _, err := db.Exec(context.Background(), query); err != nil {
 		t.Fatalf("reset database: %v", err)
+	}
+
+	_, err := db.Exec(context.Background(), `UPDATE mcp_tokens SET used = TRUE WHERE used = FALSE`)
+	if err != nil {
+		t.Fatalf("clear active tokens outside reset scope: %v", err)
 	}
 
 	ensureQuestionBank(t, db)
@@ -117,8 +131,8 @@ func ensureQuestionBank(t *testing.T, db *pgxpool.Pool) {
 		}
 	}
 
-	for block := 1; block <= 8; block++ {
-		for question := 1; question <= 8; question++ {
+	for block := 1; block <= models.MCPBlockCount; block++ {
+		for question := 1; question <= models.MCPDimensionsPerBlock; question++ {
 			text := fmt.Sprintf("Block %d question %d", block, question)
 			if _, err := db.Exec(
 				context.Background(),
@@ -142,7 +156,7 @@ func testAuthMiddleware() gin.HandlerFunc {
 
 		tokenString := header[len("Bearer "):]
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return jwtSecret, nil
+			return jwtSigningSecret(), nil
 		})
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
@@ -250,7 +264,7 @@ func parseJWTClaims(t *testing.T, tokenString string) jwt.MapClaims {
 	t.Helper()
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-		return jwtSecret, nil
+		return jwtSigningSecret(), nil
 	})
 	if err != nil {
 		t.Fatalf("parse jwt: %v", err)
@@ -590,8 +604,8 @@ func TestSubmitAnswersRebuildsTeamProfile(t *testing.T) {
 	}
 
 	idealProfile := hiringProfile["ideal_profile"].(map[string]any)
-	if len(idealProfile) != 8 {
-		t.Fatalf("expected 8 hiring profile blocks, got %d", len(idealProfile))
+	if len(idealProfile) != models.MCPBlockCount {
+		t.Fatalf("expected %d hiring profile blocks, got %d", models.MCPBlockCount, len(idealProfile))
 	}
 }
 

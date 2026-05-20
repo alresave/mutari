@@ -20,8 +20,8 @@ func vectorMagnitude(values []float64) float64 {
 func TestGetMCPQuestionsV1(t *testing.T) {
 	questions := GetMCPQuestionsV1()
 
-	if len(questions) != 64 {
-		t.Fatalf("expected 64 questions, got %d", len(questions))
+	if len(questions) != models.MCPVectorSize {
+		t.Fatalf("expected %d questions, got %d", models.MCPVectorSize, len(questions))
 	}
 
 	for i, q := range questions {
@@ -54,8 +54,8 @@ func TestBuildIdentityVectorNormalizesAndComputesConfidence(t *testing.T) {
 
 	vector, confidence := BuildIdentityVector(questions, answers)
 
-	if len(vector) != 64 {
-		t.Fatalf("expected 64 dimensions, got %d", len(vector))
+	if len(vector) != models.MCPVectorSize {
+		t.Fatalf("expected %d dimensions, got %d", models.MCPVectorSize, len(vector))
 	}
 
 	if math.Abs(confidence-0.5) > 0.000001 {
@@ -83,8 +83,8 @@ func TestBuildVectorMapsAnswersByQuestionID(t *testing.T) {
 		{QuestionID: 2, Value: 1},
 	})
 
-	if len(vector) != 64 {
-		t.Fatalf("expected 64 dimensions, got %d", len(vector))
+	if len(vector) != models.MCPVectorSize {
+		t.Fatalf("expected %d dimensions, got %d", models.MCPVectorSize, len(vector))
 	}
 
 	if vector[0] != 2 || vector[1] != 1 || vector[2] != 5 {
@@ -160,8 +160,10 @@ func TestSuggestRoleUsesBlockAverages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vector := make([]float32, 64)
-			for i := tt.block * 8; i < tt.block*8+8; i++ {
+			vector := make([]float32, models.MCPVectorSize)
+			start := tt.block * models.MCPDimensionsPerBlock
+			end := start + models.MCPDimensionsPerBlock
+			for i := start; i < end; i++ {
 				vector[i] = 0.9
 			}
 
@@ -195,13 +197,15 @@ func TestGenerateTraits(t *testing.T) {
 }
 
 func TestGenerateJWTWithCompany(t *testing.T) {
+	t.Setenv("MUTARI_JWT_SECRET", "test-secret")
+
 	tokenString, err := GenerateJWTWithCompany(42, 7)
 	if err != nil {
 		t.Fatalf("GenerateJWTWithCompany returned error: %v", err)
 	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-		return jwtSecret, nil
+		return jwtSigningSecret(), nil
 	})
 	if err != nil {
 		t.Fatalf("unable to parse token: %v", err)

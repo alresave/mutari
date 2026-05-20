@@ -15,10 +15,12 @@ type Repository struct {
 	db *pgxpool.Pool
 }
 
+// NewRepository creates an MCP repository backed by the shared database pool.
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
+// GetMCPQuestions returns the ordered MCP question bank with block metadata.
 func (r *Repository) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion, error) {
 
 	query := `
@@ -61,9 +63,14 @@ func (r *Repository) GetMCPQuestions(ctx context.Context) ([]models.MCPQuestion,
 
 		questions = append(questions, q)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return questions, nil
 }
+
+// StoreCompanyMemberAnswers upserts member answers one question at a time.
 func (r *Repository) StoreCompanyMemberAnswers(ctx context.Context, memberID int64, answers []models.MCPAnswer) error {
 
 	query := `
@@ -89,6 +96,8 @@ func (r *Repository) StoreCompanyMemberAnswers(ctx context.Context, memberID int
 
 	return nil
 }
+
+// BuildCompanyMemberProfile creates the effective 64-dimensional vector for a member.
 func (r *Repository) BuildCompanyMemberProfile(ctx context.Context, memberID int64) error {
 
 	query := `
@@ -117,13 +126,17 @@ func (r *Repository) BuildCompanyMemberProfile(ctx context.Context, memberID int
 		}
 
 		blockIndex := block - 1
-		if blockIndex >= 0 && blockIndex < 8 {
+		if blockIndex >= 0 && blockIndex < models.MCPBlockCount {
 			blockSum[blockIndex] += value
 			blockCount[blockIndex]++
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 
-	// MCP archetype bases
+	// Archetype bases provide a deterministic shape for sparse answer sets. The
+	// member answers then pull each block toward the submitted average.
 	archetypes := [][]float64{
 
 		// Leader
@@ -142,9 +155,9 @@ func (r *Repository) BuildCompanyMemberProfile(ctx context.Context, memberID int
 		{0.9, 0.85, 0.95, 0.85, 0.6, 0.7, 0.8, 0.65},
 	}
 
-	vector := make([]float32, 64)
+	vector := make([]float32, models.MCPVectorSize)
 
-	for block := 0; block < 8; block++ {
+	for block := 0; block < models.MCPBlockCount; block++ {
 
 		avg := 0.5
 
@@ -155,10 +168,11 @@ func (r *Repository) BuildCompanyMemberProfile(ctx context.Context, memberID int
 		archetype := archetypes[int(memberID)%len(archetypes)]
 		base := archetype[block]
 
-		start := block * 8
+		start := block * models.MCPDimensionsPerBlock
 
-		for i := 0; i < 8; i++ {
-			gradient := (float64(i) - 3.5) * 0.30
+		for i := 0; i < models.MCPDimensionsPerBlock; i++ {
+			midpoint := float64(models.MCPDimensionsPerBlock-1) / 2
+			gradient := (float64(i) - midpoint) * 0.30
 
 			val := (base * 0.6) + (avg * 0.4) + gradient
 
@@ -224,6 +238,9 @@ func (r *Repository) GetAllCompanyMemberIDs(ctx context.Context) ([]int64, error
 		}
 		ids = append(ids, id)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return ids, nil
 }
@@ -246,7 +263,8 @@ func (r *Repository) GetTeamVectorRaw(
 		return nil, err
 	}
 
-	// 🔹 convertir []float32 → []float64
+	// Convert from pgvector's float32 storage to float64 for callers that need
+	// regular Go math operations.
 	raw := vec.Slice()
 
 	vector := make([]float64, len(raw))
@@ -288,7 +306,8 @@ func (r *Repository) SaveAnswers(
 		return nil
 	}
 
-	// 🔥 construir query dinámica
+	// Build a batched INSERT so a full quiz submission is persisted with one
+	// database round trip while preserving per-question upsert behavior.
 	query := `
 		INSERT INTO candidate_mcp_answers (candidate_id, question_id, value)
 		VALUES 
@@ -299,7 +318,8 @@ func (r *Repository) SaveAnswers(
 
 	for i, a := range answers {
 
-		// ($1, $2, $3), ($4, $5, $6)...
+		// Each answer contributes three positional arguments:
+		// candidate_id, question_id, and value.
 		idx := i * 3
 
 		values = append(values,

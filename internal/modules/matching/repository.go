@@ -3,6 +3,7 @@ package matching
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 
@@ -20,6 +21,7 @@ type Repository struct {
 	mcp   *mcp.Repository
 }
 
+// NewRepository creates the matching repository and its nested module repositories.
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db,
 		users: users.NewRepository(db),
@@ -27,7 +29,20 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	}
 }
 
+// Users exposes user/company persistence through its interface boundary.
+func (r *Repository) Users() users.RepositoryStore {
+	return r.users
+}
+
+// MCP exposes MCP persistence through its interface boundary.
+func (r *Repository) MCP() mcp.RepositoryStore {
+	return r.mcp
+}
+
 func blockSimilarity(a, b []float32, start, end int) float64 {
+	if start < 0 || end > len(a) || end > len(b) || start >= end {
+		return 0
+	}
 
 	var dot float64
 	var normA float64
@@ -43,13 +58,14 @@ func blockSimilarity(a, b []float32, start, end int) float64 {
 		normB += bv * bv
 	}
 
-	if end > len(a) || end > len(b) {
+	if normA == 0 || normB == 0 {
 		return 0
 	}
 
 	return dot / (math.Sqrt(normA) * math.Sqrt(normB))
 }
 
+// StabilityScore turns a normalized compatibility score into a user-facing label.
 func StabilityScore(score float64) string {
 
 	switch {
@@ -85,28 +101,28 @@ func compatibilityType(block string) string {
 
 	switch block {
 
-	case "Core Values":
+	case "Professional Values", "Core Values":
 		return "Values Match"
 
-	case "Relational Architecture":
+	case "Collaboration Depth", "Relational Architecture":
 		return "Relationship Structure Match"
 
-	case "Lifestyle Rhythm":
+	case "Operational Rhythm", "Lifestyle Rhythm":
 		return "Lifestyle Match"
 
-	case "Growth":
+	case "Team Positioning", "Growth":
 		return "Growth Alignment"
 
-	case "Cognitive Style":
+	case "Cognitive Processing", "Cognitive Style":
 		return "Thinking Style Match"
 
-	case "Ambition":
+	case "Learning Velocity", "Ambition":
 		return "Ambition Alignment"
 
-	case "Emotional Stability":
+	case "Emotional Resilience", "Emotional Stability":
 		return "Emotional Compatibility"
 
-	case "Trust & Collaboration ":
+	case "Execution Drive", "Trust & Collaboration":
 		return "Bonding Compatibility"
 
 	default:
@@ -167,6 +183,9 @@ func (r *Repository) GetMemberMatches(ctx context.Context, memberID int64) ([]mo
 		names[id] = name
 		photos[id] = photo
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	source, ok := vectors[memberID]
 	if !ok {
@@ -182,16 +201,16 @@ func (r *Repository) GetMemberMatches(ctx context.Context, memberID int64) ([]mo
 		}
 
 		blockScores := make(map[string]int)
-		blockSim := make([]float64, 8)
+		blockSim := make([]float64, models.MCPBlockCount)
 
 		best := 0
 		second := 1
 		worst := 0
 
-		for block := 0; block < 8; block++ {
+		for block := 0; block < models.MCPBlockCount; block++ {
 
-			start := block * 8
-			end := start + 8
+			start := block * models.MCPDimensionsPerBlock
+			end := start + models.MCPDimensionsPerBlock
 
 			score := blockSimilarity(source, vec, start, end)
 
@@ -211,11 +230,12 @@ func (r *Repository) GetMemberMatches(ctx context.Context, memberID int64) ([]mo
 			}
 		}
 
-		weights := models.RoleWeights["engineer"] // luego dinámico
+		// TODO: make role weights dynamic when member role preferences are stored.
+		weights := models.RoleWeights["engineer"]
 
 		score := 0.0
 
-		for i := 0; i < 8; i++ {
+		for i := 0; i < models.MCPBlockCount; i++ {
 			score += blockSim[i] * weights[i]
 		}
 
@@ -301,6 +321,8 @@ WHERE team_id = $1
 	err := r.db.QueryRow(ctx, query, teamID).Scan(&vec)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			// Lazily build the team profile when a hiring profile is requested
+			// before the aggregate vector exists.
 			if buildErr := r.BuildTeamVector(ctx, teamID); buildErr != nil {
 				return nil, buildErr
 			}
@@ -339,6 +361,9 @@ func (r *Repository) RebuildAllTeams(ctx context.Context) error {
 			return err
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -358,7 +383,8 @@ func (r *Repository) BuildTeamVector(ctx context.Context, teamID int64) error {
 	}
 	defer rows.Close()
 
-	vector := make([]float32, 64)
+	// Team profiles are the centroid of all available member MCP vectors.
+	vector := make([]float32, models.MCPVectorSize)
 	count := 0
 
 	for rows.Next() {
@@ -371,7 +397,11 @@ func (r *Repository) BuildTeamVector(ctx context.Context, teamID int64) error {
 
 		values := v.Slice()
 
-		for i := 0; i < 64; i++ {
+		if len(values) != models.MCPVectorSize {
+			return fmt.Errorf("member vector has %d dimensions, expected %d", len(values), models.MCPVectorSize)
+		}
+
+		for i := 0; i < models.MCPVectorSize; i++ {
 			vector[i] += values[i]
 		}
 
@@ -382,7 +412,11 @@ func (r *Repository) BuildTeamVector(ctx context.Context, teamID int64) error {
 		return nil
 	}
 
-	for i := 0; i < 64; i++ {
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for i := 0; i < models.MCPVectorSize; i++ {
 		vector[i] = vector[i] / float32(count)
 	}
 
@@ -422,6 +456,9 @@ func (r *Repository) GetAllTeamIDs(ctx context.Context) ([]int64, error) {
 		}
 
 		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return ids, nil
@@ -466,17 +503,17 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]models
 		source := vec.Slice()
 		target := teamVec.Slice()
 
-		blockSim := make([]float64, 8)
+		blockSim := make([]float64, models.MCPBlockCount)
 		blockScores := make(map[string]int)
 
 		best := 0
 		second := 1
 		worst := 0
 
-		for block := 0; block < 8; block++ {
+		for block := 0; block < models.MCPBlockCount; block++ {
 
-			start := block * 8
-			end := start + 8
+			start := block * models.MCPDimensionsPerBlock
+			end := start + models.MCPDimensionsPerBlock
 
 			score := blockSimilarity(source, target, start, end)
 
@@ -484,7 +521,7 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]models
 			blockScores[models.BlockNames[block]] = int(score * 100)
 		}
 
-		for i := 0; i < 8; i++ {
+		for i := 0; i < models.MCPBlockCount; i++ {
 
 			if blockSim[i] > blockSim[best] {
 				second = best
@@ -498,6 +535,8 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]models
 
 		score := (blockSim[best] + blockSim[second]) / 2
 
+		// Relationship stability gives heavier influence to values, emotional
+		// fit, and relational architecture than to skill-adjacent traits.
 		stabilityWeights := []float64{
 			0.25,
 			0.10,
@@ -511,13 +550,13 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]models
 
 		stability := 0.0
 
-		for i := 0; i < 8; i++ {
+		for i := 0; i < models.MCPBlockCount; i++ {
 			stability += blockSim[i] * stabilityWeights[i]
 		}
 
 		stabilityLabel := StabilityScore(stability)
 
-		role := predictRole(stabilityWeights)
+		role := predictRole(blockSim)
 
 		c := models.Candidate{
 
@@ -550,6 +589,9 @@ func (r *Repository) GetTeamMatches(ctx context.Context, teamID int64) ([]models
 		}
 
 		results = append(results, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return results, nil
@@ -586,17 +628,17 @@ func (r *Repository) GetTeamMemberFit(ctx context.Context, teamID int64, memberI
 	source := vec.Slice()
 	target := teamVec.Slice()
 
-	blockSim := make([]float64, 8)
+	blockSim := make([]float64, models.MCPBlockCount)
 	blockScores := make(map[string]int)
 
 	best := 0
 	second := 1
 	worst := 0
 
-	for block := 0; block < 8; block++ {
+	for block := 0; block < models.MCPBlockCount; block++ {
 
-		start := block * 8
-		end := start + 8
+		start := block * models.MCPDimensionsPerBlock
+		end := start + models.MCPDimensionsPerBlock
 
 		score := blockSimilarity(source, target, start, end)
 
@@ -631,13 +673,13 @@ func (r *Repository) GetTeamMemberFit(ctx context.Context, teamID int64, memberI
 
 	stability := 0.0
 
-	for i := 0; i < 8; i++ {
+	for i := 0; i < models.MCPBlockCount; i++ {
 		stability += blockSim[i] * stabilityWeights[i]
 	}
 
 	stabilityLabel := StabilityScore(stability)
 
-	role := predictRole(stabilityWeights)
+	role := predictRole(blockSim)
 
 	result := models.Candidate{
 
@@ -697,19 +739,29 @@ func (r *Repository) GetTeamCulture(ctx context.Context, teamID int64) (map[stri
 			return nil, "", err
 		}
 
-		vectors = append(vectors, vec.Slice())
+		values := vec.Slice()
+		if len(values) != models.MCPVectorSize {
+			return nil, "", fmt.Errorf("member vector has %d dimensions, expected %d", len(values), models.MCPVectorSize)
+		}
+
+		vectors = append(vectors, values)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, "", err
 	}
 
 	if len(vectors) == 0 {
 		return nil, "", errors.New("team has no members")
 	}
 
+	// Collapse each member's 64-dimensional profile into the eight MCP blocks,
+	// then average those block scores across the team.
 	blockScores := make(map[string]int)
 
-	for block := 0; block < 8; block++ {
+	for block := 0; block < models.MCPBlockCount; block++ {
 
-		start := block * 8
-		end := start + 8
+		start := block * models.MCPDimensionsPerBlock
+		end := start + models.MCPDimensionsPerBlock
 
 		sum := 0.0
 
@@ -721,7 +773,7 @@ func (r *Repository) GetTeamCulture(ctx context.Context, teamID int64) (map[stri
 				local += float64(vec[i])
 			}
 
-			local = local / 8
+			local = local / models.MCPDimensionsPerBlock
 			sum += local
 		}
 
@@ -759,19 +811,28 @@ func (r *Repository) GetTeamGaps(ctx context.Context, teamID int64) ([]string, s
 			return nil, "", err
 		}
 
-		vectors = append(vectors, vec.Slice())
+		values := vec.Slice()
+		if len(values) != models.MCPVectorSize {
+			return nil, "", fmt.Errorf("member vector has %d dimensions, expected %d", len(values), models.MCPVectorSize)
+		}
+
+		vectors = append(vectors, values)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, "", err
 	}
 
 	if len(vectors) == 0 {
 		return nil, "", errors.New("team has no members")
 	}
 
+	// Reuse the team block averages to identify the two weakest cultural areas.
 	blockScores := make(map[string]int)
 
-	for block := 0; block < 8; block++ {
+	for block := 0; block < models.MCPBlockCount; block++ {
 
-		start := block * 8
-		end := start + 8
+		start := block * models.MCPDimensionsPerBlock
+		end := start + models.MCPDimensionsPerBlock
 
 		sum := 0.0
 
@@ -783,7 +844,7 @@ func (r *Repository) GetTeamGaps(ctx context.Context, teamID int64) ([]string, s
 				local += float64(vec[i])
 			}
 
-			local = local / 8
+			local = local / models.MCPDimensionsPerBlock
 			sum += local
 		}
 
@@ -853,6 +914,9 @@ ORDER BY id
 		teams = append(teams, t)
 
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return teams, nil
 }
@@ -898,6 +962,9 @@ func (r *Repository) GetCandidates(ctx context.Context, teamID int64) ([]models.
 
 		users = append(users, u)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return users, nil
 }
@@ -920,6 +987,9 @@ func (r *Repository) GetTeamProfile(ctx context.Context, teamID int64) ([]float3
 }
 
 func cosineSimilarity(a, b []float32) float64 {
+	if len(a) != len(b) {
+		return 0
+	}
 
 	var dot float64
 	var normA float64
@@ -941,11 +1011,14 @@ func cosineSimilarity(a, b []float32) float64 {
 
 	return dot / (math.Sqrt(normA) * math.Sqrt(normB))
 }
+
 func suggestRole(vec []float32) string {
 
+	// Role suggestions are based on block-level averages rather than individual
+	// dimensions so small per-question noise does not dominate the label.
 	blockAverage := func(block int) float32 {
-		start := block * 8
-		end := start + 8
+		start := block * models.MCPDimensionsPerBlock
+		end := start + models.MCPDimensionsPerBlock
 		if len(vec) < end {
 			return 0
 		}
@@ -955,7 +1028,7 @@ func suggestRole(vec []float32) string {
 			sum += vec[i]
 		}
 
-		return sum / 8
+		return sum / models.MCPDimensionsPerBlock
 	}
 
 	execution := blockAverage(0)
@@ -980,10 +1053,10 @@ func computeBlockScores(team, candidate []float32) map[string]int {
 
 	scores := make(map[string]int)
 
-	for block := 0; block < 8; block++ {
+	for block := 0; block < models.MCPBlockCount; block++ {
 
-		start := block * 8
-		end := start + 8
+		start := block * models.MCPDimensionsPerBlock
+		end := start + models.MCPDimensionsPerBlock
 
 		score := blockSimilarity(team, candidate, start, end)
 
@@ -999,10 +1072,7 @@ func (r *Repository) SimulateTeamFit(
 	candidateID int64,
 ) (models.TeamFitSimulation, error) {
 
-	// -----------------------------
-	// Candidate vector
-	// -----------------------------
-
+	// Load the candidate profile that will be compared against each team member.
 	var candidateVec pgvector.Vector
 
 	err := r.db.QueryRow(ctx, `
@@ -1016,11 +1086,12 @@ func (r *Repository) SimulateTeamFit(
 	}
 
 	candidate := candidateVec.Slice()
+	if len(candidate) != models.MCPVectorSize {
+		return models.TeamFitSimulation{}, fmt.Errorf("candidate vector has %d dimensions, expected %d", len(candidate), models.MCPVectorSize)
+	}
 
-	// -----------------------------
-	// Team member vectors
-	// -----------------------------
-
+	// Use individual member vectors instead of only the team centroid so the
+	// simulation can account for balance and variance across the team.
 	rows, err := r.db.Query(ctx, `
 	SELECT p.effective_vector
 	FROM team_members tm
@@ -1044,17 +1115,22 @@ func (r *Repository) SimulateTeamFit(
 			return models.TeamFitSimulation{}, err
 		}
 
-		teamVectors = append(teamVectors, vec.Slice())
+		values := vec.Slice()
+		if len(values) != len(candidate) {
+			return models.TeamFitSimulation{}, fmt.Errorf("member vector has %d dimensions, expected %d", len(values), len(candidate))
+		}
+
+		teamVectors = append(teamVectors, values)
+	}
+	if err := rows.Err(); err != nil {
+		return models.TeamFitSimulation{}, err
 	}
 
 	if len(teamVectors) == 0 {
 		return models.TeamFitSimulation{}, errors.New("team has no members")
 	}
 
-	// -----------------------------
-	// Candidate vs each team member
-	// -----------------------------
-
+	// Average the candidate's pairwise similarity to every current team member.
 	totalSim := 0.0
 	sims := make([]float64, len(teamVectors))
 
@@ -1068,10 +1144,8 @@ func (r *Repository) SimulateTeamFit(
 
 	teamFit := totalSim / float64(len(teamVectors))
 
-	// -----------------------------
-	// Team balance penalty
-	// -----------------------------
-
+	// Penalize uneven fit: a candidate who matches only part of the team should
+	// score lower than one with consistent compatibility across members.
 	var variance float64
 
 	for _, s := range sims {
@@ -1083,10 +1157,7 @@ func (r *Repository) SimulateTeamFit(
 
 	balancePenalty := math.Sqrt(variance)
 
-	// -----------------------------
-	// Role complementarity
-	// -----------------------------
-
+	// Add a small role-complementarity boost after the base fit is calculated.
 	role := suggestRole(candidate)
 
 	roleBoost := 0.0
@@ -1106,24 +1177,23 @@ func (r *Repository) SimulateTeamFit(
 		roleBoost = 0.02
 	}
 
-	// -----------------------------
-	// Final score
-	// -----------------------------
-
+	// Convert the blended cosine score into a 0-100 percentage-like score.
 	scoreRaw :=
 		(teamFit * 0.75) +
 			((1 - balancePenalty) * 0.20) +
 			roleBoost
+	if scoreRaw < -1 {
+		scoreRaw = -1
+	}
+	if scoreRaw > 1 {
+		scoreRaw = 1
+	}
 
 	dist := math.Acos(scoreRaw) / math.Pi
 
 	score := int((1 - dist) * 100)
 
-	// -----------------------------
-	// Compute team average vector
-	// (for block scores)
-	// -----------------------------
-
+	// Compute the team centroid only for the returned per-block score breakdown.
 	dim := len(candidate)
 
 	avg := make([]float32, dim)
@@ -1151,15 +1221,16 @@ func (r *Repository) SimulateTeamFit(
 
 func detectTeamArchetype(scores map[string]int) string {
 
-	if scores["Ambition"] > 85 && scores["Cognitive Style"] > 85 {
+	if scoreForIntBlock(scores, "Learning Velocity", "Ambition") > 85 &&
+		scoreForIntBlock(scores, "Cognitive Processing", "Cognitive Style") > 85 {
 		return "Visionary Builders"
 	}
 
-	if scores["Relational Architecture"] > 85 {
+	if scoreForIntBlock(scores, "Collaboration Depth", "Relational Architecture") > 85 {
 		return "Collaborative Operators"
 	}
 
-	if scores["Emotional Stability"] > 85 {
+	if scoreForIntBlock(scores, "Emotional Resilience", "Emotional Stability") > 85 {
 		return "Stable Executors"
 	}
 
@@ -1171,43 +1242,66 @@ func recommendProfile(blocks []string) string {
 
 		switch b {
 
-		case "Emotional Stability":
+		case "Emotional Resilience", "Emotional Stability":
 			return "Stabilizer"
 
-		case "Relational Architecture":
+		case "Collaboration Depth", "Relational Architecture":
 			return "Collaborator"
 
-		case "Cognitive Style":
+		case "Cognitive Processing", "Cognitive Style":
 			return "Strategist"
 
-		case "Ambition":
+		case "Learning Velocity", "Ambition":
 			return "Driver"
 
-		case "Growth":
+		case "Team Positioning", "Growth":
 			return "Learner"
 
-		case "Trust & Collaboration ":
+		case "Execution Drive", "Trust & Collaboration":
 			return "Connector"
 
-		case "Lifestyle Rhythm":
+		case "Operational Rhythm", "Lifestyle Rhythm":
 			return "Balancer"
 
-		case "Core Values":
+		case "Professional Values", "Core Values":
 			return "Anchor"
 		}
 	}
 
 	return "Generalist"
 }
+
+func scoreForIntBlock(scores map[string]int, names ...string) int {
+	for _, name := range names {
+		if score, ok := scores[name]; ok {
+			return score
+		}
+	}
+
+	return 0
+}
+
 func PredictTeamArchetype(vector []float32) string {
 
-	if len(vector) < 8 {
+	if len(vector) < models.MCPVectorSize {
 		return "Balanced Team"
 	}
 
-	cognitive := vector[1]
-	ambition := vector[5]
-	emotional := vector[2]
+	blockAverage := func(block int) float32 {
+		start := block * models.MCPDimensionsPerBlock
+		end := start + models.MCPDimensionsPerBlock
+
+		var sum float32
+		for i := start; i < end; i++ {
+			sum += vector[i]
+		}
+
+		return sum / models.MCPDimensionsPerBlock
+	}
+
+	cognitive := blockAverage(1)
+	ambition := blockAverage(4)
+	emotional := blockAverage(3)
 
 	if ambition > 0.75 && cognitive > 0.75 {
 		return "Visionary Team"

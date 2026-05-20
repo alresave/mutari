@@ -1,5 +1,11 @@
 package models
 
+const (
+	MCPBlockCount         = 8
+	MCPDimensionsPerBlock = 8
+	MCPVectorSize         = MCPBlockCount * MCPDimensionsPerBlock
+)
+
 var RoleWeights = map[string][]float64{
 	"engineer": {
 		0.20,

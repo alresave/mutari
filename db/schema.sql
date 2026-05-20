@@ -12,7 +12,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
+    email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     photo_url TEXT, 
     
@@ -161,7 +161,8 @@ CREATE TABLE company_member_mcp_profiles (
 
     effective_vector VECTOR(64),
     confidence_score FLOAT DEFAULT 1.0,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ============================================
@@ -194,7 +195,8 @@ CREATE TABLE candidate_mcp_profiles (
 
     effective_vector VECTOR(64),
     confidence_score FLOAT DEFAULT 1.0,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE mcp_tokens (
@@ -220,6 +222,9 @@ CREATE TABLE mcp_tokens (
 
 CREATE INDEX idx_user_email
 ON users(email);
+CREATE UNIQUE INDEX unique_users_email_lower
+ON users(LOWER(email));
+
 CREATE INDEX idx_team_members_team
 ON team_members(team_id);
 
@@ -264,9 +269,17 @@ ALTER TABLE company_member_mcp_answers
 ADD CONSTRAINT unique_member_question
 UNIQUE (company_member_id, question_id);
 
+ALTER TABLE company_member_mcp_answers
+ADD CONSTRAINT chk_company_member_answer_value
+CHECK (value >= 0 AND value <= 5);
+
 ALTER TABLE candidate_mcp_answers
 ADD CONSTRAINT unique_candidate_question
 UNIQUE (candidate_id, question_id);
+
+ALTER TABLE candidate_mcp_answers
+ADD CONSTRAINT chk_candidate_answer_value
+CHECK (value >= 0 AND value <= 5);
 
 CREATE INDEX idx_candidate_vectors
 ON candidate_mcp_profiles

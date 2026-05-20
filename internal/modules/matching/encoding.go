@@ -2,8 +2,11 @@ package matching
 
 import (
 	"math"
+
+	"github.com/alresave/mutari/internal/modules/models"
 )
 
+// Question describes how a quiz question maps into the 64-dimensional MCP vector.
 type Question struct {
 	ID             int
 	DimensionIndex int
@@ -11,19 +14,22 @@ type Question struct {
 	IsControl      bool
 }
 
+// Answer stores the raw score submitted for a quiz question.
 type Answer struct {
 	QuestionID int
 	Value      float64
 }
 
-const dimensionSize = 64
+const dimensionSize = models.MCPVectorSize
 
-// dispersion exponent (controla qué tan extremos se vuelven los perfiles)
+// contrastGamma controls how strongly scores move away from the neutral midpoint.
 const contrastGamma = 1.8
 
-// mixing factor para ortogonalizar dimensiones
+// orthogonalMix reduces shared signal across dimensions before final normalization.
 const orthogonalMix = 0.15
 
+// BuildIdentityVector converts question answers into a normalized identity vector.
+// It also returns a confidence score based on the consistency of control questions.
 func BuildIdentityVector(
 	questions []Question,
 	answers []Answer,
@@ -86,17 +92,16 @@ func BuildIdentityVector(
 		counts[dim]++
 	}
 
-	// average dimensions
+	// Average each populated dimension, then center scores around zero so cosine
+	// similarity compares direction rather than raw positive-only magnitudes.
 	for i := 0; i < dimensionSize; i++ {
 
 		if counts[i] > 0 {
 			vector[i] /= float64(counts[i])
 		}
 
-		// center distribution around 0
 		centered := vector[i] - 0.5
 
-		// amplify contrast
 		if centered >= 0 {
 			centered = math.Pow(centered, contrastGamma)
 		} else {
@@ -106,10 +111,8 @@ func BuildIdentityVector(
 		vector[i] = centered
 	}
 
-	// ----------------------
-	// ORTHOGONAL MIXING
-	// ----------------------
-
+	// Subtract a small amount of the other dimensions' mean to reduce broad,
+	// non-specific agreement from dominating the final profile.
 	for i := 0; i < dimensionSize; i++ {
 
 		var mix float64
@@ -128,10 +131,7 @@ func BuildIdentityVector(
 		vector[i] = vector[i] - orthogonalMix*mix
 	}
 
-	// ----------------------
-	// L2 NORMALIZATION
-	// ----------------------
-
+	// Normalize to unit length so downstream cosine comparisons are stable.
 	var mag float64
 
 	for _, v := range vector {
@@ -147,10 +147,8 @@ func BuildIdentityVector(
 		}
 	}
 
-	// ----------------------
-	// CONFIDENCE SCORE
-	// ----------------------
-
+	// Confidence starts perfect and is reduced by disagreement with control
+	// questions that target dimensions already answered by primary questions.
 	confidence := 1.0
 
 	if controlChecks > 0 {

@@ -14,11 +14,12 @@ import (
 )
 
 type Handler struct {
-	service      *Service
+	service      ServiceStore
 	loginLimiter *security.RateLimiter
 }
 
-func NewHandler(service *Service, limiter *security.RateLimiter) *Handler {
+// NewHandler wires HTTP handlers to the matching service and login limiter.
+func NewHandler(service ServiceStore, limiter *security.RateLimiter) *Handler {
 	return &Handler{
 		service:      service,
 		loginLimiter: limiter,
@@ -470,7 +471,7 @@ func (h *Handler) CreateCompany(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt64("user_id") // 👈 viene del JWT middleware
+	userID := c.GetInt64("user_id")
 
 	company, err := h.service.CreateCompany(
 		c.Request.Context(),
@@ -671,7 +672,6 @@ func (h *Handler) RemoveTeamMember(c *gin.Context) {
 
 func (h *Handler) AddTeamMember(c *gin.Context) {
 
-	// 🔹 team_id desde URL
 	teamIDParam := c.Param("team_id")
 
 	teamID, err := strconv.ParseInt(teamIDParam, 10, 64)
@@ -680,7 +680,6 @@ func (h *Handler) AddTeamMember(c *gin.Context) {
 		return
 	}
 
-	// 🔹 body
 	var req models.AddTeamMemberRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -688,10 +687,9 @@ func (h *Handler) AddTeamMember(c *gin.Context) {
 		return
 	}
 
-	// 🔹 company_id desde JWT (middleware)
+	// The JWT middleware sets company_id, which scopes the membership change.
 	companyID := c.GetInt64("company_id")
 
-	// 🔹 lógica
 	err = h.service.AddTeamMember(
 		c.Request.Context(),
 		companyID,
@@ -717,7 +715,6 @@ func (h *Handler) AddTeamMember(c *gin.Context) {
 		}
 	}
 
-	// ✅ success
 	c.JSON(200, gin.H{
 		"status": "member added",
 	})
@@ -788,21 +785,19 @@ func (h *Handler) GetQuiz(c *gin.Context) {
 		return
 	}
 
-	// 🔹 validar token
+	// Validate the quiz token before returning entity context or questions.
 	t, err := h.service.ValidateToken(c.Request.Context(), token)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 🔹 obtener preguntas MCP
 	questions, err := h.service.GetMCPQuestions(c.Request.Context())
 	if err != nil {
 		c.JSON(500, gin.H{"error": "failed to load questions"})
 		return
 	}
 
-	// 🔥 respuesta correcta (nuevo modelo)
 	c.JSON(200, gin.H{
 		"entity_type": t.EntityType,
 		"entity_id":   t.EntityID,
@@ -818,14 +813,14 @@ func (h *Handler) SubmitAnswers(c *gin.Context) {
 		return
 	}
 
-	// 🔹 validar token
+	// Token validation also resolves whether the answers belong to a candidate
+	// or an existing company member.
 	t, err := h.service.ValidateToken(c.Request.Context(), req.Token)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 🔹 procesar respuestas
 	err = h.service.ProcessAnswers(
 		c.Request.Context(),
 		t,
