@@ -8,6 +8,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="/app/supabase-config.js"></script>
+<script src="/app/supabase.js"></script>
 
 <script>
 tailwind.config = { 
@@ -245,9 +247,7 @@ select {
    🛠️ LÓGICA DE JAVASCRIPT TRANSPLANTADA (TU VERSIÓN EXACTA)
    ========================================================== */
 
-const API_URL = "http://localhost:8080";
-const token = localStorage.getItem("token");
-const headers = { "Authorization": "Bearer " + token };
+const API_URL = "";
 
 // Estado Global (Tus variables originales)
 let bestCandidate = null;
@@ -369,7 +369,7 @@ function createRadar(teamData, candidateData) {
 /* --- ✅ TU LÓGICA DE CARGA DE DATOS (API Calls Originales) --- */
 
 async function fetchApi(endpoint) {
-    const res = await fetch(`${API_URL}${endpoint}`, { headers });
+    const res = await Mutari.teams(endpoint);
     if (!res.ok) throw new Error(`API Error: ${res.status} en ${endpoint}`);
     return await res.json();
 }

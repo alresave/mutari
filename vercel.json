@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "web",
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/", "destination": "/app/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/app/supabase-config.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    }
+  ]
+}

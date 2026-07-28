@@ -120,6 +120,7 @@ Icon
 tmp/
 temp/
 *.tmp
+supabase/.temp/
 
 # =========================
 

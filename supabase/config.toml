@@ -1,0 +1,19 @@
+project_id = "wbfuymqkcximyiihatrk"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+
+[auth]
+enabled = true
+site_url = "http://localhost:8080"
+additional_redirect_urls = ["http://localhost:8080/app", "http://localhost:8080/dating"]
+
+[functions.mcp]
+verify_jwt = false
+
+[functions.teams]
+verify_jwt = false
+
+[functions.admin]
+verify_jwt = false

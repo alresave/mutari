@@ -12,8 +12,9 @@ var jwtSecret = []byte("mutari-secret")
 func GenerateJWT(userID int64) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"user_id":    userID,
+		"company_id": int64(0),
+		"exp":        time.Now().Add(time.Hour * 24).Unix(),
 	})
 
 	return token.SignedString(jwtSecret)

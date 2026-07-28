@@ -35,24 +35,15 @@ Logout
 
 </div>
 
+<script src="/app/supabase-config.js"></script>
+<script src="/app/supabase.js"></script>
 <script>
-
-const token = localStorage.getItem("token")
-
-if(!token){
-window.location="/app/login.html"
-}
 
 async function loadMatches(){
 
-const res = await fetch("/matches",{
-headers:{
-Authorization:"Bearer "+token
-}
-})
+const res = await Mutari.mcp("/matches")
 
 if(res.status === 401){
-localStorage.removeItem("token")
 window.location="/app/login.html"
 return
 }
@@ -133,7 +124,10 @@ window.location="/app/login.html"
 
 }
 
-window.onload = loadMatches
+window.onload = async () => {
+if (!await Mutari.session()) { window.location="/app/login.html"; return }
+loadMatches()
+}
 
 </script>
 
