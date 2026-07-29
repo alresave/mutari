@@ -1,0 +1,19 @@
+{
+  "name": "Mutari",
+  "short_name": "Mutari",
+  "description": "Inteligencia de compatibilidad para equipos.",
+  "id": "/app/index.html",
+  "start_url": "/app/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/icons/mutari.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
