@@ -6,8 +6,8 @@ schemas = ["public", "graphql_public"]
 
 [auth]
 enabled = true
-site_url = "http://localhost:8080"
-additional_redirect_urls = ["http://localhost:8080/app", "http://localhost:8080/dating"]
+site_url = "https://mutari-iota.vercel.app"
+additional_redirect_urls = ["http://localhost:8080/app", "http://localhost:8080/dating", "https://mutari-iota.vercel.app/app/admin.html", "https://mutari-iota.vercel.app/dating/index.html"]
 
 [functions.mcp]
 verify_jwt = false
