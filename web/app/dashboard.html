@@ -417,7 +417,17 @@ async function loadTeam(teamId) {
     // Tus cargas paralelas originales
     loadGaps(teamId);
     loadHiring(teamId);
+    loadTeamCulture(teamId);
     loadTeamInfoAndCandidates(teamId); 
+}
+
+async function loadTeamCulture(teamId) {
+    try {
+        const data = await fetchApi(`/teams/${teamId}/culture`);
+        const blocks = data?.block_scores || {};
+        teamVector = Object.values(blocks).map(value => Number(value) / 100);
+        if (teamVector.length) createRadar(teamVector);
+    } catch (err) { console.error("Error loading team culture:", err); }
 }
 
 async function loadGaps(teamId) {
@@ -427,7 +437,7 @@ async function loadGaps(teamId) {
         const container = document.getElementById("gaps");
         container.innerHTML = "";
 
-        const weakBlocks = data.weak_blocks || [];
+        const weakBlocks = data.weak_blocks || data.gaps || [];
         // Nuevo diseño para la tarjeta de Gaps
         const gapsCard = document.createElement("div");
         gapsCard.className = "bg-slate-900/60 rounded-xl p-5 border border-slate-800 space-y-4";
@@ -443,7 +453,7 @@ async function loadGaps(teamId) {
             </div>
             <div class="pt-3 border-t border-slate-800">
                 <div class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Recommended Profile to Fill</div>
-                <div class="text-sm font-semibold text-indigo-300">${data.recommended_profile?.role || data.recommended_profile || "-"}</div>
+                <div class="text-sm font-semibold text-indigo-300">${data.recommended_profile?.role || data.recommended_profile || data.recommendation || "-"}</div>
             </div>
         `;
         container.appendChild(gapsCard);
@@ -483,10 +493,10 @@ async function loadTeamInfoAndCandidates(teamId) {
 
         // 1. Procesar info del equipo base (usando el "mejor" match como proxy)
         const baseMatch = [...matches].sort((a,b) => (b.score||0) - (a.score||0))[0];
-        teamVector = Object.values(baseMatch.block_scores || {}).map(v => v / 100);
+        if (baseMatch.block_scores) teamVector = Object.values(baseMatch.block_scores).map(v => v / 100);
         teamScoreGlobal = Math.round(baseMatch.score || 0);
         
-        createRadar(teamVector); // Mostrar radar solo con equipo inicialmente
+        if (teamVector?.length) createRadar(teamVector); // Mostrar radar solo con equipo inicialmente
         
         document.getElementById("teamScore").innerText = teamScoreGlobal;
         document.getElementById("teamArchetype").innerText = baseMatch.role || "Balanced Team";

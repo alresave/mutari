@@ -32,12 +32,15 @@ legacy custom JWT flow. Apply it to a linked project with:
 ```sh
 supabase db push --include-seed
 supabase functions deploy mcp
+supabase functions deploy teams
+supabase functions deploy admin
 ```
 
-The `mcp` Edge Function exposes `GET /questions`, `POST /answers`, and `GET /matches`
-below its function URL. The caller must send its Supabase access token for answers and
-matches. Keep the Go API running during rollout, then point the web clients to the
-Supabase project and remove it only after data and UI migration are verified.
+The `mcp` Edge Function exposes `GET /questions`, `POST /answers`, and `GET /matches`.
+The `teams` function exposes the team analytics routes, and `admin` covers company and
+team administration. Authenticated requests use the Supabase access token; authorization
+is enforced again inside the database RPCs. The Go service is now legacy-only and is not
+used by the deployed web clients.
 
 Set the project's URL and **anon** key in `web/app/supabase-config.js`. Both interfaces
 load that shared configuration. Those keys are designed to be public; never expose a

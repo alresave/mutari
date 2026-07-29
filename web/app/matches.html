@@ -117,10 +117,9 @@ container.appendChild(card)
 }
 
 function logout(){
-
-localStorage.removeItem("token")
-
+Mutari.client().then(client => client.auth.signOut()).finally(() => {
 window.location="/app/login.html"
+})
 
 }
 
