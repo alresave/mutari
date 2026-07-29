@@ -34,5 +34,14 @@ window.Mutari = (() => {
     return fetch(`${config.url}/functions/v1/teams${path}`, { ...init, headers });
   }
 
-  return { client, session, mcp, teams };
+  async function admin(init = {}) {
+    const current = await session();
+    if (!current) throw new Error("Authentication required");
+    const headers = new Headers(init.headers);
+    headers.set("apikey", config.anonKey);
+    headers.set("Authorization", `Bearer ${current.access_token}`);
+    return fetch(`${config.url}/functions/v1/admin`, { ...init, headers });
+  }
+
+  return { client, session, mcp, teams, admin };
 })();

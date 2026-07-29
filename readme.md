@@ -42,6 +42,11 @@ team administration. Authenticated requests use the Supabase access token; autho
 is enforced again inside the database RPCs. The Go service is now legacy-only and is not
 used by the deployed web clients.
 
+Admins can create a company invite through the `admin` function (`action: "create_invite"`).
+The invited account accepts it with `action: "accept_invite"`; after completing the MCP
+questionnaire it becomes available as a candidate. Admin roster actions are
+`list_candidates`, `list_team_members`, and `add_member`.
+
 Set the project's URL and **anon** key in `web/app/supabase-config.js`. Both interfaces
 load that shared configuration. Those keys are designed to be public; never expose a
 Supabase service-role key in a browser file.
