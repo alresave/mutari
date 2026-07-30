@@ -8,22 +8,55 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  validate:
+  go:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Check Go formatting
+        run: test -z "$(gofmt -s -l cmd internal)"
+      - name: Vet, test, and build API
+        run: |
+          go vet ./...
+          go test ./...
+          go build ./cmd/API
+
+  edge-functions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - name: Check Edge Functions
         run: |
           deno check --config supabase/functions/deno.json supabase/functions/mcp/index.ts
           deno check --config supabase/functions/deno.json supabase/functions/teams/index.ts
           deno check --config supabase/functions/deno.json supabase/functions/admin/index.ts
+      - name: Run Edge Function tests
+        run: deno test --no-config supabase/functions/admin/handler_test.ts
+
+  web-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install web tooling
+        run: npm ci
       - name: Validate PWA and deployment configuration
         run: |
           node -e "JSON.parse(require('fs').readFileSync('web/manifest.webmanifest')); JSON.parse(require('fs').readFileSync('vercel.json'));"
