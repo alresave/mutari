@@ -120,6 +120,7 @@ Icon
 tmp/
 temp/
 *.tmp
+supabase/.temp/
 
 # =========================
 
@@ -150,3 +151,4 @@ coverage/
 *.swp
 *.swo
 *~
+.vercel

@@ -67,13 +67,13 @@ help:
 # =========================
 
 dev:
-	$(GO) run cmd/api/main.go
+	$(GO) run ./cmd/API
 
 watch:
 	air
 
 build:
-	$(GO) build -o $(APP) cmd/api/main.go
+	$(GO) build -o $(APP) ./cmd/API
 
 run:
 	./$(APP)
@@ -139,7 +139,7 @@ reset-db:
 # =========================
 
 swagger-init:
-	swag init --generalInfo cmd/api/main.go --output docs
+	swag init --generalInfo cmd/API/main.go --output docs
 
 swagger-serve:
 	open http://localhost:8080/swagger/index.html

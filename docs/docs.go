@@ -34,8 +34,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "API for Mutari - Matching engine for teams and relationships",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

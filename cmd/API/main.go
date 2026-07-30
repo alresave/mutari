@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -44,11 +45,19 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		tokenString := strings.Replace(header, "Bearer ", "", 1)
+		if !strings.HasPrefix(header, "Bearer ") {
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid authorization header"})
+			return
+		}
+
+		tokenString := strings.TrimPrefix(header, "Bearer ")
 
 		token, err := jwt.Parse(
 			tokenString,
 			func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
 				return jwtSecret, nil
 			},
 		)
@@ -58,16 +67,34 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		claims := token.Claims.(jwt.MapClaims)
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token claims"})
+			return
+		}
 
-		userID := int64(claims["user_id"].(float64))
-		companyID := int64(claims["company_id"].(float64))
+		userID, ok := numberClaim(claims, "user_id")
+		if !ok || userID <= 0 {
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token claims"})
+			return
+		}
+		companyID, _ := numberClaim(claims, "company_id")
 
 		c.Set("userID", userID)
 		c.Set("companyID", companyID)
 
 		c.Next()
 	}
+}
+
+func numberClaim(claims jwt.MapClaims, name string) (int64, bool) {
+	value, exists := claims[name]
+	if !exists {
+		return 0, false
+	}
+
+	number, ok := value.(float64)
+	return int64(number), ok && number == float64(int64(number))
 }
 
 func main() {
@@ -93,6 +120,16 @@ func main() {
 	// Static UI
 	r.Static("app", "web/app")
 	r.Static("dating", "web/dating")
+	r.StaticFile("/swagger/doc.json", "docs/swagger.json")
+	r.GET("/swagger/index.html", func(c *gin.Context) {
+		c.Data(200, "text/html; charset=utf-8", []byte(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Mutari API documentation</title>
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"></head>
+<body><div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>SwaggerUIBundle({url: '/swagger/doc.json', dom_id: '#swagger-ui'})</script>
+</body></html>`))
+	})
 
 	// Health
 	r.GET("/health", func(c *gin.Context) {
@@ -125,8 +162,8 @@ func main() {
 	// TEAM ENGINE
 	auth.GET("/teams/:team_id/matches", handler.GetTeamMatches)
 
-	// Admin utility
-	r.POST("/admin/rebuild-profiles", handler.RebuildProfiles)
+	// Administrative utilities require authentication.
+	auth.POST("/admin/rebuild-profiles", handler.RebuildProfiles)
 	auth.POST("/admin/rebuild-team-profiles", handler.RebuildTeamProfiles)
 
 	log.Println("Mutari Engine Started")

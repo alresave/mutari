@@ -1,0 +1,19 @@
+project_id = "wbfuymqkcximyiihatrk"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+
+[auth]
+enabled = true
+site_url = "https://mutari-iota.vercel.app"
+additional_redirect_urls = ["http://localhost:8080/app", "http://localhost:8080/dating", "https://mutari-iota.vercel.app/app/admin.html", "https://mutari-iota.vercel.app/dating/index.html"]
+
+[functions.mcp]
+verify_jwt = false
+
+[functions.teams]
+verify_jwt = false
+
+[functions.admin]
+verify_jwt = false

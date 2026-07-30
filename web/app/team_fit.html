@@ -8,6 +8,8 @@
 <title>Mutari — Team Fit</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="/app/supabase-config.js"></script>
+<script src="/app/supabase.js"></script>
 
 </head>
 
@@ -32,7 +34,7 @@ class="bg-gray-700 p-3 rounded w-40"
 
 <input
 id="userID"
-type="number"
+type="text"
 placeholder="Candidate User ID"
 class="bg-gray-700 p-3 rounded w-56"
 />
@@ -59,21 +61,13 @@ async function loadFit(){
 const teamID=document.getElementById("teamID").value
 const userID=document.getElementById("userID").value
 
-const token=localStorage.getItem("token")
-
-const res=await fetch(`http://localhost:8080/teams/${teamID}/fit/${userID}`,{
-
-headers:{
-"Authorization":"Bearer "+token
-}
-
-})
+const res=await Mutari.teams(`/${teamID}/fit/${userID}`)
 
 const data=await res.json()
 
 console.log(data)
 
-renderResults(data.matches)
+renderResults(data ? [data] : [])
 
 }
 

@@ -19,6 +19,7 @@ COPY --from=builder /app/app .
 
 # Copiamos carpeta web también
 COPY --from=builder /app/web ./web
+COPY --from=builder /app/docs ./docs
 
 EXPOSE 8080
 

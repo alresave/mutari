@@ -82,6 +82,10 @@ func (h *Handler) Signup(c *gin.Context) {
 // @Router /auth/login [post]
 
 func (h *Handler) Login(c *gin.Context) {
+	if !h.loginLimiter.Allow(c.ClientIP()) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many login attempts; try again later"})
+		return
+	}
 
 	var body LoginRequest
 
@@ -146,9 +150,11 @@ func (h *Handler) SubmitMCPAnswers(c *gin.Context) {
 		return
 	}
 
+	// The authenticated identity is authoritative. UserID in the payload is
+	// accepted for backwards compatibility but is deliberately ignored.
 	err := h.service.SubmitMCPAnswers(
 		c.Request.Context(),
-		req.UserID,
+		c.GetInt64("userID"),
 		req.Answers,
 	)
 

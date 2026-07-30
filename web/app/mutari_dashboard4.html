@@ -7,6 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="/app/supabase-config.js"></script>
+<script src="/app/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -126,8 +128,9 @@ async function loadTeams(){
 
 try{
 
-const res = await fetch("/teams")
-teams = await res.json()
+const res = await Mutari.teams("/")
+const data = await res.json()
+teams = Array.isArray(data) ? data : data.teams
 
 }catch{
 
